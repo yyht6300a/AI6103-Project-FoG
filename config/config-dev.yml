@@ -1,0 +1,24 @@
+dataset: webqsp            # webqsp | cwq
+hop_budget: 3
+expansion_threshold: 0.1
+potential_threshold: 0.7
+max_rounds: 4
+
+llm:
+  provider: openai
+  model_name: gpt-4o-mini
+  base_url: ""
+  api_key: ""
+
+embedding:
+  model_name: Qwen/Qwen3-Embedding-4B
+  base_url: ""
+  api_key: ""
+
+training:
+  learning_rate: 1.0e-5
+  epochs: 5
+  weight_decay: 1.0e-3
+  dropout: 0.1
+  negative_sample_ratio: 10
+

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Secrets / local config
+.env
+config/config-local.yml
+
+# Large data artifacts (fetch with scripts/download_data.py)
+data/raw/**/*.parquet
+data/raw/**/*.csv
+data/freebase/
+*.tar.tz
+*.zip
+
+# Model checkpoints and caches
+checkpoints/
+cache/
+
+# Upstream scratch clone (no published source code yet)
+FoG/
+

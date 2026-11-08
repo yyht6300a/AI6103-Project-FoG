@@ -6,10 +6,11 @@ it does not load configuration, run a retrieval loop or mutate question state.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from numbers import Real
 
 from src.agent.llm_client import LLMClient
+from src.agent.answer_ranking import build_ranking_prompt, parse_ranking
 from src.agent.memory_response import MemoryResponse
 from src.agent.memory_state import QuestionMemory
 from src.agent.memory_update import update_memory
@@ -82,3 +83,50 @@ def manage_memory(
     eligible = state.filter_expansion_triplets(potential)
     updated, response = update_memory(state, eligible, client, prompt_variant=prompt_variant)
     return MSMResult(updated, response)
+
+
+def manage_memory_ranked(
+    state: QuestionMemory,
+    triples: Sequence[Sequence[str]],
+    scores: Sequence[Real],
+    client: LLMClient,
+    potential_threshold: Real = 0.7,
+    *,
+    prompt_variant: str = "retrieval_questions",
+) -> MSMResult:
+    """Complete an atomic memory round with a separate answer-ranking request.
+
+    To improve answer-order correctness, this enhancement separates ranking
+    from selection and answering. Zero or one candidate skips the extra call.
+
+    Args:
+        state: Immutable question-local snapshot, published by the caller only
+            after the entire transaction succeeds.
+        triples: Expanded head/relation/tail rows passed unchanged to MSM.
+        scores: Positionally aligned finite refined scores passed to MSM.
+        client: Caller-owned client shared by both stages; never closed here.
+        potential_threshold: Strict cutoff forwarded unchanged to MSM.
+        prompt_variant: Stage-one variant forwarded unchanged to manage_memory.
+
+    Returns:
+        MSMResult with stage-one state, selected evidence and questions unchanged.
+        Only answer order may change; literal strings and multiplicity survive.
+        No answer, path or rejection is repaired by the ranking stage.
+
+    Raises:
+        ValueError: Either stage fails input, envelope or structured validation.
+        requests.RequestException: Transport retries are exhausted.
+        OSError: Usage accounting fails. Any failure returns no partial result
+            and preserves the original snapshot. There is no business retry;
+            each stage uses the client's existing transport and logging policy.
+    """
+    provisional = manage_memory(state, triples, scores, client,
+        potential_threshold, prompt_variant=prompt_variant)
+    response = provisional.response
+    if len(response.predict_answer) < 2:
+        return provisional
+    prompt = build_ranking_prompt(state.original_question, response.selected_triplets,
+                                  response.predict_answer)
+    ranked = parse_ranking(client.complete([{"role": "user", "content": prompt}]),
+                           response.predict_answer)
+    return MSMResult(provisional.state, replace(response, predict_answer=ranked))

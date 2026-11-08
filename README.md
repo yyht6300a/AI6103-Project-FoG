@@ -75,7 +75,7 @@ Every HTTP attempt, including failures and retries, appends a row to [`logs/llm_
 
 ### Module reference
 
-See [Member D modules](docs/part_d.md) for interfaces and usage examples.
+See [Member D modules](docs/part_d.md) for interfaces and usage examples. For ranked answers, use `manage_memory_ranked`; [separate answer ranking](docs/part_d.md#separate-answer-ranking) explains the additional LLM call used to improve correctness.
 
 ## Threshold optimization experiments
 

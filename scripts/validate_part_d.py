@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 from src.agent.validation_error import failure_diagnostics
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
-from src.agent.memory_management import manage_memory
+from src.agent.memory_management import manage_memory, manage_memory_ranked
 from src.agent.memory_state import QuestionMemory
 from src.agent.question_decomposition import decompose_question
 
@@ -92,10 +92,12 @@ def case_plan(suite: str) -> list[dict]:
         suite: CLI-validated single, multi, removal, ranking or all selection.
 
     Returns:
-        Ordered plan; every entry permits one completion plus YAML retries.
+        Ordered cases with per-case logical request limits. Ranking cases permit
+        selection plus separate ranking; each request has YAML transport retries.
     """
     groups = tuple(group for group in CASES if not group.endswith("_diagnostic")) if suite == "all" else (suite,)
-    return [{"case": f"{group}.{name}", "expected": expected}
+    return [{"case": f"{group}.{name}", "expected": expected,
+             "logical_call_limit": 2 if group == "ranking" else 1}
             for group in groups for name, expected in CASES[group]]
 
 
@@ -132,9 +134,46 @@ def begin_case(report: dict, name: str) -> dict:
     planned = {case["case"]: case for case in report["plan"]}
     if name not in planned or any(case["case"] == name for case in report["results"]):
         raise RuntimeError("Unplanned or repeated acceptance call")
-    record = dict(planned[name], status="started")
+    record = dict(planned[name], status="started", logical_calls_started=0)
     report["results"].append(record)
     return record
+
+
+class CountingClient:
+    """Count logical requests per case without changing transport or logging.
+
+    The underlying client remains caller-owned. Retries within complete are
+    counted by its CSV, while this wrapper counts selection and ranking stages.
+    """
+
+    def __init__(self, client: LLMClient, record: dict) -> None:
+        """Bind a case-local counter and the caller-owned client.
+
+        Args:
+            client: Configured client receiving unchanged messages.
+            record: Case telemetry updated before every logical request.
+        """
+        self.client = client
+        self.record = record
+        record["logical_calls_started"] = 0
+
+    def complete(self, messages: list[dict]) -> dict:
+        """Count one request before forwarding, including terminal failures.
+
+        Args:
+            messages: Unchanged selection or ranking messages.
+
+        Returns:
+            Raw completion from the underlying client without output repair.
+
+        Raises:
+            RuntimeError: The case would exceed its declared logical budget.
+            Exception: Any underlying client error, propagated unchanged.
+        """
+        if self.record["logical_calls_started"] >= self.record["logical_call_limit"]:
+            raise RuntimeError("Case logical request budget exhausted")
+        self.record["logical_calls_started"] += 1
+        return self.client.complete(messages)
 
 
 def memory_round(
@@ -142,12 +181,12 @@ def memory_round(
     triples: list, scores: list, queries: tuple | list,
     *, prompt_variant: str = "retrieval_questions",
 ):
-    """Call public MSM once, recording inputs and publishing only on success.
+    """Run public MSM, using separate ranking for the ranking acceptance cases.
 
     Args:
         client: Real configured client; its retry policy remains unchanged.
         report: Mutable report; failure records expose exception classes and fixed validation diagnostics.
-        name: Planned case identifier, used for failure localization.
+        name: Planned case identifier; ranking cases use manage_memory_ranked.
         state: Prior question-local immutable snapshot.
         triples: Controlled retrieval rows, including exclusion probes.
         scores: Positionally aligned controlled scores; cutoff stays 0.7.
@@ -170,9 +209,11 @@ def memory_round(
     }
     record.update(queries=queries, triples=triples, scores=scores, threshold=0.7,
                   prompt_variant=prompt_variant,
+                  ranking_stage_enabled=name.startswith("ranking."),
                   state_before=before, submitted=sorted(submitted))
     try:
-        result = manage_memory(state, triples, scores, client, potential_threshold=0.7,
+        entry = manage_memory_ranked if record["ranking_stage_enabled"] else manage_memory
+        result = entry(state, triples, scores, CountingClient(client, record), potential_threshold=0.7,
                                prompt_variant=prompt_variant)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,
@@ -229,7 +270,7 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     if suite == "reference_diagnostic":
         for variant in ("paper", "explicit_references"):
             record = begin_case(report, f"reference_diagnostic.{variant}")
-            record.update(question=QUESTION, prompt_variant=variant)
+            record.update(question=QUESTION, prompt_variant=variant, logical_calls_started=1)
             questions = decompose_question(QUESTION, client, prompt_variant=variant)
             record.update(status="validated", sub_questions=questions)
         # These are recorded queries, not a substitute for real C/E retrieval.
@@ -243,6 +284,7 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     if suite in ("single", "all"):
         record = begin_case(report, "single.decomposition")
         record["question"] = QUESTION
+        record["logical_calls_started"] = 1
         questions = decompose_question(QUESTION, client)
         record.update(status="validated", sub_questions=questions)
         for name, triples, scores in (
@@ -352,7 +394,7 @@ def main(argv: list[str] | None = None) -> int:
         "semantic_review": "pending", "status": "not_started",
         "usage_csv": "logs/llm_usage.csv",
     }
-    report["logical_call_limit"] = len(report["plan"])
+    report["logical_call_limit"] = sum(case["logical_call_limit"] for case in report["plan"])
     if args.list_cases:
         print(json.dumps(report, indent=2))
         return 0
@@ -367,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
         config = load_llm_config()
         report.update(requested_model=config.model_name, base_url=config.base_url,
                       timeout=config.timeout, max_retries=config.max_retries,
-                      http_attempt_limit=len(report["plan"]) * (config.max_retries + 1))
+                      http_attempt_limit=report["logical_call_limit"] * (config.max_retries + 1))
         # Reserve report storage before incurring API usage; final write may still fail.
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -384,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         if client is not None:
             client.close()
-    report["logical_calls_started"] = len(report["results"])
+    report["logical_calls_started"] = sum(record["logical_calls_started"] for record in report["results"])
     try:
         output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         print(json.dumps({"status": report["status"], "report": str(output),

@@ -120,13 +120,13 @@ class PartDValidationTests(unittest.TestCase):
             ) as client, redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(validation.main(["--list-cases", "--suite", suite]), 0)
                 plan = json.loads(output.getvalue())
-                self.assertEqual(plan["logical_call_limit"], count)
+                self.assertEqual(plan["logical_call_limit"], count + (2 if suite in ("ranking", "all") else 0))
                 self.assertEqual(len(plan["plan"]), count)
                 load.assert_not_called()
                 client.assert_not_called()
 
     def test_all_cases_use_public_parsers_and_keep_semantic_review_pending(self) -> None:
-        """Exercise thirteen calls with independent state and true HTTP accounting.
+        """Exercise thirteen cases and fifteen requests with real HTTP accounting.
 
         The model keeps the useful path and rejects a distractor. Absence of old
         memory removal is recorded as unobserved rather than fabricated success.
@@ -147,9 +147,14 @@ class PartDValidationTests(unittest.TestCase):
             completion([validation.PUBLISHER, validation.OTHER_BIRTH], ["Cedar City"], []),
             completion([validation.PUBLISHER, validation.OTHER_BIRTH], ["Cedar City"], []),
             completion([birth, validation.OTHER_BIRTH], ["Cedar City", "Linden City"], []),
+            completion([], [], []),
             completion([validation.CONFIRMED_BIRTH, validation.POSSIBLE_BIRTH],
                        ["Linden City", "Cedar City"], []),
+            completion([], [], []),
         ]
+        for index, answers in ((12, ["Cedar City", "Linden City"]),
+                               (14, ["Linden City", "Cedar City"])):
+            envelopes[index]["choices"][0]["message"]["content"] = json.dumps({"predict_answer": answers})
         (ROOT / "tmp").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / "tmp", prefix="tmp_acceptance_") as directory:
             root = Path(directory)
@@ -162,11 +167,12 @@ class PartDValidationTests(unittest.TestCase):
                 side_effect=[self.response(body) for body in envelopes],
             ) as send, patch.object(client, "close", wraps=client.close) as close, redirect_stdout(io.StringIO()):
                 self.assertEqual(validation.main([]), 0)
-                self.assertEqual(send.call_count, 13)
+                self.assertEqual(send.call_count, 15)
                 close.assert_called_once()
             report = json.loads(next((root / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8"))
-            self.assertEqual(report["http_attempt_limit"], 39)
-            self.assertEqual(report["logical_calls_started"], 13)
+            self.assertEqual(report["http_attempt_limit"], 45)
+            self.assertEqual(report["logical_calls_started"], 15)
+            self.assertTrue(all(record["ranking_stage_enabled"] for record in report["results"][-2:]))
             self.assertEqual(report["semantic_review"], "pending")
             self.assertFalse(report["multi_observations"]["old_memory_removal"])
             self.assertTrue(report["multi_observations"]["overlapping_rejection_isolation"])
@@ -186,7 +192,7 @@ class PartDValidationTests(unittest.TestCase):
                 self.assertTrue(record["state_rules_match"])
             self.assertNotIn(config.api_key, json.dumps(report))
             with (root / "tmp_usage.csv").open(encoding="utf-8", newline="") as stream:
-                self.assertEqual(len(list(csv.DictReader(stream))), 13)
+                self.assertEqual(len(list(csv.DictReader(stream))), 15)
 
     def test_failure_stops_suite_closes_client_and_preserves_previous_state(self) -> None:
         """Stop on malformed content or exhausted timeout without leaking detail.

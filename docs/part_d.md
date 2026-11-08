@@ -14,7 +14,7 @@ This document summarizes implemented member D modules and their interfaces. Setu
 
 ## Initial question decomposition
 
-[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial $Q_{\mathrm{sub}}$ from FoG §3.1 and Appendix C, Figure 7 (paper page 21). The prompt retains the figure's wording and printed numbering beginning at `2`: produce standalone sub-questions that jointly resolve the original question, assume no missing facts and clarify only when necessary.
+[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial $Q_{\mathrm{sub}}$ from FoG §3.1 and Appendix C, Figure 7 (paper page 21). The prompt retains the figure's wording with instruction numbering corrected to begin at `1`: produce standalone sub-questions that jointly resolve the original question, assume no missing facts and clarify only when necessary.
 
 ```python
 from src.agent.llm_client import LLMClient

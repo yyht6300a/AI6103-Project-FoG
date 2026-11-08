@@ -9,12 +9,12 @@ import json
 from src.agent.llm_client import LLMClient
 
 
-# Figure 7, Appendix C, paper page 21. Preserve the printed numbering (2, 3).
+# Figure 7, Appendix C, paper page 21, with instruction numbering corrected.
 QUESTION_DECOMPOSITION_PROMPT = """### Task
 
 Given a complex question, break it into a set of standalone sub-questions whose answers together resolve the original question.
-2. Do not assume missing facts; add clarification sub-questions only if needed.
-3. Output only sub-questions, no explanations.
+1. Do not assume missing facts; add clarification sub-questions only if needed.
+2. Output only sub-questions, no explanations.
 
 ### Output Format
 ["Sub question 1", ...]

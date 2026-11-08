@@ -114,13 +114,16 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("reference_diagnostic", 3), ("clarification_diagnostic", 6), ("all", 13)):
+        for suite, count, limit in (("single", 4, 7), ("multi", 4, 8), ("removal", 3, 6),
+                                   ("ranking", 2, 4), ("empty_diagnostic", 1, 2),
+                                   ("reference_diagnostic", 3, 4), ("clarification_diagnostic", 6, 12),
+                                   ("all", 13, 25)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(validation.main(["--list-cases", "--suite", suite]), 0)
                 plan = json.loads(output.getvalue())
-                self.assertEqual(plan["logical_call_limit"], count + (2 if suite in ("ranking", "all") else 0))
+                self.assertEqual(plan["logical_call_limit"], limit)
                 self.assertEqual(len(plan["plan"]), count)
                 load.assert_not_called()
                 client.assert_not_called()
@@ -170,9 +173,9 @@ class PartDValidationTests(unittest.TestCase):
                 self.assertEqual(send.call_count, 15)
                 close.assert_called_once()
             report = json.loads(next((root / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8"))
-            self.assertEqual(report["http_attempt_limit"], 45)
+            self.assertEqual(report["http_attempt_limit"], 75)
             self.assertEqual(report["logical_calls_started"], 15)
-            self.assertTrue(all(record["ranking_stage_enabled"] for record in report["results"][-2:]))
+            self.assertTrue(all(record["ranking_stage_enabled"] for record in report["results"][1:]))
             self.assertEqual(report["semantic_review"], "pending")
             self.assertFalse(report["multi_observations"]["old_memory_removal"])
             self.assertTrue(report["multi_observations"]["overlapping_rejection_isolation"])

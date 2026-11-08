@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 from src.agent.validation_error import failure_diagnostics
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
-from src.agent.memory_management import manage_memory, manage_memory_ranked
+from src.agent.memory_management import manage_memory
 from src.agent.memory_state import QuestionMemory
 from src.agent.question_decomposition import decompose_question
 
@@ -92,12 +92,14 @@ def case_plan(suite: str) -> list[dict]:
         suite: CLI-validated single, multi, removal, ranking or all selection.
 
     Returns:
-        Ordered cases with per-case logical request limits. Ranking cases permit
-        selection plus separate ranking; each request has YAML transport retries.
+        Ordered cases with per-case logical request limits. Every memory round
+        permits selection plus mandatory ranking if it returns multiple answers;
+        decomposition permits one request. Each has YAML transport retries.
     """
     groups = tuple(group for group in CASES if not group.endswith("_diagnostic")) if suite == "all" else (suite,)
     return [{"case": f"{group}.{name}", "expected": expected,
-             "logical_call_limit": 2 if group == "ranking" else 1}
+             "logical_call_limit": 1 if (group == "single" and name == "decomposition")
+                 or (group == "reference_diagnostic" and name != "named_author") else 2}
             for group in groups for name, expected in CASES[group]]
 
 
@@ -181,12 +183,12 @@ def memory_round(
     triples: list, scores: list, queries: tuple | list,
     *, prompt_variant: str = "retrieval_questions",
 ):
-    """Run public MSM, using separate ranking for the ranking acceptance cases.
+    """Run public MSM with mandatory ranking of multiple candidate answers.
 
     Args:
         client: Real configured client; its retry policy remains unchanged.
         report: Mutable report; failure records expose exception classes and fixed validation diagnostics.
-        name: Planned case identifier; ranking cases use manage_memory_ranked.
+        name: Planned case identifier for this default manage_memory call.
         state: Prior question-local immutable snapshot.
         triples: Controlled retrieval rows, including exclusion probes.
         scores: Positionally aligned controlled scores; cutoff stays 0.7.
@@ -209,11 +211,10 @@ def memory_round(
     }
     record.update(queries=queries, triples=triples, scores=scores, threshold=0.7,
                   prompt_variant=prompt_variant,
-                  ranking_stage_enabled=name.startswith("ranking."),
+                  ranking_stage_enabled=True,
                   state_before=before, submitted=sorted(submitted))
     try:
-        entry = manage_memory_ranked if record["ranking_stage_enabled"] else manage_memory
-        result = entry(state, triples, scores, CountingClient(client, record), potential_threshold=0.7,
+        result = manage_memory(state, triples, scores, CountingClient(client, record), potential_threshold=0.7,
                                prompt_variant=prompt_variant)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,

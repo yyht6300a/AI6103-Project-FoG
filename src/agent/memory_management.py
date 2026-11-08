@@ -35,7 +35,7 @@ class MSMResult:
     response: MemoryResponse
 
 
-def manage_memory(
+def _manage_memory_once(
     state: QuestionMemory,
     triples: Sequence[Sequence[str]],
     scores: Sequence[Real],
@@ -44,7 +44,7 @@ def manage_memory(
     *,
     prompt_variant: str = "retrieval_questions",
 ) -> MSMResult:
-    """Process member C's aligned refined triples in one memory round.
+    """Build the internal single-call selection result before answer ranking.
 
     Args:
         state: Current question-local immutable snapshot. Create a fresh
@@ -85,7 +85,7 @@ def manage_memory(
     return MSMResult(updated, response)
 
 
-def manage_memory_ranked(
+def manage_memory(
     state: QuestionMemory,
     triples: Sequence[Sequence[str]],
     scores: Sequence[Real],
@@ -96,8 +96,9 @@ def manage_memory_ranked(
 ) -> MSMResult:
     """Complete an atomic memory round with a separate answer-ranking request.
 
-    To improve answer-order correctness, this enhancement separates ranking
-    from selection and answering. Zero or one candidate skips the extra call.
+    Answer ranking is required by the paper and always enabled here. To improve
+    correctness, ranking uses a separate request after selection and answering.
+    Zero or one candidate skips that request because its order is unambiguous.
 
     Args:
         state: Immutable question-local snapshot, published by the caller only
@@ -106,7 +107,8 @@ def manage_memory_ranked(
         scores: Positionally aligned finite refined scores passed to MSM.
         client: Caller-owned client shared by both stages; never closed here.
         potential_threshold: Strict cutoff forwarded unchanged to MSM.
-        prompt_variant: Stage-one variant forwarded unchanged to manage_memory.
+        prompt_variant: Stage-one prompt variant; even ``paper`` retains the
+            mandatory separate ranking stage for multiple candidate answers.
 
     Returns:
         MSMResult with stage-one state, selected evidence and questions unchanged.
@@ -120,7 +122,7 @@ def manage_memory_ranked(
             and preserves the original snapshot. There is no business retry;
             each stage uses the client's existing transport and logging policy.
     """
-    provisional = manage_memory(state, triples, scores, client,
+    provisional = _manage_memory_once(state, triples, scores, client,
         potential_threshold, prompt_variant=prompt_variant)
     response = provisional.response
     if len(response.predict_answer) < 2:
@@ -130,3 +132,8 @@ def manage_memory_ranked(
     ranked = parse_ranking(client.complete([{"role": "user", "content": prompt}]),
                            response.predict_answer)
     return MSMResult(provisional.state, replace(response, predict_answer=ranked))
+
+
+# Compatibility name for callers of the earlier opt-in facade. Both names now
+# execute mandatory ranking; this alias does not expose a behavior switch.
+manage_memory_ranked = manage_memory

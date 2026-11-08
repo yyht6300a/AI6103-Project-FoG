@@ -5,6 +5,7 @@ atomic publication through the composed production entry point.
 """
 
 from dataclasses import FrozenInstanceError
+import json
 import math
 import unittest
 from unittest.mock import Mock
@@ -26,23 +27,25 @@ class MemoryManagementTests(unittest.TestCase):
     """
 
     def test_ranking_variant_preserves_contract_and_model_order(self) -> None:
-        """Forward opt-in ranking instructions through both public boundaries.
+        """Rank answers by default for every first-stage prompt variant.
 
-        An intentionally reversed model answer stays reversed: this variant
-        changes instructions only, without parser sorting or response repair.
-        Removing its instruction block must recover the exact default prompt.
+        Even the paper prompt must run the separate ranking stage. Its model
+        order survives unchanged without deterministic response repair.
         """
         state = QuestionMemory("Who?", [A])
         default = build_memory_prompt("Who?", [A], [B])
         for variant in ("paper", "retrieval_questions", "answer_ranking"):
             with self.subTest(variant=variant):
                 client = Mock(spec=LLMClient)
-                client.complete.return_value = completion([B, A], [B[2], A[0]])
+                ranked = completion()
+                ranked["choices"][0]["message"]["content"] = json.dumps({"predict_answer": [A[0], B[2]]})
+                client.complete.side_effect = [completion([B, A], [B[2], A[0]]), ranked]
                 result = manage_memory(state, [B, C], [0.95, 0.7], client,
                                        prompt_variant=variant)
                 prompt = build_memory_prompt("Who?", [A], [B], prompt_variant=variant)
-                client.complete.assert_called_once_with([{"role": "user", "content": prompt}])
-                self.assertEqual(result.response.predict_answer, (B[2], A[0]))
+                self.assertEqual(client.complete.call_count, 2)
+                self.assertEqual(client.complete.call_args_list[0].args[0], [{"role": "user", "content": prompt}])
+                self.assertEqual(result.response.predict_answer, (A[0], B[2]))
                 self.assertEqual(result.state.memory_triplets, {A, B})
                 self.assertEqual(state.memory_triplets, {A})
                 if variant == "answer_ranking":
@@ -62,7 +65,9 @@ class MemoryManagementTests(unittest.TestCase):
         triples = [B, REJECTED, A, C, B]
         scores = [0.1, 1.0, 0.0, 0.7, 0.9]
         client = Mock(spec=LLMClient)
-        client.complete.return_value = completion([B, A, B], [B[2], A[0], B[2]], ["Next?"])
+        ranked = completion()
+        ranked["choices"][0]["message"]["content"] = json.dumps({"predict_answer": [B[2], A[0], B[2]]})
+        client.complete.side_effect = [completion([B, A, B], [B[2], A[0], B[2]], ["Next?"]), ranked]
         result = manage_memory(state, triples, scores, client)
         self.assertIsInstance(result, MSMResult)
         self.assertEqual(result.state.memory_triplets, {A, B})
@@ -71,7 +76,8 @@ class MemoryManagementTests(unittest.TestCase):
         self.assertEqual(result.response.selected_triplets, (B, A, B))
         self.assertEqual(result.response.predict_answer, (B[2], A[0], B[2]))
         self.assertEqual(result.response.subsequent_question, ("Next?",))
-        client.complete.assert_called_once_with([{"role": "user", "content":
+        self.assertEqual(client.complete.call_count, 2)
+        self.assertEqual(client.complete.call_args_list[0].args[0], [{"role": "user", "content":
             build_memory_prompt(state.original_question, [A], [B])}])
         self.assertEqual(triples, [B, REJECTED, A, C, B])
         self.assertEqual(scores, [0.1, 1.0, 0.0, 0.7, 0.9])

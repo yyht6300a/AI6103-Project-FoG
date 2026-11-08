@@ -23,7 +23,7 @@ python scripts/validate_part_d.py --suite ranking
 python scripts/validate_part_d.py --suite all
 ```
 
-`--list-cases` 免费预览，不读取私有配置；其余命令产生真实 API 用量。`single` 最多 $4$ 次逻辑调用：初始问题分解、两跳证据充足、证据不足及空潜在输入。`multi` 最多 $4$ 次 MSM 调用：出生地证据被阈值隐藏的首轮、使用上轮状态与真实后续问题的恢复轮、强制排除探测轮，以及询问干扰证据的独立问题。`removal` 最多 $3$ 次 MSM 调用：保留未确定条件分支的候选证据、补充出版社证据以确定另一分支、探测移除历史证据的永久屏蔽。该合成用例将出版社关系视为单值，各轮保持原条件问题不变。即使上轮没有后续问题，探测轮仍执行；这不是 E 的停止策略。`ranking` 经公开 `manage_memory_ranked` 验证两个独立用例，每例先执行 MSM，再对多个答案单独调用排序，最多 $4$ 次逻辑调用。其余组保留单次 MSM 基线。默认 `all` 共 $13$ 个用例、最多 $15$ 次逻辑调用。计入 YAML 重试后，HTTP 请求上限为逻辑调用上限乘以 `(max_retries + 1)`，当前分别最多 $12$、$12$、$9$、$12$、$45$ 次。报告区分用例数与实际启动的逻辑调用数；任一阶段终止异常都会停止整组。
+`--list-cases` 免费预览，不读取私有配置；其余命令产生真实 API 用量。全部记忆轮次统一调用 `manage_memory`，默认对多个答案追加独立排序请求，不提供关闭排序的业务配置；零或单答案跳过该请求。`single` 包含问题分解和证据充足、不足、空图共 $4$ 个用例，保守最多 $7$ 次逻辑调用；`multi` 的 $4$ 个记忆轮次最多 $8$ 次；`removal` 的 $3$ 个轮次最多 $6$ 次；`ranking` 的两个用例最多 $4$ 次。默认 `all` 共 $13$ 个用例、最多 $25$ 次逻辑调用。上限按每个记忆轮次可能返回多个答案计算，不依赖模型恰好输出预期数量；实际跳过排序时调用更少。计入 YAML 重试后，HTTP 上限为逻辑调用上限乘以 `(max_retries + 1)`，当前分别最多 $21$、$24$、$18$、$12$、$75$ 次。报告区分用例数与实际启动的逻辑调用数；任一阶段终止异常都会停止整组。
 
 每次付费运行写入唯一的私有 `tmp/tmp_part_d_validation_<UTC timestamp>.json`，包含用例预期、受控三元组及对齐分数、实际查询与有效输出、提交图、前后状态、异常类名和状态规则检查；不含密钥、失败的原始回复及异常消息。实际请求仍追加到 `logs/llm_usage.csv`，实际模型和用量元数据在 TODO 2.3.6 核对；私有报告用于人工审阅，不自动提交。
 
@@ -121,7 +121,7 @@ python scripts/validate_part_d.py --suite all
 
 ## 初始问题分解
 
-2026/11/09 使用未变更的 GPT-4o-mini/OpenAI 配置运行 `python scripts/validate_part_d.py --suite reference_diagnostic`，完成 $3$ 次真实调用：原版仍输出 `In which city was this author born?`，增强版输出 `In which city was the author of The Glass Orchard born?`；两版第一问均为 `Who is the author of The Glass Orchard?`。向 MSM 提交受控作者关系后，模型保留该关系，答案为空并追问 `Where was Mira Vale born?`，旧状态和状态规则通过。本用例的上下文指代问题已修正；单次观察不能保证所有问题均合格。该显式诊断不加入 `all`，可用 `--suite reference_diagnostic --list-cases` 免费预览，最多 $3$ 次逻辑调用、当前最多 $9$ 次 HTTP 尝试。
+2026/11/09 使用未变更的 GPT-4o-mini/OpenAI 配置运行 `python scripts/validate_part_d.py --suite reference_diagnostic`，完成 $3$ 次真实调用：原版仍输出 `In which city was this author born?`，增强版输出 `In which city was the author of The Glass Orchard born?`；两版第一问均为 `Who is the author of The Glass Orchard?`。向 MSM 提交受控作者关系后，模型保留该关系，答案为空并追问 `Where was Mira Vale born?`，旧状态和状态规则通过。本用例的上下文指代问题已修正；单次观察不能保证所有问题均合格。该显式诊断不加入 `all`，可用 `--suite reference_diagnostic --list-cases` 免费预览，当前保守上限为 $4$ 次逻辑调用、$12$ 次 HTTP 尝试。
 
 实际均返回 `gpt-4o-mini-2024-07-18`，无重试，新增 $3$ 条成功用量记录，共输入 $569$、输出 $87$ tokens。私有报告为 `tmp/tmp_part_d_validation_20261108T174923559860Z.json`，保留原始有效输出及自动待审标记，本段为人工审阅结果。仓库尚无真实 C/E 检索器，诊断记录的初始查询未实际执行检索，作者关系为受控输入；逐个子问题的真实召回验证仍待 C/E 集成，不能据此宣布 TODO 2.3.5 整体通过。图 8 未修改，其他语义问题仍待处理。
 
@@ -312,7 +312,9 @@ TODO 2.1.12 通过已有潜在子图、展开过滤及记忆更新接口实现�
 
 ## 独立答案排序
 
-为提高正确率，答案排序与展示顺序的生成已从联合任务中提取为一次单独的 LLM 调用。[`manage_memory_ranked`](../src/agent/memory_management.py) 是需要排序时的推荐入口：第一阶段调用原有 `manage_memory` 完成证据选择、试探作答和后续问题；已有答案不少于两个时，第二阶段调用 [`answer_ranking.py`](../src/agent/answer_ranking.py)，仅根据原问题、实际选中三元组和实际已有答案按支持强弱排序。零或单答案跳过第二阶段。原有 `manage_memory` 和 `update_memory` 保持单次调用，供论文基线或不需要独立排序的调用方使用。
+论文已要求多答案按证据支持程度排序，因此排序是模块的默认功能，不是由队友选择开启的附加选项。公开 [`manage_memory`](../src/agent/memory_management.py) 统一执行完整流程：第一阶段完成证据选择、试探作答和后续问题；已有答案不少于两个时，第二阶段调用 [`answer_ranking.py`](../src/agent/answer_ranking.py)，仅根据原问题、实际选中三元组和实际已有答案按支持强弱排序。为提高正确率，排序及展示顺序的生成提取为一次单独的 LLM 调用。零或单答案无需比较顺序，自动跳过第二阶段。
+
+接口不提供关闭排序的业务开关；`prompt_variant` 仅选择第一阶段提示词，即使指定 `paper` 也仍对多个答案执行独立排序。旧名 `manage_memory_ranked` 保留为 `manage_memory` 的兼容别名，两者行为相同。底层 `update_memory` 仅负责第一阶段的提示、解析和状态转换，供内部编排及提示词对照使用，不作为完整 MSM 接口替代。
 
 这是偏离论文单次 MSM 联合输出的实现增强。排序提示词沿用冻结原型全文，未继续调优；不传检索分数、金标准或未选中证据，不使用城市顺序、关系权重表或确定性后处理。第二阶段必须正常完成、未拒答，返回仅含 `predict_answer` 的标准 JSON；候选原串及多重集必须完全相同，禁止增删、改名或去重。只允许改变答案顺序，不改变选中证据、后续问题、记忆或永久拒绝，不能补救第一阶段漏答案或漏路径。
 
@@ -322,7 +324,7 @@ TODO 2.1.12 通过已有潜在子图、展开过滤及记忆更新接口实现�
 
 用户已接受上述工程效果与剩余模型语义限制，决定停止调优、完成共享接口并关闭排序排查项；原“全部排列及重复零失败”标准不再作为本项关闭条件。这不表示任意图谱输入均排序正确，也不改变既有永久拒绝规则。其他条件推理、正确移除旧记忆及 TODO 2.3.5 的整体交付关卡仍单独待办。
 
-共享接口经已有全部 $70$ 次真实运行的原始回复免费重放，核对 $136$ 个阶段的提示词、答案原串、选择、问题及前后状态，与私有原型结果完全一致；重放验证迁移一致性，不是新增真实质量验收。`tests/test_answer_ranking.py` 覆盖各提示变体、自定义阈值、跳过排序、重复及原串保持、证据隔离、严格多重集、两阶段原子失败和真实客户端模拟 HTTP 重试记账；`tests/test_part_d_validation.py` 核对排序验收接线及 $15$ 次请求预算。全部 $100$ 项离线测试通过，收尾没有新增 API 用量或修改私有配置。
+默认接口经已有全部 $70$ 次真实运行的原始回复免费重放，核对 $136$ 个阶段的提示词、答案原串、选择、问题及前后状态，与私有原型结果完全一致；重放验证迁移一致性，不是新增真实质量验收。`tests/test_answer_ranking.py` 覆盖默认排序、兼容别名、各提示变体、自定义阈值、跳过排序、重复及原串保持、证据隔离、严格多重集、两阶段原子失败和真实客户端模拟 HTTP 重试记账；`tests/test_part_d_validation.py` 核对全部轮次接线及 $25$ 次逻辑调用上限，受控预期回复实际执行 $15$ 次。全部 $100$ 项离线测试通过，默认化没有新增 API 用量或修改私有配置。
 
 完整独立报告保留在私有 `tmp/tmp_ranking_holdout_20261108T191825684477Z.json`，审计汇总为 `tmp/tmp_ranking_holdout_live_audit.json`；历史提示词对照与筛查报告继续保留在私有 `tmp/` 和 Git 历史中。独立运行的用量已核对：MSM 输入 $32415$、输出 $5709$ tokens，排序输入 $14492$、输出 $882$ tokens，对应共享日志第 $163$ 至 $298$ 行共 $136$ 条成功记录。按运行前清单每百万输入 $0.15$、输出 $0.60$ 美元的价格口径，额外排序估算 $0.002703$ 美元、两阶段合计 $0.01099065$ 美元，实际账单待核对。
 
@@ -331,19 +333,19 @@ TODO 2.1.12 通过已有潜在子图、展开过滤及记忆更新接口实现�
 [`memory_management.py`](../src/agent/memory_management.py) 提供 `manage_memory(state, triples, scores, client, potential_threshold=0.7)`，完成 TODO 2.1.13。成员 C 传入反馈传播后按位置对齐的展开三元组和重打分分数；成员 E 管理问题快照、检索循环和客户端生命周期。输入格式、有限数值校验、原字符串保持、严格阈值及张量显式转换沿用上文潜在子图约定。若从 YAML 加载阈值，应显式传入；接口不读取文件或配置。
 
 ```python
-from src.agent.memory_management import manage_memory_ranked
+from src.agent.memory_management import manage_memory
 from src.agent.memory_state import QuestionMemory
 
 state = QuestionMemory(original_question)  # Once per independent question run.
 # Repeat these steps in E's loop; retrieval and C's scorer are caller supplied.
 candidates = state.filter_expansion_triplets(retrieve(sub_questions))
 scores = refine_scores(candidates)  # Aligned 1-D Python scalar sequence.
-result = manage_memory_ranked(state, candidates, scores, client, potential_threshold=0.7)
+result = manage_memory(state, candidates, scores, client, potential_threshold=0.7)
 state = result.state  # Publish only when the entire call succeeds.
 sub_questions = result.response.subsequent_question
 ```
 
-示例中的检索和打分函数表示调用方依赖，并非已实现函数。调用入口会产生 LLM 用量，空输入或空潜在图也会请求。`manage_memory_ranked` 与 `manage_memory` 参数及 `MSMResult` 返回类型一致，在单次记忆更新之后按需增加上述排序调用；不需要独立排序时可显式使用原有 `manage_memory`。传输重试和用量记录仍由 `LLMClient` 负责。
+示例中的检索和打分函数表示调用方依赖，并非已实现函数。调用入口会产生 LLM 用量，空输入或空潜在图也会请求。`manage_memory` 默认包含上述答案排序阶段，调用方无需选择其他入口或传排序开关；参数及 `MSMResult` 返回类型保持不变。传输重试和用量记录仍由 `LLMClient` 负责。
 
 | 返回字段 | C/E 用途 |
 | --- | --- |
@@ -376,7 +378,7 @@ TODO 2.1.9 对应 FoG 第 3.3 节公式 11 和附录 C：图 8 要求 LLM 在选
 
 子问题保留原字符串、空白、Unicode、顺序及重复项。它们是自然语言检索问题，无须完全匹配输入实体串或使用特定结尾标点。空白或非字符串项、超过 $3$ 个问题、无答案且无问题时，均在发布新快照前抛出 `ValueError`，保留旧记忆和永久拒绝状态，不增加业务重试。测试覆盖有无答案时的数量边界、原字符串保持、无效输出的状态保持，以及通过模拟检索传递子问题并在第二轮获得答案的受控流程。离线检查不代表已验证真实模型的问题质量。
 
-2026/11/09 运行 `python scripts/validate_part_d.py --suite clarification_diagnostic`，通过公开 MSM 接口，对 `paper` 和默认 `retrieval_questions` 各检查空图、只有作者关系及完整路径，共 $6$ 次真实 GPT 调用。每次独立创建状态并使用相同的受控三元组和 $0.95$ 分数，严格阈值仍为 $0.7$。该组不属于默认 `all`；`--list-cases --suite clarification_diagnostic` 可免费预览，计入当前重试配置最多 $18$ 次 HTTP 尝试。
+2026/11/09 运行 `python scripts/validate_part_d.py --suite clarification_diagnostic`，通过公开 MSM 接口，对 `paper` 和默认 `retrieval_questions` 各检查空图、只有作者关系及完整路径，共 $6$ 次真实 GPT 调用。每次独立创建状态并使用相同的受控三元组和 $0.95$ 分数，严格阈值仍为 $0.7$。该组不属于默认 `all`；`--list-cases --suite clarification_diagnostic` 可免费预览，默认排序后，该组保守最多 $12$ 次逻辑调用、计入当前重试配置最多 $36$ 次 HTTP 尝试。
 
 | 输入证据 | 论文原版 | 检索增强版 |
 | --- | --- | --- |

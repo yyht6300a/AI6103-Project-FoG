@@ -230,8 +230,10 @@ class MemoryFailureTests(unittest.TestCase):
                 before = len(self.rows())
                 initial = QuestionMemory("Private original question?")
                 state = initial
+                ranked = completion()
+                ranked["choices"][0]["message"]["content"] = json.dumps({"predict_answer": [C[2], B[2]]})
                 attempts = [self.response(completion([A], [A[2]])), *failures,
-                            self.response(completion([C, B], [C[2], B[2]]))]
+                            self.response(completion([C, B], [C[2], B[2]])), self.response(ranked)]
                 with patch("requests.adapters.HTTPAdapter.send", side_effect=attempts) as send, patch(
                     "src.agent.llm_client.time.sleep",
                 ) as sleep:
@@ -264,7 +266,7 @@ class MemoryFailureTests(unittest.TestCase):
                     state = recovered.state
                     self.assertEqual(send.call_count, len(attempts))
                     unions = [{A, REJECTED}] + [{A, B}] * len(failures) + [{A, B, C}]
-                    for attempt, submitted in zip(send.call_args_list, unions):
+                    for attempt, submitted in zip(send.call_args_list[:-1], unions):
                         payload = json.loads(attempt.args[0].body)
                         self.assertEqual(payload, {"model": "gpt-4o-mini", "messages": [
                             {"role": "user", "content": build_memory_prompt(
@@ -289,8 +291,8 @@ class MemoryFailureTests(unittest.TestCase):
                 self.assertEqual(initial.rejected_triplets, frozenset())
                 rows = self.rows()[before:]
                 self.assertEqual(len(rows), len(attempts))
-                self.assertEqual([row["status"] for row in rows], ["success", *statuses, "success"])
-                self.assertEqual([row["error_type"] for row in rows], ["", *errors, ""])
+                self.assertEqual([row["status"] for row in rows], ["success", *statuses, "success", "success"])
+                self.assertEqual([row["error_type"] for row in rows], ["", *errors, "", ""])
                 for row in rows:
                     self.assertEqual((row["input_tokens"], row["output_tokens"]), ("", ""))
                 for private in (self.client.config.api_key, initial.original_question,

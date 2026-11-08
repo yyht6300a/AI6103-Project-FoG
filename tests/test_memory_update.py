@@ -67,6 +67,10 @@ class MemoryUpdateTests(unittest.TestCase):
         self.assertEqual(second.memory_triplets, {A, B})
         self.assertEqual(third.memory_triplets, {B})
         self.assertEqual(fourth.memory_triplets, set())
+        self.assertEqual(first.rejected_triplets, set())
+        self.assertEqual(second.rejected_triplets, set())
+        self.assertEqual(third.rejected_triplets, {A})
+        self.assertEqual(fourth.rejected_triplets, {A, B})
         self.assertEqual(state.memory_triplets, set())
         for call, graph in zip(client.complete.call_args_list, ({A}, {A, B}, {A, B}, {B})):
             prompt = call.args[0][0]["content"]
@@ -285,7 +289,7 @@ class MemoryUpdateTests(unittest.TestCase):
         client.complete.return_value = completion([A], questions=["What evidence is missing?"])
         updated, _ = update_memory(first, [A, B], client)
         self.assertEqual(updated.memory_triplets, {A})
-        self.assertEqual(updated.rejected_triplets, set())
+        self.assertEqual(updated.rejected_triplets, {B})
         self.assertEqual(second.memory_triplets, set())
         self.assertEqual(first.memory_triplets, set())
 

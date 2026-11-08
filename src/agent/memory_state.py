@@ -2,8 +2,8 @@
 
 Create one QuestionMemory per question run and retain its snapshot between
 rounds. Persistence means in-process evidence retention, not disk storage.
-LLM selection, rejection decisions and retrieval filtering belong to later
-memory-management steps; this module only validates and owns their state.
+The update coordinator owns LLM rejection decisions. This module exposes the
+resulting exclusion set and filters candidate triples before repeated expansion.
 """
 
 from collections.abc import Iterable, Mapping, Sequence
@@ -77,3 +77,38 @@ class QuestionMemory:
             raise ValueError("Memory and rejected triplets must be disjoint")
         object.__setattr__(self, "memory_triplets", memory)
         object.__setattr__(self, "rejected_triplets", rejected)
+
+    @property
+    def excluded_triplets(self) -> frozenset[Triple]:
+        """Return exact triples ineligible for retrieval expansion in this run.
+
+        Current memory is already absorbed evidence; permanent rejections must
+        never return. Historical memory still goes into each LLM prompt.
+
+        Returns:
+            Immutable union of current memory and cumulative rejections.
+        """
+        return self.memory_triplets | self.rejected_triplets
+
+    def filter_expansion_triplets(self, triplets: Iterable[Sequence[str]]) -> list[Triple]:
+        """Filter retrieved candidates before expansion without changing state.
+
+        Args:
+            triplets: Candidate head/relation/tail rows, including generators.
+                All rows must contain exactly three nonblank strings.
+
+        Returns:
+            Eligible triples in first occurrence order, deduplicated by exact
+            identity. Strings, direction and the supplied containers are kept.
+
+        Raises:
+            ValueError: The iterable or any row is malformed, even if excluded.
+                One-shot iterators are consumed; no partial result is returned.
+        """
+        if isinstance(triplets, (str, bytes, Mapping)) or not isinstance(triplets, Iterable):
+            raise ValueError("Triplets must be an iterable of triples")
+        # Snapshot once so validation and filtering see the same generator rows.
+        rows = list(triplets)
+        _freeze_triplets(rows)
+        excluded = self.excluded_triplets
+        return list(dict.fromkeys(tuple(row) for row in rows if tuple(row) not in excluded))

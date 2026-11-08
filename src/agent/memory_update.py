@@ -32,8 +32,9 @@ def update_memory(
         New snapshot and validated structured response. The new evidence set is
         exactly the selected triples, deduplicated by set identity, even if empty.
         Old evidence survives only when selected again. The original query and
-        existing permanent rejection set are preserved. No new rejections are
-        inferred here; that policy belongs to the retrieval-exclusion step.
+        existing permanent rejection set are preserved. Submitted triples absent
+        from the validated selection are permanently rejected for this run,
+        including omitted historical memory. Unsubmitted evidence is unaffected.
         result.subsequent_question carries ordered next-round retrieval queries;
         unanswered output requires one to three. Retrieval remains caller-owned.
 
@@ -64,7 +65,10 @@ def update_memory(
     except (KeyError, IndexError, TypeError, AttributeError):
         raise ValueError("Invalid memory completion envelope") from None
     result = parse_memory_response(content, state.memory_triplets, potential)
+    # User-approved omission criterion: only evidence actually submitted counts.
+    selected = frozenset(result.selected_triplets)
+    rejected = state.rejected_triplets | ((state.memory_triplets | potential) - selected)
     updated = QuestionMemory(
-        state.original_question, result.selected_triplets, state.rejected_triplets,
+        state.original_question, selected, rejected,
     )
     return updated, result

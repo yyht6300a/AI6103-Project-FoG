@@ -2,7 +2,7 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots and LLM-guided memory replacement are implemented; new rejection tracking and retrieval exclusions remain pending.
+This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots, LLM-guided memory replacement, permanent rejection tracking and expansion exclusions are implemented. Wiring the retriever and inference loop remains integration work.
 
 ## LLM configuration and requests
 
@@ -76,7 +76,7 @@ assert second.memory_triplets == frozenset()
 
 `original_question` must be a nonblank string and is stored verbatim. The optional `memory_triplets` and `rejected_triplets` constructor arguments accept iterables of head/relation/tail sequences. Both are copied to `frozenset[tuple[str, str, str]]`: exact duplicates collapse, strings and direction remain unchanged, and iteration order is unspecified. Each triple must contain exactly three nonblank strings. Malformed inputs and overlapping memory/rejection sets raise `ValueError` without including query or triple text. Fields and nested values are immutable, so subsequent changes to supplied lists cannot affect the snapshot or another question.
 
-The update coordinator below constructs a new snapshot only after validating the complete LLM result and carries prior permanent rejections forward. Keeping the old snapshot supports failure preservation. This container stores explicit state only: it does not select evidence, infer rejection, call the LLM or filter retrieval. Threshold filtering does not populate either graph. Retrieval exclusion remains a subsequent task.
+The update coordinator below constructs a new snapshot only after validating the complete LLM result and carries prior permanent rejections forward. Keeping the old snapshot supports failure preservation. This container stores explicit state and provides expansion filtering as described below; it does not select evidence, infer rejection or call the LLM. Threshold filtering does not populate either graph.
 
 `tests/test_memory_state.py` verifies empty initialization, isolation across different questions and repeated query text, immutable detached snapshots, exact graph identity, invalid-input preservation and threshold filtering without rejection. All checks are offline.
 
@@ -125,7 +125,7 @@ For tentative answering (TODO 2.1.8), Figure 8 instructs the LLM to use only sel
 
 The frozen `MemoryResponse` result contains tuple fields named `selected_triplets`, `predict_answer` and `subsequent_question`; selected rows are tuples too. Model order, answer ranking, duplicates and all string characters are preserved. Use the parser for validation: direct construction of the data container does not validate graph membership. Input graphs accept the same iterable contract as the prompt builder. Materialize one-shot iterators before using them for both prompt building and parsing; each call consumes them.
 
-Malformed graphs or outputs raise `ValueError` with content-free messages. Missing, extra or duplicate fields, prose, code fences, trailing values, nonstandard JSON numbers, malformed array items and out-of-range triples/entities are rejected without repair. Duplicate-key rejection and exact field sets are explicit parsing choices to avoid ambiguous responses. The parser makes no API calls, adds no retries and changes neither memory nor permanent rejection state. The coordinator below handles completion envelopes and state updates; retrieval exclusions remain pending.
+Malformed graphs or outputs raise `ValueError` with content-free messages. Missing, extra or duplicate fields, prose, code fences, trailing values, nonstandard JSON numbers, malformed array items and out-of-range triples/entities are rejected without repair. Duplicate-key rejection and exact field sets are explicit parsing choices to avoid ambiguous responses. The parser makes no API calls, adds no retries and changes neither memory nor permanent rejection state. The coordinator below handles completion envelopes and state updates; the state snapshot exposes expansion exclusions.
 
 `tests/test_memory_response.py` covers literal strings, ordering, immutability, empty fields, question-count boundaries, strict JSON and schema errors, graph/entity membership, threshold-hidden and rejected evidence, prompt composition and failure preservation. All checks are offline.
 
@@ -150,11 +150,30 @@ state = updated_state  # Publish only after the whole call succeeds.
 
 The returned pair contains a new `QuestionMemory` and the parsed `MemoryResponse`. Memory becomes exactly the set of `response.selected_triplets`, rather than a union with old memory. Historical evidence can survive multiple rounds when selected again, disappear when omitted, or be cleared by an empty selection. Response order, duplicates, answer ranking and questions remain available in the response; memory stores an unordered deduplicated graph. The original question and prior permanent rejections are preserved.
 
-Potential input follows the prompt's graph contract, including empty graphs and generators. The coordinator materializes it once so prompt construction and parsing use identical evidence. Invalid state/graphs and potential triples overlapping prior permanent rejections raise `ValueError` before any request; the caller must supply eligible evidence. No new rejection decisions or retrieval filters are implemented yet. Until that policy is connected, omitted triples leave memory without being added to the rejection set.
+Potential input follows the prompt's graph contract, including empty graphs and generators. The coordinator materializes it once so prompt construction and parsing use identical evidence. Invalid state/graphs and potential triples overlapping prior permanent rejections raise `ValueError` before any request; the caller must supply eligible evidence. After complete validation, omitted submitted triples join the permanent rejection set according to the exploration policy below.
 
 Only completed (`finish_reason: stop`), nonrefused responses with all three valid output fields produce a new snapshot. Bad envelopes, malformed JSON and out-of-range selections or answers raise `ValueError`, including answers found only in omitted input triples; transport and accounting failures propagate. No path mutates the input snapshot. The caller owns client lifetime and assigns the returned state only on success. Transport retries and per-attempt logging remain in `LLMClient`; output validation adds no retry or fallback. Tentative-answer validation and its semantic limits are described above.
 
 `tests/test_memory_update.py` covers controlled multi-round retention, removal and empty replacement, literal generator evidence, ordered outputs, preserved rejection state, invalid-input prevention, full-output validation, refused/truncated completions, failure preservation, question isolation and mocked HTTP retry/accounting integration. All checks are offline.
+
+## Exploration efficiency
+
+TODO 2.1.11 implements the two exclusion rules in FoG §3.3. `state.excluded_triplets` is the immutable union of current memory and cumulative permanent rejections. Call `state.filter_expansion_triplets(candidates)` at each retrieval/expansion boundary, before scoring or further expansion. It returns an ordered list of eligible tuples, preserving first occurrences and literal strings while removing exact duplicates. It validates every row, including excluded candidates, consumes generators once and leaves state and input containers unchanged. Filtering is by complete triple identity; sharing an entity or reversing an edge does not by itself exclude another triple.
+
+```python
+# candidates are triples returned by caller-owned retrieval.
+eligible = state.filter_expansion_triplets(candidates)
+# Score eligible only; scores must stay positionally aligned with eligible.
+potential = build_potential_subgraph(eligible, refined_scores)
+state, response = update_memory(state, potential, client)
+excluded_for_next_round = state.excluded_triplets
+```
+
+The caller must apply the exclusion at every expansion step; this module does not implement a retriever or modify member C's scoring. Already absorbed memory is excluded from repeated expansion, but is still submitted from `state.memory_triplets` in every memory-management prompt. Supplying overlapping memory in a potential graph is harmless: the prompt deduplicates it. Supplying permanently rejected evidence to `update_memory` raises before an API request, guarding against a missed upstream filter.
+
+For a fully valid LLM response, let $U = G^{\mathrm{mem}} \cup G^{\mathrm{pot}}$ be the exact submitted union and $S$ the selected set. The new memory is $S$, and permanent rejections become $R' = R \cup (U \setminus S)$. This includes both unselected new evidence and omitted historical memory. Mapping all omitted submitted triples to “explicit rejection” is a user-approved reproduction assumption; the paper does not explicitly define this mapping. No decision is inferred from malformed, refused, unfinished or failed calls. Rejections persist for that question run, including after memory is emptied; fresh runs have independent masks even with identical question text. Threshold-hidden triples never submitted in that call are outside $U$ and acquire no rejection; later retrieval can recover them.
+
+`tests/test_exploration_efficiency.py` covers candidate order and exact identity, validation, cumulative multi-round masks, historical prompt retention, rejected-input prevention, threshold-hidden recovery, failed-response preservation and question isolation. Existing update tests also verify rejection of removed historical memory and empty selections. All checks are offline; actual retrieval-loop wiring remains integration work.
 
 ## Subsequent sub-questions
 

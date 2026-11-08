@@ -2,7 +2,7 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering is implemented; persistent memory and LLM-guided memory updates remain pending.
+This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering and question-local memory snapshots are implemented; LLM-guided memory updates remain pending.
 
 ## LLM configuration and requests
 
@@ -59,3 +59,23 @@ Scores and the cutoff must be finite real scalars, excluding booleans. The funct
 Malformed triples, invalid numeric values and mismatched lengths raise `ValueError`, including invalid rows below the cutoff. Validation errors exclude triple text. Filtering makes no API calls and maintains no memory or exclusion state: a triple filtered in one round can qualify on a later call. Permanent rejection belongs to the later LLM memory-management step.
 
 `tests/test_potential_subgraph.py` checks the strict floating-point boundary, YAML default agreement, custom score scales, graph identity and ordering, input preservation, empty results, later-round recovery and invalid inputs. All checks are offline.
+
+## Question-local persistent memory
+
+[`memory_state.py`](../src/agent/memory_state.py) implements the state foundation for FoG §3.3. `QuestionMemory(original_question)` initializes $G^{\mathrm{mem}}$ and the permanent rejection set as empty. Create a separate instance for each question run, including repeated runs with identical question text, and retain the snapshot across that run's reasoning rounds. Persistence here means retention within the run; there is no disk storage or global question cache.
+
+```python
+from src.agent.memory_state import QuestionMemory
+
+first = QuestionMemory("Who leads Country A?")
+second = QuestionMemory("Who leads Country B?")
+assert first.memory_triplets == frozenset()
+assert first.rejected_triplets == frozenset()
+assert second.memory_triplets == frozenset()
+```
+
+`original_question` must be a nonblank string and is stored verbatim. The optional `memory_triplets` and `rejected_triplets` constructor arguments accept iterables of head/relation/tail sequences. Both are copied to `frozenset[tuple[str, str, str]]`: exact duplicates collapse, strings and direction remain unchanged, and iteration order is unspecified. Each triple must contain exactly three nonblank strings. Malformed inputs and overlapping memory/rejection sets raise `ValueError` without including query or triple text. Fields and nested values are immutable, so subsequent changes to supplied lists cannot affect the snapshot or another question.
+
+Future update code can construct a new snapshot, or use `dataclasses.replace`, only after validating the complete LLM result. Keeping the old snapshot supports failure preservation; the later update policy must carry prior permanent rejections forward. This container stores explicit state only: it does not select evidence, infer rejection, call the LLM or filter retrieval. Threshold filtering does not populate either graph. Prompt construction, validated state transitions and retrieval exclusion remain subsequent tasks.
+
+`tests/test_memory_state.py` verifies empty initialization, isolation across different questions and repeated query text, immutable detached snapshots, exact graph identity, invalid-input preservation and threshold filtering without rejection. All checks are offline.

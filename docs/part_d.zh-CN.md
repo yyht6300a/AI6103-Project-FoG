@@ -2,7 +2,7 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-本文介绍成员 D 已实现的模块及其接口。配置和测试命令见 [README](../README.zn-CN.md#llm-配置)。潜力子图过滤已实现；持久化记忆和 LLM 引导的记忆更新仍待实现。
+本文介绍成员 D 已实现的模块及其接口。配置和测试命令见 [README](../README.zn-CN.md#llm-配置)。潜力子图过滤和问题级记忆快照已实现；LLM 引导的记忆更新仍待实现。
 
 ## LLM 配置与请求
 
@@ -59,3 +59,23 @@ potential = build_potential_subgraph(triples, refined_scores)
 三元组格式错误、数值无效或长度不匹配时抛出 `ValueError`，低于阈值的无效行也会报错。校验错误不包含三元组文本。过滤不调用 API，也不维护记忆或排除状态：某轮被过滤的三元组可在后续调用中满足条件。永久拒绝由后续 LLM 记忆管理步骤负责。
 
 `tests/test_potential_subgraph.py` 检查严格浮点边界、YAML 默认值一致性、自定义分数尺度、图中三元组的身份与顺序、输入保持不变、空结果、后续轮次重新纳入及无效输入。所有检查均离线运行。
+
+## 问题级持久记忆
+
+[`memory_state.py`](../src/agent/memory_state.py) 实现 FoG 第 3.3 节的状态基础。`QuestionMemory(original_question)` 将 $G^{\mathrm{mem}}$ 和永久拒绝集合初始化为空。每次问题运行均须创建独立实例，即使问题文本相同；在该次运行的各轮推理之间保留快照。此处持久指运行内跨轮保留，不包含磁盘存储或全局问题缓存。
+
+```python
+from src.agent.memory_state import QuestionMemory
+
+first = QuestionMemory("Who leads Country A?")
+second = QuestionMemory("Who leads Country B?")
+assert first.memory_triplets == frozenset()
+assert first.rejected_triplets == frozenset()
+assert second.memory_triplets == frozenset()
+```
+
+`original_question` 必须是非空白字符串，并原样保存。构造器的可选参数 `memory_triplets` 和 `rejected_triplets` 接收由头实体、关系、尾实体序列组成的可迭代对象，均复制为 `frozenset[tuple[str, str, str]]`。完全相同的三元组去重，保留字符串和方向，不保证遍历顺序。每个三元组必须包含恰好三个非空白字符串。输入无效或记忆与拒绝集合有交集时抛出 `ValueError`，错误消息不包含问题或三元组文本。字段和内部元素均不可变；后续修改传入列表不会影响快照或其他问题。
+
+后续更新代码须先完整校验 LLM 结果，再构造新快照或使用 `dataclasses.replace`。保留旧快照可支持失败时维持原状态；后续更新策略还须继承已有的永久拒绝集合。此容器仅保存显式状态，不执行证据选择、拒绝判定、LLM 调用或检索过滤。阈值过滤不会填充任何集合。提示词构建、经过校验的状态转换和检索排除仍属于后续任务。
+
+`tests/test_memory_state.py` 验证空集初始化、不同问题及同文问题运行之间的隔离、不可变且脱离输入引用的快照、图身份保持、无效输入不改写旧状态，以及阈值过滤不产生拒绝状态。所有检查均离线运行。

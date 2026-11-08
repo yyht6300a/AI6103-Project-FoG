@@ -62,19 +62,49 @@ class MemoryResponseTests(unittest.TestCase):
             result.selected_triplets[0][0] = "Changed"
 
     def test_empty_fields_and_question_count_boundaries(self) -> None:
-        """Accept empty structural fields and enforce the three-question maximum.
+        """Require one to three questions when no answer can be determined.
 
-        Semantic sufficiency and conditional question generation belong to later
-        tasks; an all-empty schema example must remain parseable here.
+        The all-empty Figure 8 schema example is not a valid completed response.
+        Empty evidence must still yield a query for the next retrieval round.
         """
-        for count in range(4):
+        for count in range(1, 4):
             questions = ["Clarify?"] * count
             result = parse_memory_response(response_json(questions=questions), [], [])
             self.assertEqual(result.selected_triplets, ())
             self.assertEqual(result.predict_answer, ())
             self.assertEqual(result.subsequent_question, tuple(questions))
+        for count in (0, 4):
+            with self.subTest(count=count), self.assertRaises(ValueError):
+                parse_memory_response(response_json(questions=["Clarify?"] * count), [], [])
+
+    def test_unanswered_selected_evidence_requires_clarification(self) -> None:
+        """Require follow-up even when the model keeps relevant bridge evidence.
+
+        Retaining triples alone does not declare that the original query has an
+        answer; no extra sufficiency check or synthesized query is introduced.
+        """
+        triple = ("Country", "anthem", "Song")
+        with self.assertRaisesRegex(ValueError, "requires subsequent questions"):
+            parse_memory_response(response_json([triple]), [triple], [])
+        questions = [' Who leads "Country"?\n', '后续问题？', '后续问题？']
+        result = parse_memory_response(response_json([triple], questions=questions), [triple], [])
+        self.assertEqual(result.subsequent_question, tuple(questions))
+
+    def test_tentative_answers_allow_optional_clarification(self) -> None:
+        """Allow answered and partially answered outputs without mutual exclusion.
+
+        Semantic sufficiency stays with the model. Answer presence must neither
+        force questions nor discard questions seeking additional evidence.
+        """
+        triple = ("Country", "leader", "Person")
+        for count in range(4):
+            questions = ["Who else leads Country?"] * count
+            result = parse_memory_response(
+                response_json([triple], ["Person"], questions), [], [triple],
+            )
+            self.assertEqual(result.subsequent_question, tuple(questions))
         with self.assertRaises(ValueError):
-            parse_memory_response(response_json(questions=["Clarify?"] * 4), [], [])
+            parse_memory_response(response_json([triple], ["Person"], ["Q?"] * 4), [], [triple])
 
     def test_rejects_non_json_wrappers_and_ambiguous_objects(self) -> None:
         """Reject text repairs, extra values, duplicate keys and nonstandard JSON.
@@ -174,7 +204,9 @@ class MemoryResponseTests(unittest.TestCase):
             with self.subTest(selected=selected), self.assertRaises(ValueError):
                 parse_memory_response(response_json(selected, [answer]), [old], [new])
         for selected in ([], [old], [new]):
-            result = parse_memory_response(response_json(selected), [old], [new])
+            result = parse_memory_response(
+                response_json(selected, questions=["What evidence is missing?"]), [old], [new],
+            )
             self.assertEqual(result.predict_answer, ())
 
     def test_ranked_answers_can_span_selected_multi_hop_evidence(self) -> None:

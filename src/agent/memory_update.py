@@ -34,6 +34,8 @@ def update_memory(
         Old evidence survives only when selected again. The original query and
         existing permanent rejection set are preserved. No new rejections are
         inferred here; that policy belongs to the retrieval-exclusion step.
+        result.subsequent_question carries ordered next-round retrieval queries;
+        unanswered output requires one to three. Retrieval remains caller-owned.
 
     Raises:
         ValueError: State, potential graph, completion envelope or any structured

@@ -54,8 +54,10 @@ class MemoryUpdateTests(unittest.TestCase):
         Every prompt must include the current memory, even without new evidence.
         """
         client = Mock(spec=LLMClient)
-        client.complete.side_effect = [completion([A]), completion([A, B]),
-                                       completion([B]), completion()]
+        client.complete.side_effect = [completion([A], questions=["Who leads Country A?"]),
+                                       completion([A, B], [B[2]]),
+                                       completion([B], [B[2]]),
+                                       completion(questions=["Which country has Song C?"])]
         state = QuestionMemory("Who leads the country with Song C?")
         first, _ = update_memory(state, [A], client)
         second, _ = update_memory(first, [B], client)
@@ -89,6 +91,51 @@ class MemoryUpdateTests(unittest.TestCase):
         self.assertEqual(updated.rejected_triplets, {REJECTED})
         self.assertEqual(updated.original_question, state.original_question)
         client.close.assert_not_called()
+
+    def test_subsequent_questions_guide_next_round_retrieval(self) -> None:
+        """Thread generated queries into caller-owned retrieval and a later update.
+
+        A first round retains bridge evidence without answering; retrieved leader
+        evidence then resolves the original query, which stays in both prompts.
+        """
+        query = "Who leads the country with Song C?"
+        questions = ("Who leads Country A?", "Who leads Country A?")
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = [completion([A], questions=questions),
+                                       completion([A, B], [B[2]])]
+        first, response = update_memory(QuestionMemory(query), [A], client)
+        self.assertEqual(response.predict_answer, ())
+        self.assertEqual(response.subsequent_question, questions)
+        retrieve = Mock(return_value=[B])
+        potential = retrieve(response.subsequent_question)
+        second, final = update_memory(first, potential, client)
+        retrieve.assert_called_once_with(questions)
+        self.assertEqual(first.memory_triplets, {A})
+        self.assertEqual(second.memory_triplets, {A, B})
+        self.assertEqual(final.predict_answer, (B[2],))
+        self.assertEqual(final.subsequent_question, ())
+        for call in client.complete.call_args_list:
+            prompt = call.args[0][0]["content"]
+            self.assertIn("Question: " + query, prompt)
+            self.assertIn("if undetermined, ask 1–3 clarification questions", prompt)
+
+    def test_invalid_clarification_preserves_state_without_retry(self) -> None:
+        """Reject missing or malformed follow-up before publishing new evidence.
+
+        Both existing sets survive validation failures, including when the model
+        returns no selected evidence. Application validation never retries.
+        """
+        state = QuestionMemory("Who?", [A], [REJECTED])
+        client = Mock(spec=LLMClient)
+        for selected in ([], [B]):
+            for questions in ([], ["Q?"] * 4, [" \n"], [None]):
+                client.reset_mock()
+                client.complete.return_value = completion(selected, questions=questions)
+                with self.subTest(selected=selected, questions=questions), self.assertRaises(ValueError):
+                    update_memory(state, [B], client)
+                client.complete.assert_called_once()
+                self.assertEqual(state.memory_triplets, {A})
+                self.assertEqual(state.rejected_triplets, {REJECTED})
 
     def test_invalid_inputs_prevent_requests(self) -> None:
         """Reject malformed or permanently masked evidence before paid work.
@@ -207,7 +254,7 @@ class MemoryUpdateTests(unittest.TestCase):
         first = QuestionMemory("Same question?")
         second = QuestionMemory("Same question?")
         client = Mock(spec=LLMClient)
-        client.complete.return_value = completion([A])
+        client.complete.return_value = completion([A], questions=["What evidence is missing?"])
         updated, _ = update_memory(first, [A, B], client)
         self.assertEqual(updated.memory_triplets, {A})
         self.assertEqual(updated.rejected_triplets, set())

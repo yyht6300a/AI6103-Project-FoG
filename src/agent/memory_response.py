@@ -23,7 +23,7 @@ class MemoryResponse:
     Attributes:
         selected_triplets: Exact head/relation/tail tuples in model order.
         predict_answer: Literal selected-evidence entities in model ranking order.
-        subsequent_question: Up to three nonblank clarification strings.
+        subsequent_question: Ordered next-round queries; one to three if unanswered.
     """
 
     selected_triplets: tuple[Triple, ...]
@@ -102,8 +102,9 @@ def parse_memory_response(
         strings. Selected triples must occur in the submitted graph union; answers
         must equal a selected triple's head or tail, not merely a relation or
         substring. Input entities occurring only in unselected triples fail.
-        Clarification count is zero to three. Empty arrays are structurally valid;
-        whether clarification is needed is not inferred from array emptiness.
+        Clarification count is zero to three, but an empty answer array requires
+        at least one question. This treats no answer as declared undetermined;
+        nonempty tentative answers may still accompany clarification questions.
         Figure 8 instructs evidence-based ranking; the parser preserves that
         order without claiming to verify entailment or relative support.
 
@@ -140,4 +141,6 @@ def parse_memory_response(
     questions = _string_array(output["subsequent_question"])
     if len(questions) > 3:
         raise ValueError("At most three subsequent questions are allowed")
+    if not answers and not questions:
+        raise ValueError("Unanswered memory output requires subsequent questions")
     return MemoryResponse(tuple(tuple(triple) for triple in selected), answers, questions)

@@ -50,12 +50,12 @@ class LLMConfigurationTests(unittest.TestCase):
         return load_llm_config(self.yaml_path, self.env_path)
 
     def test_defaults_and_blank_overrides(self) -> None:
-        """Keep YAML defaults when local non-secret overrides are empty.
+        """Keep YAML defaults and ignore legacy local request policy fields.
 
         The key remains local and is omitted from configuration repr.
         """
         with self.env_path.open("a", encoding="utf-8") as stream:
-            stream.write("LLM_MODEL_NAME=\nLLM_BASE_URL=\nLLM_TIMEOUT=\nLLM_MAX_RETRIES=\n")
+            stream.write("LLM_MODEL_NAME=\nLLM_BASE_URL=\nLLM_TIMEOUT=0\nLLM_MAX_RETRIES=-1\n")
         config = self.load()
         self.assertEqual((config.model_name, config.timeout, config.max_retries),
                          ("gpt-4o-mini", 60, 2))
@@ -67,10 +67,15 @@ class LLMConfigurationTests(unittest.TestCase):
 
         The process mapping is restored by patch.dict, even on assertion failure.
         """
+        self.yaml_path.write_text(
+            self.yaml_path.read_text(encoding="utf-8")
+            .replace("timeout: 60", "timeout: 1.5")
+            .replace("max_retries: 2", "max_retries: 0"), encoding="utf-8",
+        )
         self.env_path.write_text(
             "export LLM_API_KEY='offline-test-key' # local only\n"
-            "LLM_MODEL_NAME=gpt-4o\nLLM_BASE_URL=https://local.invalid/v1/\n"
-            "LLM_TIMEOUT=1.5\nLLM_MAX_RETRIES=0\n", encoding="utf-8",
+            "LLM_MODEL_NAME=gpt-4o\nLLM_BASE_URL=https://local.invalid/v1/\n",
+            encoding="utf-8",
         )
         conflicts = {key: "conflicting-value" for key in (
             "LLM_MODEL_NAME", "LLM_API_KEY", "LLM_BASE_URL", "LLM_TIMEOUT",
@@ -81,6 +86,7 @@ class LLMConfigurationTests(unittest.TestCase):
         with patch.dict(os.environ, conflicts), patch("requests.Session") as factory:
             before = dict(os.environ)
             client = LLMClient(self.load())
+            self.assertEqual(client.config.max_retries, 0)
             response = factory.return_value.post.return_value.__enter__.return_value
             response.status_code = 200
             response.is_redirect = False
@@ -155,9 +161,11 @@ class LLMConfigurationTests(unittest.TestCase):
             for value in values:
                 with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                     replace(config, **{key: value})
-        for field, value in (("LLM_MAX_RETRIES", "1.5"), ("LLM_TIMEOUT", "abc")):
-            self.env_path.write_text(
-                f"LLM_API_KEY=offline-test-key\n{field}={value}\n", encoding="utf-8",
+        original_yaml = self.yaml_path.read_text(encoding="utf-8")
+        for field, old, value in (("max_retries", "2", "1.5"), ("timeout", "60", "abc")):
+            self.yaml_path.write_text(
+                original_yaml.replace(f"{field}: {old}", f"{field}: {value}"),
+                encoding="utf-8",
             )
             with self.assertRaises(ValueError):
                 self.load()

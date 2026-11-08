@@ -19,8 +19,6 @@ ENV_KEYS = {
     "model_name": "LLM_MODEL_NAME",
     "api_key": "LLM_API_KEY",
     "base_url": "LLM_BASE_URL",
-    "timeout": "LLM_TIMEOUT",
-    "max_retries": "LLM_MAX_RETRIES",
 }
 
 
@@ -103,11 +101,11 @@ def load_llm_config(
     yaml_path: Path = ROOT / "config/config-dev.yml",
     env_path: Path = ROOT / ".env",
 ) -> LLMConfig:
-    """Merge nonempty dotenv overrides over YAML and validate the result.
+    """Merge local connection overrides with YAML-only request policy.
 
     Args:
-        yaml_path: YAML containing an llm mapping with public defaults.
-        env_path: Literal local overrides; the API key is accepted only here.
+        yaml_path: YAML llm mapping with defaults, timeout and max_retries.
+        env_path: Literal model/key/URL overrides; the key is accepted only here.
 
     Returns:
         Settings ready for explicit transmission to an LLM client.
@@ -129,6 +127,9 @@ def load_llm_config(
     }
     # Secrets must never be loaded from a shared YAML file.
     merged["api_key"] = overrides.get("LLM_API_KEY", "").strip()
+    # Request policy belongs to the shared YAML, never to local overrides.
+    merged["timeout"] = defaults.get("timeout")
+    merged["max_retries"] = defaults.get("max_retries")
     for key, converter in (("timeout", float), ("max_retries", int)):
         value = merged[key]
         if isinstance(value, str):

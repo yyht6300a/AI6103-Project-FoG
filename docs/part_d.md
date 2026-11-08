@@ -97,6 +97,32 @@ prompt = build_memory_prompt(state.original_question, state.memory_triplets, pot
 
 The original question must be a nonblank string and is inserted verbatim. Both graphs accept iterables of head/relation/tail sequences with exactly three nonblank strings each, including empty graphs, unordered snapshots and generators. Figure 8 has one `Knowledge` field: it receives the union of historical and potential triples, deduplicated by exact equality and sorted lexicographically by tuple for stable presentation. JSON array serialization preserves Unicode and round-trips quotes, newlines, backslashes and all original string values. Sorting graph rows does not change positions within a triple. The graph union and serialization are reproduction choices; the paper does not specify an input ordering or serialization encoding.
 
-Malformed inputs raise `ValueError` without exposing their text. Mutable input containers and memory snapshots remain unchanged; one-shot iterators are consumed. This function only builds text: it makes no API call, validates no model output and performs no memory or rejection update. The caller supplies the eligible potential graph; the builder does not implicitly access rejection sets or retrieval results. The prompt expresses the output constraints, while enforcing them belongs to subsequent response-validation tasks.
+Malformed inputs raise `ValueError` without exposing their text. Mutable input containers and memory snapshots remain unchanged; one-shot iterators are consumed. This function only builds text: it makes no API call, validates no model output and performs no memory or rejection update. The caller supplies the eligible potential graph; the builder does not implicitly access rejection sets or retrieval results. The structured-output parser below enforces field types and exact input membership; semantic evidence checks remain pending.
 
 `tests/test_memory_prompt.py` checks the paper instructions and JSON example, graph union and stable ordering, exact string and direction preservation, empty graphs, invalid-input handling and composition with existing memory/potential modules. All checks are offline.
+
+## Structured memory output
+
+[`memory_response.py`](../src/agent/memory_response.py) implements `parse_memory_response(content, memory_triplets, potential_triplets)` for FoG §3.3, Eq. 11 and Appendix C, Figure 8. Pass the assistant content string and the same historical/potential graphs submitted in that call's prompt. The parser accepts exactly one standard JSON object with exactly the three required fields; every field must be an array.
+
+```python
+from src.agent.memory_response import parse_memory_response
+
+memory = [("Country A", "anthem", "Song C")]
+potential = [("Country A", "led_by", "Person B")]
+content = '''{
+  "selected_triplets": [["Country A", "led_by", "Person B"]],
+  "predict_answer": ["Person B"],
+  "subsequent_question": []
+}'''
+result = parse_memory_response(content, memory, potential)
+assert result.predict_answer == ("Person B",)
+```
+
+`selected_triplets` must contain arrays of exactly three nonblank strings, each matching a triple in the submitted graph union with identical head/relation/tail positions and characters. `predict_answer` must contain nonblank strings matching heads or tails in that union exactly; relation-only strings, substrings, case changes and whitespace normalization are rejected. `subsequent_question` must contain zero to three nonblank strings. These structural checks accept empty arrays, including the figure's all-empty schema example. Conditional clarification generation and whether answers follow only selected evidence belong to later answering/sub-question tasks; input membership alone does not establish semantic correctness. No mutual exclusion between answers and questions is imposed.
+
+The frozen `MemoryResponse` result contains tuple fields named `selected_triplets`, `predict_answer` and `subsequent_question`; selected rows are tuples too. Model order, answer ranking, duplicates and all string characters are preserved. Use the parser for validation: direct construction of the data container does not validate graph membership. Input graphs accept the same iterable contract as the prompt builder. Materialize one-shot iterators before using them for both prompt building and parsing; each call consumes them.
+
+Malformed graphs or outputs raise `ValueError` with content-free messages. Missing, extra or duplicate fields, prose, code fences, trailing values, nonstandard JSON numbers, malformed array items and out-of-range triples/entities are rejected without repair. Duplicate-key rejection and exact field sets are explicit parsing choices to avoid ambiguous responses. The parser makes no API calls, adds no retries and changes neither memory nor permanent rejection state. Completion-envelope checks, state updates and retrieval exclusions remain subsequent orchestration work.
+
+`tests/test_memory_response.py` covers literal strings, ordering, immutability, empty fields, question-count boundaries, strict JSON and schema errors, graph/entity membership, threshold-hidden and rejected evidence, prompt composition and failure preservation. All checks are offline.

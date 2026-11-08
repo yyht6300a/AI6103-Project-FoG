@@ -54,11 +54,13 @@ python scripts/download_data.py --full          # 下载完整 parquet 文件
 
 ### LLM 配置
 
-将 [`env_example`](env_example) 复制为 `.env`，在本地填写 `LLM_API_KEY`。本地文件只保留 `LLM_MODEL_NAME`、`LLM_API_KEY` 和 `LLM_BASE_URL`；模型名和 URL 的非空值覆盖 [`config/config-dev.yml`](config/config-dev.yml) 中的默认值，留空时沿用 YAML。密钥仅从 `.env` 读取，该文件已被 Git 忽略。当前模型 `gpt-4o-mini` 和服务地址仅为暂定默认值，尚未确定或实测 API 服务。推理模型限于 `gpt-4o-mini`、`gpt-4` 和 `gpt-4o`。
+将 [`env_example`](env_example) 复制为 `.env`，在本地填写 `LLM_API_KEY`。本地文件只保留 `LLM_MODEL_NAME`、`LLM_API_KEY` 和 `LLM_BASE_URL`；模型名和 URL 的非空值覆盖 [`config/config-dev.yml`](config/config-dev.yml) 中的默认值，留空时沿用 YAML。密钥仅从 `.env` 读取，该文件已被 Git 忽略。当前选用 OpenAI 官方服务 `https://api.openai.com/v1` 和 `gpt-4o-mini`，已于 2026/11/08 通过真实 Chat Completions 调用，返回模型为 `gpt-4o-mini-2024-07-18`。推理模型限于 `gpt-4o-mini`、`gpt-4` 和 `gpt-4o`。
 
 超时和重试上限仅在 YAML 的 `llm.timeout` 和 `llm.max_retries` 中设置。前者为每次 HTTP 连接或读取操作的超时秒数，必须是大于零的有限数；后者为首次请求后的额外重试次数，必须是非负整数。旧 `.env` 中的 `LLM_TIMEOUT` 和 `LLM_MAX_RETRIES` 会被忽略。`.env` 支持单行赋值、引号、可选的 `export` 前缀和注释，不支持 shell 命令、多行值或变量插值。配置加载不读取或修改进程环境变量。HTTP 客户端禁用环境中的代理、CA 证书和凭据配置，显式传入模型、密钥、服务地址和超时，采用 OpenAI 兼容的 `/chat/completions` 协议；其他协议需要另行适配。
 
-调用示例见 [English README](README.md#llm-configuration)。运行 `python -m unittest discover -s tests -v` 可执行离线检查，使用虚构密钥和模拟传输。待模型、服务及本地密钥确定后，仍需完成一次真实 API 调用。逐次请求的用量记录和记忆管理属于后续复现任务，当前配置入口尚未实现。
+调用示例见 [English README](README.md#llm-configuration)。运行 `python -m unittest discover -s tests -v` 可执行离线检查，使用虚构密钥、模拟传输和私有临时 CSV。运行 `python -m src.agent.llm_smoke` 可用最终配置发起付费验证：在内存中检查简短确认回复，只输出配置和用量元数据，不输出密钥或回复正文。
+
+每次 HTTP 请求（包括失败和重试）均向 UTF-8 文件 [`logs/llm_usage.csv`](logs/llm_usage.csv) 追加一行，字段固定为 `timestamp, model, input_tokens, output_tokens, status, error_type, request_id`。时间戳为请求开始时的 UTC 时间，含时区偏移；模型优先采用返回值，缺失时使用请求模型；token 数读取 `usage.prompt_tokens` 和 `usage.completion_tokens`，请求 ID 读取 `x-request-id` 响应头，依据 [OpenAI Chat Completions 文档](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)和[请求调试文档](https://developers.openai.com/api/reference/overview#debugging-requests)。未知用量及 ID 留空，服务返回的零用量保留为零。状态为 `success` 或 `error`，错误类型只记录异常类名；HTTP 成功但 JSON 非法时记为错误，客户端返回后的业务校验不修改 HTTP 记录。不记录密钥、问题、三元组、回复或错误正文。真实记录随 Git 提交，用于后续核对账单；用量不能直接代表实际费用。客户端在请求前检查 CSV 表头和可写性，追加失败时直接报错，不触发重试；多进程并发时需由调用方串行化 CSV 写入。记忆管理仍属于后续复现任务。
 
 ## 阈值优化实验
 

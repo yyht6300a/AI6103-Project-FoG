@@ -1,0 +1,3 @@
+timestamp,model,input_tokens,output_tokens,status,error_type,request_id
+2026-11-08T12:05:26.728011+00:00,gpt-4o-mini-2024-07-18,11,2,success,,req_116bce4515a84404921bb8c7691c5f54
+2026-11-08T12:05:54.014506+00:00,gpt-4o-mini-2024-07-18,11,2,success,,req_86fc54edcae94cd69e260f2b4924fbdd

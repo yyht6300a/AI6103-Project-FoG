@@ -34,6 +34,7 @@ class LLMConfigurationTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.yaml_path = Path(directory.name) / "config.yml"
         self.env_path = Path(directory.name) / ".env"
+        self.usage_path = Path(directory.name) / "usage.csv"
         self.yaml_path.write_text(
             "llm:\n  provider: openai\n  model_name: gpt-4o-mini\n"
             "  base_url: https://yaml.invalid/v1\n  timeout: 60\n  max_retries: 2\n",
@@ -85,7 +86,7 @@ class LLMConfigurationTests(unittest.TestCase):
         )}
         with patch.dict(os.environ, conflicts), patch("requests.Session") as factory:
             before = dict(os.environ)
-            client = LLMClient(self.load())
+            client = LLMClient(self.load(), self.usage_path)
             self.assertEqual(client.config.max_retries, 0)
             response = factory.return_value.post.return_value.__enter__.return_value
             response.status_code = 200
@@ -122,7 +123,7 @@ class LLMConfigurationTests(unittest.TestCase):
         Conflicting proxy and credential settings must not enter the prepared
         request or adapter options. No connection to the endpoint is opened.
         """
-        client = LLMClient(self.load())
+        client = LLMClient(self.load(), self.usage_path)
         self.addCleanup(client.close)
         response = requests.Response()
         response.status_code = 200
@@ -191,7 +192,7 @@ class LLMConfigurationTests(unittest.TestCase):
         Args:
             sleep: Patched backoff timer so retry tests run without delay.
         """
-        client = LLMClient(replace(self.load(), max_retries=1))
+        client = LLMClient(replace(self.load(), max_retries=1), self.usage_path)
         self.addCleanup(client.close)
         response = MagicMock()
         response.__enter__.return_value = response
@@ -205,7 +206,7 @@ class LLMConfigurationTests(unittest.TestCase):
             for status in (429, 500):
                 post.reset_mock(side_effect=True)
                 response.status_code = status
-                response.raise_for_status.side_effect = requests.HTTPError()
+                response.raise_for_status.side_effect = requests.HTTPError(response=response)
                 post.return_value = response
                 with self.assertRaises(requests.HTTPError):
                     client.complete([])

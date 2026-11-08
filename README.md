@@ -1,5 +1,7 @@
 # FoG Reproduction
 
+[English](README.md) | [简体中文](README.zn-CN.md)
+
 Reproduction project for **Foresight-over-Graph: Reasoning Beyond Local Horizons for Knowledge Base Question Answering** (NeurIPS 2026).
 
 The upstream repository (https://github.com/yhong7/FoG) does not publish its source code yet; it only contains a README and an architecture figure. This repository rebuilds the pipeline from the paper and prepares the data, model, retrieval, and experiment scaffolding needed to reproduce FoG and to run the threshold-optimization experiments discussed during planning.
@@ -8,20 +10,20 @@ The upstream repository (https://github.com/yhong7/FoG) does not publish its sou
 
 ```text
 .
-|-- paper/                      # the paper and its architecture figure
-|-- docs/                       # analysis document and extracted paper text
-|-- config/                     # runtime configuration (LLM, embedding, thresholds)
-|-- data/
-|   |-- raw/                    # WebQSP and CWQ datasets (samples committed, full data ignored)
-|   |-- processed/              # extracted triples.tsv and entity2name.tsv
-|   `-- freebase/               # Freebase dumps or Virtuoso database (not committed)
-|-- src/
-|   |-- data/                   # dataset loading and preprocessing
-|   |-- model/                  # question-conditioned triple encoder, scorer, FSE, FFP
-|   `-- agent/                  # memory subgraph manager and LLM interaction
-|-- experiments/                # threshold policy and retrieval metrics
-|-- scripts/                    # dataset download and helper scripts
-`-- requirements.txt
+├── paper/                      # the paper and its architecture figure
+├── docs/                       # analysis document and extracted paper text
+├── config/                     # runtime configuration (LLM, embedding, thresholds)
+├── data/
+│   ├── raw/                    # WebQSP and CWQ datasets (samples committed, full data ignored)
+│   ├── processed/              # extracted triples.tsv and entity2name.tsv
+│   └── freebase/               # Freebase dumps or Virtuoso database (not committed)
+├── src/
+│   ├── data/                   # dataset loading and preprocessing
+│   ├── model/                  # question-conditioned triple encoder, scorer, FSE, FFP
+│   └── agent/                  # memory subgraph manager and LLM interaction
+├── experiments/                # threshold policy and retrieval metrics
+├── scripts/                    # dataset download and helper scripts
+└── requirements.txt
 ```
 
 ## Data

@@ -29,8 +29,9 @@ AUTHOR = ("The Glass Orchard", "written_by", "Mira Vale")
 BIRTH = ("Mira Vale", "born_in", "Linden City")
 DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
 BRANCH_QUESTION = (
-    "If The Glass Orchard was published by Silver Press, which city was Mira Vale "
-    "born in? Otherwise, which city was Nolan Reed born in?"
+    "The Glass Orchard has exactly one publisher. If it was published by Silver "
+    "Press, which city was Mira Vale born in? Otherwise, which city was Nolan Reed "
+    "born in? If the publisher is unknown, ask for it before answering."
 )
 PUBLISHER = ("The Glass Orchard", "published_by", "Bronze Press")
 OTHER_BIRTH = ("Nolan Reed", "born_in", "Cedar City")

@@ -10,6 +10,27 @@ For the unified C/E entry point, see [Scored-round MSM interface](#scored-round-
 
 [`llm_config.py`](../src/agent/llm_config.py) merges literal private `.env` values with shared YAML defaults and validates the effective configuration. [`llm_client.py`](../src/agent/llm_client.py) exposes `LLMClient.complete(messages)` for OpenAI-compatible Chat Completions. Requests receive settings explicitly and do not inherit process configuration. The caller owns and closes the client; timeout, connection failures, HTTP $429$ and HTTP $5xx$ follow its bounded retry policy.
 
+## Live acceptance runner
+
+TODO 2.3.1 provides [`scripts/validate_part_d.py`](../scripts/validate_part_d.py). It loads private `.env` and shared YAML through `load_llm_config`, creates a real `LLMClient`, calls public `decompose_question` and `manage_memory`, and closes the client in `finally`. Runtime HTTP and replies are real; only C/E retrieval and scores are controlled fixtures. It does not repair output or add application retries. The strict potential cutoff is fixed at $0.7$.
+
+Run from the repository root with the project Python environment:
+
+```text
+python scripts/validate_part_d.py --list-cases
+python scripts/validate_part_d.py --suite single
+python scripts/validate_part_d.py --suite multi
+python scripts/validate_part_d.py --suite all
+```
+
+`--list-cases` is free and does not read private configuration; other commands incur API usage. `single` permits $4$ logical calls: initial decomposition, sufficient two-hop evidence, insufficient evidence and empty potential input. `multi` permits $4$ MSM calls: partial evidence with a threshold-hidden birthplace, recovery using prior state and returned questions, a forced exclusion probe, and an independent question about the distractor. The probe runs even when the previous model returned no questions; it does not implement E's stopping policy. Default `all` permits $8$ calls. Including YAML retries, the HTTP-attempt bound is the logical-call limit times `(max_retries + 1)`, currently $12$, $12$ and $24$. Any terminal error stops the suite.
+
+Each paid run writes a unique private `tmp/tmp_part_d_validation_<UTC timestamp>.json` with expectations, controlled triples and aligned scores, actual queries and validated outputs, submitted graphs, before/after state, exception classes and state-rule checks. It excludes keys, failed raw replies and exception messages. Actual attempts still append to `logs/llm_usage.csv`; reconcile returned model and usage metadata during TODO 2.3.6. Reports are private review material and are not automatically committed.
+
+Exit code $0$ means parsing and state checks passed; semantic review remains pending. Review query usefulness, evidence sufficiency, answer support and ranking, and clarification quality manually. Multi-round observations record actual retention, removal, rejection, recovery and isolation; `false` means unobserved coverage, which may require refining fixtures before live acceptance can pass. Do not force model choices. Current fixtures target one answer; multiple-answer ranking needs an additional representative case in TODO 2.3.4. Final acceptance requires GPT-4o-mini and matching OpenAI settings under TODO 2.3.5. Runner preparation does not complete TODO 2.3.2-2.3.6 or C/E integration.
+
+`tests/test_part_d_validation.py` checks free preview, bounded full execution through public parsing and isolated usage accounting, fail-fast behavior, old-state preservation, cleanup and sensitive-error suppression offline. Synthetic transport is confined to tests. No paid calls were made for TODO 2.3.1.
+
 ## Per-attempt usage accounting
 
 [`llm_usage.py`](../src/agent/llm_usage.py) appends one UTF-8 CSV row per actual HTTP attempt, including retries and failures. Metadata records request start time, model, returned token counts, outcome, exception class and request ID. Unknown values remain blank. Credentials and request/response content are excluded. A later application validation failure does not change a successful HTTP accounting row. Configuration and accounting tests are in `tests/test_llm_configuration.py` and `tests/test_llm_usage.py`.

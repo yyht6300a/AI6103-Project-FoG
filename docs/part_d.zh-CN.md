@@ -8,6 +8,27 @@
 
 [`llm_config.py`](../src/agent/llm_config.py) 将私有 `.env` 中的字面值与共享 YAML 默认值合并，并校验最终配置。[`llm_client.py`](../src/agent/llm_client.py) 提供 `LLMClient.complete(messages)`，支持兼容 OpenAI 的 Chat Completions 接口。请求显式接收配置，不继承进程配置。调用方负责管理和关闭客户端；超时、连接失败、HTTP $429$ 和 HTTP $5xx$ 按客户端的有限重试策略处理。
 
+## 真实验收入口
+
+TODO 2.3.1 提供 [`scripts/validate_part_d.py`](../scripts/validate_part_d.py)：通过 `load_llm_config` 加载私有 `.env` 和共享 YAML，创建真实 `LLMClient`，直接调用公开的 `decompose_question` 和 `manage_memory`，并在 `finally` 中关闭客户端。运行时 HTTP 和回复均为真实内容，仅用受控用例代替 C/E 检索打分；不修复输出、不增加业务重试，严格潜在阈值固定为 $0.7$。
+
+在仓库根目录使用项目 Python 环境运行：
+
+```text
+python scripts/validate_part_d.py --list-cases
+python scripts/validate_part_d.py --suite single
+python scripts/validate_part_d.py --suite multi
+python scripts/validate_part_d.py --suite all
+```
+
+`--list-cases` 免费预览，不读取私有配置；其余命令产生真实 API 用量。`single` 最多 $4$ 次逻辑调用：初始问题分解、两跳证据充足、证据不足及空潜在输入。`multi` 最多 $4$ 次 MSM 调用：出生地证据被阈值隐藏的首轮、使用上轮状态与真实后续问题的恢复轮、强制排除探测轮，以及询问干扰证据的独立问题。即使上轮没有后续问题，探测轮仍执行；这不是 E 的停止策略。默认 `all` 最多 $8$ 次调用。计入 YAML 重试后，HTTP 请求上限为逻辑调用上限乘以 `(max_retries + 1)`，当前分别最多 $12$、$12$、$24$ 次。任何终止异常都会停止整组。
+
+每次付费运行写入唯一的私有 `tmp/tmp_part_d_validation_<UTC timestamp>.json`，包含用例预期、受控三元组及对齐分数、实际查询与有效输出、提交图、前后状态、异常类名和状态规则检查；不含密钥、失败的原始回复及异常消息。实际请求仍追加到 `logs/llm_usage.csv`，实际模型和用量元数据在 TODO 2.3.6 核对；私有报告用于人工审阅，不自动提交。
+
+退出码 $0$ 仅表示解析与状态检查通过，语义审阅仍为待办。人工核对检索问题有效性、证据充分性、答案依据和排序、澄清质量。多轮观察项按实际选择记录保留、移除、拒绝、恢复与隔离；`false` 表示未观察到该行为，对应真实验收项可能需要完善用例后才能通过，不强迫模型选择。当前用例侧重单答案，多答案排序仍需在 TODO 2.3.4 补充代表性用例。最终验收须满足 TODO 2.3.5 的 GPT-4o-mini 和匹配 OpenAI 配置要求。入口准备完成不代表 TODO 2.3.2 至 2.3.6 或 C/E 集成完成。
+
+`tests/test_part_d_validation.py` 离线验证免费预览、完整调用上限、公开解析及隔离用量记录、异常即停、旧状态保持、客户端关闭和敏感错误过滤；模拟传输仅存在于测试中。TODO 2.3.1 未发起付费请求。
+
 ## 逐次请求用量记录
 
 [`llm_usage.py`](../src/agent/llm_usage.py) 为每次实际 HTTP 尝试追加一行 UTF-8 CSV 记录，包括重试和失败。元数据包含请求开始时间、模型、返回的 token 数、请求结果、异常类名和请求 ID。未知值留空，不记录凭据及请求、响应内容。后续应用层校验失败不会修改已成功的 HTTP 用量记录。配置和用量记录测试见 `tests/test_llm_configuration.py` 和 `tests/test_llm_usage.py`。

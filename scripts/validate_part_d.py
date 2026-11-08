@@ -1,0 +1,287 @@
+"""Run bounded live acceptance cases through Member D's public interfaces.
+
+Use --list-cases for a free preview, or --suite single, multi or all for paid
+requests. Synthetic retrieval inputs replace C/E only; HTTP and model responses
+are real. Reports under tmp contain public fixtures and validated outputs, never
+credentials, raw failed responses or exception messages.
+"""
+
+import argparse
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import sys
+
+# Support both python scripts/validate_part_d.py and python -m scripts.validate_part_d.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.agent.llm_client import LLMClient
+from src.agent.llm_config import load_llm_config
+from src.agent.memory_management import manage_memory
+from src.agent.memory_state import QuestionMemory
+from src.agent.question_decomposition import decompose_question
+
+
+QUESTION = "Which city was the author of The Glass Orchard born in?"
+AUTHOR = ("The Glass Orchard", "written_by", "Mira Vale")
+BIRTH = ("Mira Vale", "born_in", "Linden City")
+DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
+CASES = {
+    "single": [
+        ("decomposition", "Nonempty standalone retrieval questions; review usefulness."),
+        ("sufficient", "Retain the two-hop path; answer Linden City from selected evidence."),
+        ("insufficient", "Author alone cannot establish birthplace; ask for missing evidence."),
+        ("empty", "No selected evidence or answer; return 1-3 clarification questions."),
+    ],
+    "multi": [
+        ("partial", "Keep useful author evidence; birth score 0.7 is hidden, not rejected."),
+        ("recovery", "Use prior questions and memory; birth score 0.95 permits recovery."),
+        ("exclusion_probe", "Re-submit candidates; previously rejected rows stay excluded."),
+        ("independent", "A fresh question run can use evidence excluded in the other run."),
+    ],
+}
+
+
+def case_plan(suite: str) -> list[dict]:
+    """List the fixed calls and expectations without loading private settings.
+
+    Args:
+        suite: CLI-validated single, multi or all selection.
+
+    Returns:
+        Ordered plan; every entry permits one completion plus YAML retries.
+    """
+    groups = ("single", "multi") if suite == "all" else (suite,)
+    return [{"case": f"{group}.{name}", "expected": expected}
+            for group in groups for name, expected in CASES[group]]
+
+
+def snapshot(state: QuestionMemory) -> dict:
+    """Serialize immutable state deterministically for human comparison.
+
+    Args:
+        state: One independent question run's current snapshot.
+
+    Returns:
+        Original question and sorted memory, rejection and exclusion graphs.
+    """
+    return {
+        "question": state.original_question,
+        "memory": sorted(state.memory_triplets),
+        "rejected": sorted(state.rejected_triplets),
+        "excluded": sorted(state.excluded_triplets),
+    }
+
+
+def begin_case(report: dict, name: str) -> dict:
+    """Reserve one planned call before any public API can send a request.
+
+    Args:
+        report: Mutable run report with the fixed plan and accumulating results.
+        name: Unique planned case identifier.
+
+    Returns:
+        Mutable case record, initially marked started for failure localization.
+
+    Raises:
+        RuntimeError: A caller attempts an unplanned, duplicate or excess call.
+    """
+    planned = {case["case"]: case for case in report["plan"]}
+    if name not in planned or any(case["case"] == name for case in report["results"]):
+        raise RuntimeError("Unplanned or repeated acceptance call")
+    record = dict(planned[name], status="started")
+    report["results"].append(record)
+    return record
+
+
+def memory_round(
+    client: LLMClient, report: dict, name: str, state: QuestionMemory,
+    triples: list, scores: list, queries: tuple | list,
+):
+    """Call public MSM once, recording inputs and publishing only on success.
+
+    Args:
+        client: Real configured client; its retry policy remains unchanged.
+        report: Mutable report; failure records expose only exception classes.
+        name: Planned case identifier, used for failure localization.
+        state: Prior question-local immutable snapshot.
+        triples: Controlled retrieval rows, including exclusion probes.
+        scores: Positionally aligned controlled scores; cutoff stays 0.7.
+        queries: Actual initial or preceding model questions driving this fixture.
+
+    Returns:
+        Validated MSM result with a new state and ordered response.
+
+    Raises:
+        Exception: Public API failure, recorded and propagated without retries
+            beyond LLMClient's configured transport policy.
+    """
+    record = begin_case(report, name)
+    before = snapshot(state)
+    eligible = state.filter_expansion_triplets(triples)
+    submitted = state.memory_triplets | {
+        tuple(row) for row, score in zip(triples, scores)
+        if score > 0.7 and tuple(row) in eligible
+    }
+    record.update(queries=queries, triples=triples, scores=scores, threshold=0.7,
+                  state_before=before, submitted=sorted(submitted))
+    try:
+        result = manage_memory(state, triples, scores, client, potential_threshold=0.7)
+    except Exception as error:
+        record.update(status="error", error_type=type(error).__name__,
+                      state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
+        raise
+
+    selected = result.state.memory_triplets
+    record.update(
+        status="validated", state_after=snapshot(result.state),
+        selected_triplets=result.response.selected_triplets,
+        predict_answer=result.response.predict_answer,
+        subsequent_question=result.response.subsequent_question,
+        old_state_unchanged=snapshot(state) == before,
+        state_rules_match=(selected <= submitted
+                           and result.state.rejected_triplets
+                           == state.rejected_triplets | (submitted - selected)
+                           and result.state.excluded_triplets
+                           == selected | result.state.rejected_triplets),
+        retained_memory=sorted(state.memory_triplets & selected),
+        removed_memory=sorted(state.memory_triplets - selected),
+        newly_rejected=sorted(result.state.rejected_triplets - state.rejected_triplets),
+    )
+    if not record["old_state_unchanged"] or not record["state_rules_match"]:
+        record["status"] = "state_rule_failure"
+        raise RuntimeError("Acceptance state invariant failed")
+    return result
+
+
+def run_cases(client: LLMClient, report: dict, suite: str) -> None:
+    """Execute fixed single-round and/or adaptive-state multi-round fixtures.
+
+    Args:
+        client: Real LLMClient, shared across independent question states.
+        report: Mutable report storing validated output for later semantic review.
+        suite: single, multi or all; all permits exactly eight logical calls.
+
+    Multi-round retrieval consumes the preceding response's questions but returns
+    controlled rows rather than implementing C/E. Empty questions are recorded
+    honestly; the last round is a forced exclusion probe, not a stopping policy.
+    Model choices are never replaced to manufacture a desired state transition.
+    """
+    if suite in ("single", "all"):
+        record = begin_case(report, "single.decomposition")
+        record["question"] = QUESTION
+        questions = decompose_question(QUESTION, client)
+        record.update(status="validated", sub_questions=questions)
+        for name, triples, scores in (
+            ("sufficient", [AUTHOR, BIRTH], [0.95, 0.95]),
+            ("insufficient", [AUTHOR], [0.95]),
+            ("empty", [], []),
+        ):
+            memory_round(client, report, f"single.{name}", QuestionMemory(QUESTION),
+                         triples, scores, questions)
+
+    if suite in ("multi", "all"):
+        first = memory_round(
+            client, report, "multi.partial", QuestionMemory(QUESTION),
+            [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.7, 0.95], (QUESTION,),
+        )
+        second = memory_round(
+            client, report, "multi.recovery", first.state,
+            [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.95, 0.95],
+            first.response.subsequent_question,
+        )
+        third = memory_round(
+            client, report, "multi.exclusion_probe", second.state,
+            [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.95, 0.95],
+            second.response.subsequent_question,
+        )
+        independent = memory_round(
+            client, report, "multi.independent",
+            QuestionMemory("Who wrote The Copper Harbor?"),
+            [DISTRACTOR], [0.95], ("Who wrote The Copper Harbor?",),
+        )
+        # Observations are coverage evidence, not forced model expectations.
+        report["multi_observations"] = {
+            "hidden_not_rejected": BIRTH not in first.state.excluded_triplets,
+            "hidden_recovered": BIRTH in second.state.memory_triplets,
+            "cross_round_retention": bool(first.state.memory_triplets
+                                          & second.state.memory_triplets),
+            "old_memory_removal": bool((first.state.memory_triplets
+                                        - second.state.memory_triplets)
+                                       | (second.state.memory_triplets
+                                          - third.state.memory_triplets)),
+            "submitted_omission": bool(third.state.rejected_triplets),
+            "independent_selection": DISTRACTOR in independent.state.memory_triplets,
+            "overlapping_rejection_isolation": (
+                DISTRACTOR in third.state.rejected_triplets
+                and DISTRACTOR in independent.state.memory_triplets),
+        }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Preview or execute paid cases, closing the client even after failure.
+
+    Args:
+        argv: Optional CLI arguments; defaults to the process argument list.
+
+    Returns:
+        Zero for preview or structurally valid execution, one on configuration,
+        transport, validation or report failure. Semantic acceptance still needs
+        human review and the final GPT-4o-mini gate, even when exit status is zero.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--suite", choices=("single", "multi", "all"), default="all")
+    parser.add_argument("--list-cases", action="store_true",
+                        help="Print expectations and call counts without loading .env or using API.")
+    args = parser.parse_args(argv)
+    report = {
+        "suite": args.suite, "plan": case_plan(args.suite), "results": [],
+        "semantic_review": "pending", "status": "not_started",
+        "usage_csv": "logs/llm_usage.csv",
+    }
+    report["logical_call_limit"] = len(report["plan"])
+    if args.list_cases:
+        print(json.dumps(report, indent=2))
+        return 0
+
+    client = None
+    output = ROOT / "tmp" / (
+        "tmp_part_d_validation_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        + ".json"
+    )
+    exit_code = 1
+    try:
+        config = load_llm_config()
+        report.update(requested_model=config.model_name, base_url=config.base_url,
+                      timeout=config.timeout, max_retries=config.max_retries,
+                      http_attempt_limit=len(report["plan"]) * (config.max_retries + 1))
+        # Reserve report storage before incurring API usage; final write may still fail.
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"paid_run": True, "model": config.model_name,
+                          "logical_call_limit": report["logical_call_limit"],
+                          "http_attempt_limit": report["http_attempt_limit"]}), flush=True)
+        client = LLMClient(config)
+        run_cases(client, report, args.suite)
+        report["status"] = "structurally_valid_semantic_review_pending"
+        exit_code = 0
+    except Exception as error:
+        report.update(status="error", error_type=type(error).__name__)
+    finally:
+        if client is not None:
+            client.close()
+    report["logical_calls_started"] = len(report["results"])
+    try:
+        output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"status": report["status"], "report": str(output),
+                          "logical_calls_started": report["logical_calls_started"]}))
+    except OSError as error:
+        print(json.dumps({"status": "report_error", "error_type": type(error).__name__}))
+        return 1
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

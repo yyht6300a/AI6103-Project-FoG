@@ -55,8 +55,8 @@ def manage_memory(
         client: Caller-owned LLMClient; configuration and closing stay external.
         potential_threshold: Finite real strict cutoff, default 0.7. Callers
             loading YAML must pass its potential_threshold explicitly.
-        prompt_variant: Default retrieval-question enhancement or ``paper``
-            baseline, forwarded unchanged to the memory prompt builder.
+        prompt_variant: Default ``retrieval_questions``, ``paper`` baseline,
+            or opt-in ``answer_ranking``, forwarded unchanged to the builder.
 
     Returns:
         New state and structured output after complete validation. All input

@@ -203,6 +203,8 @@ The update coordinator below constructs a new snapshot only after validating the
 
 `build_memory_prompt`, `update_memory` and `manage_memory` accept keyword-only `prompt_variant`. The default `retrieval_questions` inserts retrieval instructions before the real input; `paper` uses the unchanged Figure 8 baseline. Unknown variants raise `ValueError` before a request. The enhancement asks for missing relations along the original question's path, starting from a known entity and using named intermediate entities once established. It discourages information-availability questions and repeated known facts, and requests no further questions when evidence fully answers the query. This is an implementation enhancement, not paper text or a semantic/recall guarantee. Serialization, parsing, permanent rejection and transport retries retain their existing contracts.
 
+Opt-in `prompt_variant="answer_ranking"` adds support comparison, presentation-order independence and answer completeness instructions to `retrieval_questions`, without changing defaults or adding a model stage. Its P2 screen failed; the variant remains experimental and independent acceptance has not started. See the authoritative [ranking execution record and next steps](part_d.zh-CN.md#多答案排序可能受证据展示顺序影响).
+
 ```python
 from src.agent.memory_prompt import build_memory_prompt
 from src.agent.memory_state import QuestionMemory

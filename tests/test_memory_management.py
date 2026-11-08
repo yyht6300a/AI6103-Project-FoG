@@ -13,7 +13,7 @@ import requests
 
 from src.agent.llm_client import LLMClient
 from src.agent.memory_management import MSMResult, manage_memory
-from src.agent.memory_prompt import build_memory_prompt
+from src.agent.memory_prompt import ANSWER_RANKING_INSTRUCTIONS, build_memory_prompt
 from src.agent.memory_state import QuestionMemory
 from test_memory_update import A, B, C, REJECTED, completion
 
@@ -24,6 +24,33 @@ class MemoryManagementTests(unittest.TestCase):
     Assertions inspect submitted evidence as well as all returned state and
     response fields so a successful call establishes a usable next round.
     """
+
+    def test_ranking_variant_preserves_contract_and_model_order(self) -> None:
+        """Forward opt-in ranking instructions through both public boundaries.
+
+        An intentionally reversed model answer stays reversed: this variant
+        changes instructions only, without parser sorting or response repair.
+        Removing its instruction block must recover the exact default prompt.
+        """
+        state = QuestionMemory("Who?", [A])
+        default = build_memory_prompt("Who?", [A], [B])
+        for variant in ("paper", "retrieval_questions", "answer_ranking"):
+            with self.subTest(variant=variant):
+                client = Mock(spec=LLMClient)
+                client.complete.return_value = completion([B, A], [B[2], A[0]])
+                result = manage_memory(state, [B, C], [0.95, 0.7], client,
+                                       prompt_variant=variant)
+                prompt = build_memory_prompt("Who?", [A], [B], prompt_variant=variant)
+                client.complete.assert_called_once_with([{"role": "user", "content": prompt}])
+                self.assertEqual(result.response.predict_answer, (B[2], A[0]))
+                self.assertEqual(result.state.memory_triplets, {A, B})
+                self.assertEqual(state.memory_triplets, {A})
+                if variant == "answer_ranking":
+                    self.assertEqual(prompt.replace(ANSWER_RANKING_INSTRUCTIONS, "", 1), default)
+        client = Mock(spec=LLMClient)
+        with self.assertRaises(ValueError):
+            manage_memory(state, [B], [0.95], client, prompt_variant="unknown")
+        client.complete.assert_not_called()
 
     def test_scored_round_returns_all_outputs_without_alignment_loss(self) -> None:
         """Keep later qualifying duplicates aligned with their own scores.

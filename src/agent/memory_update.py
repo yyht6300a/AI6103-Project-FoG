@@ -30,8 +30,8 @@ def update_memory(
             previously rejected triples must already be excluded by the caller.
         client: Caller-owned configured client, including transport retries and
             per-attempt usage accounting. This function does not close it.
-        prompt_variant: Retrieval-question enhancement by default; ``paper``
-            retains Figure 8 for controlled comparisons without extra requests.
+        prompt_variant: Default ``retrieval_questions``, unchanged ``paper``,
+            or opt-in ``answer_ranking``. All use one logical request.
 
     Returns:
         New snapshot and validated structured response. The new evidence set is

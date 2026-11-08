@@ -60,6 +60,21 @@ These instructions do not authorize new selected triples or unsupported answers.
 """
 
 
+ANSWER_RANKING_INSTRUCTIONS = """### Answer Ranking (implementation enhancement)
+Rank predict_answer by the strength of support in the selected triples for the
+original question. Compare candidate support before ordering the answer array.
+Knowledge row order and selected_triplets row order are presentation choices,
+not evidence of likelihood. Entity spelling and alphabetical order are not
+evidence of likelihood either. Include all supported candidates requested by
+the question; do not drop a weaker candidate merely to avoid ranking it.
+If the evidence does not distinguish two candidates, either relative order is
+acceptable. Keep every triple's subject, relation and object exactly as supplied;
+this copying constraint does not require predict_answer to follow triple order.
+Return only the existing three-field JSON object, with no additional fields.
+
+"""
+
+
 def build_memory_prompt(
     question: str,
     memory_triplets: Iterable[Sequence[str]],
@@ -75,8 +90,9 @@ def build_memory_prompt(
             sequences containing exactly three nonblank strings each.
         potential_triplets: Newly discovered potential graph with the same
             contract. Either graph may be empty, unordered or a generator.
-        prompt_variant: Default retrieval-question enhancement, or ``paper``
-            for the unchanged Figure 8 instructions.
+        prompt_variant: Default ``retrieval_questions``, unchanged ``paper``,
+            or opt-in ``answer_ranking`` adding support comparison to retrieval
+            instructions. Ranking remains a model responsibility.
 
     Returns:
         Prompt with the exact graph union encoded as a Unicode JSON array of
@@ -91,12 +107,14 @@ def build_memory_prompt(
     """
     if not isinstance(question, str) or not question.strip():
         raise ValueError("Original question must be a nonblank string")
-    if prompt_variant not in ("paper", "retrieval_questions"):
+    if prompt_variant not in ("paper", "retrieval_questions", "answer_ranking"):
         raise ValueError("Unknown memory prompt variant")
     memory = _freeze_triplets(memory_triplets)
     potential = _freeze_triplets(potential_triplets)
     knowledge = json.dumps(sorted(memory | potential), ensure_ascii=False)
     template = MEMORY_MANAGEMENT_PROMPT
-    if prompt_variant == "retrieval_questions":
+    if prompt_variant in ("retrieval_questions", "answer_ranking"):
         template = template.replace("### Real Input", RETRIEVAL_INSTRUCTIONS + "### Real Input")
+    if prompt_variant == "answer_ranking":
+        template = template.replace("### Real Input", ANSWER_RANKING_INSTRUCTIONS + "### Real Input")
     return template.format(question=question, triplets=knowledge)

@@ -5,6 +5,7 @@ and verify that invalid output cannot alter question-local state.
 """
 
 from dataclasses import FrozenInstanceError, asdict
+from itertools import permutations
 import json
 import unittest
 
@@ -174,6 +175,65 @@ class MemoryResponseTests(unittest.TestCase):
                 parse_memory_response(response_json(selected=[triple]), knowledge, [])
         with self.assertRaises(ValueError):
             parse_memory_response(response_json(selected=[knowledge[0]]), [], [])
+
+    def test_exact_match_rejects_all_component_permutations(self) -> None:
+        """Reject every nonidentity permutation of a submitted directed edge.
+
+        Valid clarification isolates the membership failure from other output
+        constraints. Both historical and potential input sources are checked.
+        """
+        triple = ("Subject", "relation", "Object")
+        for memory, potential in (([triple], []), ([], [triple])):
+            for reordered in permutations(triple):
+                if reordered == triple:
+                    continue
+                with self.subTest(reordered=reordered, memory=memory):
+                    with self.assertRaisesRegex(ValueError, "match submitted triples exactly"):
+                        parse_memory_response(
+                            response_json([reordered], questions=["What is missing?"]),
+                            memory, potential,
+                        )
+
+    def test_exact_match_rejects_rewriting_merging_and_splitting(self) -> None:
+        """Reject new edges even when all their components occur in input.
+
+        Include path compression, cross-row recombination, textual merging,
+        splitting and literal normalization. Every response is otherwise valid.
+        """
+        knowledge = [("A", "r", "B"), ("B", "s", "C"),
+                     ("New York", "located_in", "USA"), ("Café", "named", "Place")]
+        invalid = [
+            [("A", "r", "C")], [("A", "s", "B")],
+            [("A", "r/s", "C")], [("A B", "r", "C")],
+            [("New", "located_in", "USA"), ("York", "located_in", "USA")],
+            [("a", "r", "B")], [("A ", "r", "B")],
+            [("A", "R", "B")], [("A", "r", " B")],
+            [("Cafe\u0301", "named", "Place")], [("External", "r", "B")],
+        ]
+        for selected in invalid:
+            with self.subTest(selected=selected):
+                with self.assertRaisesRegex(ValueError, "match submitted triples exactly"):
+                    parse_memory_response(
+                        response_json(selected, questions=["What evidence is missing?"]),
+                        knowledge[:2], knowledge[2:],
+                    )
+
+    def test_exact_match_uses_decoded_strings_without_enforcing_row_order(self) -> None:
+        """Accept equivalent JSON spellings and reordered intact input triples.
+
+        Identity concerns decoded characters and component positions rather than
+        serialized bytes, graph presentation order or duplicate multiplicity.
+        """
+        first = ("Café", "r/slash", 'Quoted "entity"\n')
+        second = ("Other", "s", "Café")
+        selected = [second, first, second]
+        content = json.dumps({
+            "selected_triplets": selected, "predict_answer": [first[2]],
+            "subsequent_question": [],
+        }, ensure_ascii=True).replace("r/slash", r"r\/slash")
+        result = parse_memory_response(content, [first], [second])
+        self.assertEqual(result.selected_triplets, tuple(selected))
+        self.assertEqual(result.predict_answer, (first[2],))
 
     def test_answers_require_head_or_tail_identity(self) -> None:
         """Validate literal entity range without guessing answer semantics.

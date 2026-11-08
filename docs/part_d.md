@@ -129,6 +129,12 @@ Malformed graphs or outputs raise `ValueError` with content-free messages. Missi
 
 `tests/test_memory_response.py` covers literal strings, ordering, immutability, empty fields, question-count boundaries, strict JSON and schema errors, graph/entity membership, threshold-hidden and rejected evidence, prompt composition and failure preservation. All checks are offline.
 
+### Exact-match constraints
+
+TODO 2.1.10 uses Figure 8's prohibition of external knowledge, fabrication and triple rewriting/creation/reordering/merging/splitting. The parser enforces exact membership of each complete decoded head/relation/tail tuple in the submitted union. It rejects component permutations, cross-row recombination, compressed paths, split or merged names, case/whitespace changes and Unicode normalization unless the resulting triple itself was submitted. It does not repair output. Equivalent JSON escapes represent the same decoded strings and are accepted. Reordering intact rows in `selected_triplets` is allowed; the component positions within each triple remain fixed.
+
+Answers must exactly match selected endpoint strings as described above. These checks reject fabricated triples and out-of-range entities, but cannot detect external reasoning that returns an otherwise valid input entity. Evidence-only reasoning remains an LLM instruction. Clarification questions are natural-language retrieval queries and are not subject to triple membership. Invalid selection or answers fail before publication, preserving both old sets without an application retry. Regression tests cover all nonidentity component permutations, rewriting/merging/splitting, equivalent JSON escapes, selected row order and coordinator state preservation.
+
 ## LLM-guided memory replacement
 
 [`memory_update.py`](../src/agent/memory_update.py) implements `update_memory(state, potential_triplets, client)` for FoG §3.3, Eqs. 11–12. It submits the original question and the exact union of historical memory and eligible new evidence through Figure 8. Its high-recall instruction keeps triples unless the LLM is confident they are irrelevant; this is a prompt policy, not a measured recall guarantee.

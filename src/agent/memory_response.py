@@ -107,6 +107,11 @@ def parse_memory_response(
         nonempty tentative answers may still accompany clarification questions.
         Figure 8 instructs evidence-based ranking; the parser preserves that
         order without claiming to verify entailment or relative support.
+        Triple identity compares decoded strings at fixed head/relation/tail
+        positions, without trimming, case folding or Unicode normalization.
+        Equivalent JSON escapes are valid; selected row order is unrestricted.
+        External reasoning that returns an otherwise valid input entity cannot
+        be detected by membership checks; Figure 8 supplies that instruction.
 
     Raises:
         ValueError: Inputs, JSON, field names, types or membership are invalid.

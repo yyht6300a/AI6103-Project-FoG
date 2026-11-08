@@ -137,6 +137,34 @@ class MemoryUpdateTests(unittest.TestCase):
                 self.assertEqual(state.memory_triplets, {A})
                 self.assertEqual(state.rejected_triplets, {REJECTED})
 
+    def test_exact_match_failures_preserve_both_sets_without_repair(self) -> None:
+        """Keep the previous snapshot when a model alters submitted evidence.
+
+        A valid prefix selection must not publish before a later invalid triple
+        or answer is rejected. Prompt constraints accompany each single call.
+        """
+        state = QuestionMemory("Who?", [A], [REJECTED])
+        client = Mock(spec=LLMClient)
+        cases = [
+            completion([A, (B[2], B[1], B[0])], questions=["Who?"]),
+            completion([A, (A[0], B[1], A[2])], questions=["Who?"]),
+            completion([A, (B[0] + " ", B[1], B[2])], questions=["Who?"]),
+            completion([A, B], [B[2] + " "]),
+            completion([A, B], ["External answer"]),
+        ]
+        for output in cases:
+            client.reset_mock()
+            client.complete.return_value = output
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                update_memory(state, [B], client)
+            client.complete.assert_called_once()
+            prompt = client.complete.call_args.args[0][0]["content"]
+            self.assertIn("No external knowledge; no fabrication;", prompt)
+            self.assertIn("no rewriting/creating/reordering/merging/splitting triples.", prompt)
+            self.assertIn("Selected triples must match input exactly.", prompt)
+            self.assertEqual(state.memory_triplets, {A})
+            self.assertEqual(state.rejected_triplets, {REJECTED})
+
     def test_invalid_inputs_prevent_requests(self) -> None:
         """Reject malformed or permanently masked evidence before paid work.
 

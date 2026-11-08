@@ -76,6 +76,27 @@ assert second.memory_triplets == frozenset()
 
 `original_question` must be a nonblank string and is stored verbatim. The optional `memory_triplets` and `rejected_triplets` constructor arguments accept iterables of head/relation/tail sequences. Both are copied to `frozenset[tuple[str, str, str]]`: exact duplicates collapse, strings and direction remain unchanged, and iteration order is unspecified. Each triple must contain exactly three nonblank strings. Malformed inputs and overlapping memory/rejection sets raise `ValueError` without including query or triple text. Fields and nested values are immutable, so subsequent changes to supplied lists cannot affect the snapshot or another question.
 
-Future update code can construct a new snapshot, or use `dataclasses.replace`, only after validating the complete LLM result. Keeping the old snapshot supports failure preservation; the later update policy must carry prior permanent rejections forward. This container stores explicit state only: it does not select evidence, infer rejection, call the LLM or filter retrieval. Threshold filtering does not populate either graph. Prompt construction, validated state transitions and retrieval exclusion remain subsequent tasks.
+Future update code can construct a new snapshot, or use `dataclasses.replace`, only after validating the complete LLM result. Keeping the old snapshot supports failure preservation; the later update policy must carry prior permanent rejections forward. This container stores explicit state only: it does not select evidence, infer rejection, call the LLM or filter retrieval. Threshold filtering does not populate either graph. Validated state transitions and retrieval exclusion remain subsequent tasks.
 
 `tests/test_memory_state.py` verifies empty initialization, isolation across different questions and repeated query text, immutable detached snapshots, exact graph identity, invalid-input preservation and threshold filtering without rejection. All checks are offline.
+
+## Memory-management prompt
+
+[`memory_prompt.py`](../src/agent/memory_prompt.py) implements `build_memory_prompt(question, memory_triplets, potential_triplets)` from FoG §3.3 and Appendix C, Figure 8 (paper page 21). The template retains the figure's wording, high-recall selection principle, evidence-only answering, exact triple/entity copying constraints, conditional one-to-three clarification questions and the three-field JSON output example.
+
+```python
+from src.agent.memory_prompt import build_memory_prompt
+from src.agent.memory_state import QuestionMemory
+
+state = QuestionMemory("Who leads the country with Song C?", [
+    ("Country A", "anthem", "Song C"),
+])
+potential = [("Country A", "led_by", "Person B")]
+prompt = build_memory_prompt(state.original_question, state.memory_triplets, potential)
+```
+
+The original question must be a nonblank string and is inserted verbatim. Both graphs accept iterables of head/relation/tail sequences with exactly three nonblank strings each, including empty graphs, unordered snapshots and generators. Figure 8 has one `Knowledge` field: it receives the union of historical and potential triples, deduplicated by exact equality and sorted lexicographically by tuple for stable presentation. JSON array serialization preserves Unicode and round-trips quotes, newlines, backslashes and all original string values. Sorting graph rows does not change positions within a triple. The graph union and serialization are reproduction choices; the paper does not specify an input ordering or serialization encoding.
+
+Malformed inputs raise `ValueError` without exposing their text. Mutable input containers and memory snapshots remain unchanged; one-shot iterators are consumed. This function only builds text: it makes no API call, validates no model output and performs no memory or rejection update. The caller supplies the eligible potential graph; the builder does not implicitly access rejection sets or retrieval results. The prompt expresses the output constraints, while enforcing them belongs to subsequent response-validation tasks.
+
+`tests/test_memory_prompt.py` checks the paper instructions and JSON example, graph union and stable ordering, exact string and direction preservation, empty graphs, invalid-input handling and composition with existing memory/potential modules. All checks are offline.

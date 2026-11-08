@@ -76,6 +76,27 @@ assert second.memory_triplets == frozenset()
 
 `original_question` 必须是非空白字符串，并原样保存。构造器的可选参数 `memory_triplets` 和 `rejected_triplets` 接收由头实体、关系、尾实体序列组成的可迭代对象，均复制为 `frozenset[tuple[str, str, str]]`。完全相同的三元组去重，保留字符串和方向，不保证遍历顺序。每个三元组必须包含恰好三个非空白字符串。输入无效或记忆与拒绝集合有交集时抛出 `ValueError`，错误消息不包含问题或三元组文本。字段和内部元素均不可变；后续修改传入列表不会影响快照或其他问题。
 
-后续更新代码须先完整校验 LLM 结果，再构造新快照或使用 `dataclasses.replace`。保留旧快照可支持失败时维持原状态；后续更新策略还须继承已有的永久拒绝集合。此容器仅保存显式状态，不执行证据选择、拒绝判定、LLM 调用或检索过滤。阈值过滤不会填充任何集合。提示词构建、经过校验的状态转换和检索排除仍属于后续任务。
+后续更新代码须先完整校验 LLM 结果，再构造新快照或使用 `dataclasses.replace`。保留旧快照可支持失败时维持原状态；后续更新策略还须继承已有的永久拒绝集合。此容器仅保存显式状态，不执行证据选择、拒绝判定、LLM 调用或检索过滤。阈值过滤不会填充任何集合。经过校验的状态转换和检索排除仍属于后续任务。
 
 `tests/test_memory_state.py` 验证空集初始化、不同问题及同文问题运行之间的隔离、不可变且脱离输入引用的快照、图身份保持、无效输入不改写旧状态，以及阈值过滤不产生拒绝状态。所有检查均离线运行。
+
+## 记忆管理提示词
+
+[`memory_prompt.py`](../src/agent/memory_prompt.py) 提供 `build_memory_prompt(question, memory_triplets, potential_triplets)`，对应 FoG 第 3.3 节和附录 C 图 8（论文第 21 页）。模板保留图中措辞、高召回选择原则、仅依据证据作答、三元组和实体原样复制约束、证据不足时生成一至三个澄清问题，以及包含三个字段的 JSON 输出示例。
+
+```python
+from src.agent.memory_prompt import build_memory_prompt
+from src.agent.memory_state import QuestionMemory
+
+state = QuestionMemory("Who leads the country with Song C?", [
+    ("Country A", "anthem", "Song C"),
+])
+potential = [("Country A", "led_by", "Person B")]
+prompt = build_memory_prompt(state.original_question, state.memory_triplets, potential)
+```
+
+原问题须为非空白字符串，原样插入。两个图均接收由头实体、关系、尾实体序列组成的可迭代对象，每个三元组恰含三个非空白字符串；支持空图、无序快照和生成器。图 8 仅有一个 `Knowledge` 字段，此处传入历史记忆与潜在三元组的并集，按完全相等去重，再按元组字典序排序，使展示稳定。JSON 数组序列化保留 Unicode，解码后引号、换行、反斜杠和所有原始字符串均保持不变。图中行排序不改变三元组内部位置。取并集和序列化方式属于复现选择，论文未规定输入顺序或序列化编码。
+
+输入格式无效时抛出 `ValueError`，不暴露输入文本。可变输入容器和记忆快照保持不变；一次性迭代器会被消耗。此函数只构造文本，不调用 API、不校验模型输出，也不更新记忆或拒绝状态。调用方负责提供符合条件的潜在子图；构造器不会隐式读取拒绝集合或检索结果。提示词表达输出约束，程序强制校验由后续响应处理任务实现。
+
+`tests/test_memory_prompt.py` 检查论文指令和 JSON 示例、图并集与稳定排序、原字符串和方向保持、空图、无效输入处理，以及与现有记忆和潜在子图模块的组合。所有检查均离线运行。

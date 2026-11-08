@@ -121,6 +121,10 @@ python scripts/validate_part_d.py --suite all
 
 ## 初始问题分解
 
+2026/11/09 使用未变更的 GPT-4o-mini/OpenAI 配置运行 `python scripts/validate_part_d.py --suite reference_diagnostic`，完成 $3$ 次真实调用：原版仍输出 `In which city was this author born?`，增强版输出 `In which city was the author of The Glass Orchard born?`；两版第一问均为 `Who is the author of The Glass Orchard?`。向 MSM 提交受控作者关系后，模型保留该关系，答案为空并追问 `Where was Mira Vale born?`，旧状态和状态规则通过。本用例的上下文指代问题已修正；单次观察不能保证所有问题均合格。该显式诊断不加入 `all`，可用 `--suite reference_diagnostic --list-cases` 免费预览，最多 $3$ 次逻辑调用、当前最多 $9$ 次 HTTP 尝试。
+
+实际均返回 `gpt-4o-mini-2024-07-18`，无重试，新增 $3$ 条成功用量记录，共输入 $569$、输出 $87$ tokens。私有报告为 `tmp/tmp_part_d_validation_20261108T174923559860Z.json`，保留原始有效输出及自动待审标记，本段为人工审阅结果。仓库尚无真实 C/E 检索器，诊断记录的初始查询未实际执行检索，作者关系为受控输入；逐个子问题的真实召回验证仍待 C/E 集成，不能据此宣布 TODO 2.3.5 整体通过。图 8 未修改，其他语义问题仍待处理。
+
 [`question_decomposition.py`](../src/agent/question_decomposition.py) 实现 FoG 第 3.1 节和附录 C 图 7（论文第 21 页）中的初始 $Q_{\mathrm{sub}}$。默认 `prompt_variant="explicit_references"` 在图 7 基础上增加独立指代要求，属于实现增强：每个问题按单独检索书写，写全已知实体名及未知实体的关系描述，不假定上一问已有答案，不编造实体名。`decompose_question` 和 `build_decomposition_prompt` 均接受该仅限关键字的参数；传入 `prompt_variant="paper"` 可使用保留论文措辞、仅校正指令编号的原版。两版共用原有解析、重试及记账路径。
 
 ```python
@@ -375,16 +379,6 @@ TODO 2.1.9 对应 FoG 第 3.3 节公式 11 和附录 C：图 8 要求 LLM 在选
 问题：原用例确实移除了旧记忆，但连必要证据也一起删除，不能算正确移除；澄清条件后的复测又保留了全部证据。离线状态转换测试通过，不等于 GPT 已正确判断哪些旧证据不再有用。
 
 解决方案：增加不依赖条件分支的作者查询用例。第一轮只给两人的出生地、暂不给作者关系，观察模型是否保留可能有用的证据并追问作者；第二轮补充书籍的作者关系，检查是否保留正确路径、移除另一人的出生地；第三轮以高分重新输入被移除证据，检查是否仍被屏蔽。前两轮必须使用真实模型返回的状态；若首轮未保留候选，就如实记为尚未覆盖移除行为。原条件推理问题仍单独排查。
-
-### 初始子问题依赖上一问的上下文
-
-问题：`In which city was this author born?` 单独提交检索时，不知道 `this author` 指谁。当前解析器只检查非空字符串列表，不检查指代和检索效果。
-
-已实现：默认图 7 增强版要求每个问题写全指代，例如使用 `the author of The Glass Orchard`，不猜测尚未检索到的作者姓名；原版通过 `prompt_variant="paper"` 保留对照。未增加代词黑名单、回复改写或语义自动通过规则。写全指代只解决上下文依赖，实体姓名仍须从证据解析。
-
-2026/11/09 使用未变更的 GPT-4o-mini/OpenAI 配置运行 `python scripts/validate_part_d.py --suite reference_diagnostic`，完成 $3$ 次真实调用：原版仍输出 `In which city was this author born?`，增强版输出 `In which city was the author of The Glass Orchard born?`；两版第一问均为 `Who is the author of The Glass Orchard?`。向 MSM 提交受控作者关系后，模型保留该关系，答案为空并追问 `Where was Mira Vale born?`，旧状态和状态规则通过。本用例的上下文指代问题已修正；单次观察不能保证所有问题均合格。该显式诊断不加入 `all`，可用 `--suite reference_diagnostic --list-cases` 免费预览，最多 $3$ 次逻辑调用、当前最多 $9$ 次 HTTP 尝试。
-
-实际均返回 `gpt-4o-mini-2024-07-18`，无重试，新增 $3$ 条成功用量记录，共输入 $569$、输出 $87$ tokens。私有报告为 `tmp/tmp_part_d_validation_20261108T174923559860Z.json`，保留原始有效输出及自动待审标记，本段为人工审阅结果。仓库尚无真实 C/E 检索器，诊断记录的初始查询未实际执行检索，作者关系为受控输入；逐个子问题的真实召回验证仍待 C/E 集成，不能据此宣布 TODO 2.3.5 整体通过。图 8 未修改，其他语义问题仍待处理。
 
 ### 空图时的澄清问题偏题或无法直接检索
 

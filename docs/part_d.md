@@ -1,5 +1,7 @@
 # Member D modules
 
+[English](part_d.md) | [简体中文](part_d.zh-CN.md)
+
 This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering is implemented; persistent memory and LLM-guided memory updates remain pending.
 
 ## LLM configuration and requests

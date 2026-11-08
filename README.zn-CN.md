@@ -64,7 +64,7 @@ python scripts/download_data.py --full          # 下载完整 parquet 文件
 
 ### 模块文档
 
-成员 D 各模块的接口与调用示例见[成员 D 模块说明](docs/part_d.md)。
+成员 D 各模块的接口与调用示例见[成员 D 模块说明](docs/part_d.zh-CN.md)。
 
 ## 阈值优化实验
 

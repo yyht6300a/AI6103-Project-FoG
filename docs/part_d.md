@@ -6,6 +6,8 @@ This document summarizes implemented member D modules and their interfaces. Setu
 
 ## LLM configuration and requests
 
+For the unified C/E entry point, see [Scored-round MSM interface](#scored-round-msm-interface).
+
 [`llm_config.py`](../src/agent/llm_config.py) merges literal private `.env` values with shared YAML defaults and validates the effective configuration. [`llm_client.py`](../src/agent/llm_client.py) exposes `LLMClient.complete(messages)` for OpenAI-compatible Chat Completions. Requests receive settings explicitly and do not inherit process configuration. The caller owns and closes the client; timeout, connection failures, HTTP $429$ and HTTP $5xx$ follow its bounded retry policy.
 
 ## Per-attempt usage accounting
@@ -182,6 +184,38 @@ TODO 2.1.12 composes the existing potential-subgraph, expansion-filter and memor
 For the next round, pass `response.subsequent_question` to retrieval, apply the current state's expansion exclusions, obtain new positionally aligned refined scores, and call `build_potential_subgraph` again. Previously hidden evidence remains eligible even after several low-score rounds; it can enter the potential graph once its new score strictly exceeds the same cutoff and enter memory if selected by the LLM. Recovery requires rediscovery and re-scoring; it is not automatic reinsertion, a threshold reduction or a retry of the previous LLM request. A submitted, rejected triple remains excluded even if later retrieval would assign it a higher score.
 
 An empty potential graph is valid: memory management still submits historical memory, or an empty Knowledge array when memory is also empty. An undetermined response must supply clarification questions under the parser contract. `tests/test_fault_tolerance.py` verifies clarification-driven retrieval and re-scoring, below/equal cutoffs at default and custom thresholds, recovery after an initially empty graph, repeated hiding, retained history and permanent-rejection controls. Prompt assertions check exactly which evidence was submitted each round. These are controlled offline integration tests of Member D boundaries; real C/E retrieval and scoring integration and live-model quality remain unverified.
+
+## Scored-round MSM interface
+
+[`memory_management.py`](../src/agent/memory_management.py) exposes `manage_memory(state, triples, scores, client, potential_threshold=0.7)` for TODO 2.1.13. Member C supplies positionally aligned expanded triples and refined scores after feedback propagation; member E owns the question snapshot, retrieval loop and client lifetime. Input types, finite-number checks, exact string handling, strict threshold and explicit tensor conversion follow [potential subgraph construction](#potential-subgraph-construction). Pass a YAML-loaded cutoff explicitly; this function does not read files or configuration.
+
+```python
+from src.agent.memory_management import manage_memory
+from src.agent.memory_state import QuestionMemory
+
+state = QuestionMemory(original_question)  # Once per independent question run.
+# Repeat these steps in E's loop; retrieval and C's scorer are caller supplied.
+candidates = state.filter_expansion_triplets(retrieve(sub_questions))
+scores = refine_scores(candidates)  # Aligned 1-D Python scalar sequence.
+result = manage_memory(state, candidates, scores, client, potential_threshold=0.7)
+state = result.state  # Publish only when the entire call succeeds.
+sub_questions = result.response.subsequent_question
+```
+
+The retrieval/scoring names above illustrate caller dependencies, not implemented functions. Calling the entry point incurs LLM usage, including for empty input or an empty potential graph. It invokes the existing update coordinator once, with transport retries and accounting still owned by `LLMClient`.
+
+| Returned field | C/E use |
+| --- | --- |
+| `result.state.memory_triplets` | Updated immutable evidence graph |
+| `result.response.predict_answer` | Tentative answer tuple in model ranking order |
+| `result.response.subsequent_question` | Ordered next-round retrieval queries |
+| `result.state.excluded_triplets` | Current memory plus permanent rejections; exclude at each expansion boundary |
+| `result.state.rejected_triplets` | Permanent question-local mask |
+| `result.response.selected_triplets` | Validated selection retaining model order and duplicates |
+
+`MSMResult` is a frozen container with `state: QuestionMemory` and `response: MemoryResponse`; it reuses existing immutable contracts rather than maintaining duplicate state. All rows and scores are validated before filtering, including stale memory/rejected rows and low scores. Thresholding operates on aligned pairs before exact deduplication: a duplicate qualifies if any occurrence exceeds the cutoff. The facade defensively removes current memory and permanent rejections from new potential input; historical memory independently reaches the prompt even when absent or low-scoring now. This differs from lower-level `update_memory`, which rejects permanently rejected potential input. E must still filter at retrieval/expansion boundaries to avoid wasted expansion and scoring; filtering an already scored list without filtering its matching scores would break alignment.
+
+Only fully validated output yields a new result. `ValueError` reports invalid input or output; transport and accounting errors propagate unchanged. No input snapshot is mutated, no application retry/fallback is added and no client is closed. E retains its prior snapshot on exceptions and decides stopping conditions and round limits; neither a tentative answer nor an empty question tuple automatically terminates a loop here. Permanent omission and temporary threshold hiding follow the policies above. `tests/test_memory_management.py` covers aligned duplicate rows, stale exclusions, all output fields, empty/custom-threshold inputs, multi-round recovery/removal, question isolation and failed-call preservation. Real C/E wiring and live-model quality remain integration work.
 
 ## Subsequent sub-questions
 

@@ -183,6 +183,38 @@ TODO 2.1.12 通过已有潜在子图、展开过滤及记忆更新接口实现�
 
 空潜在图合法：记忆管理仍提交历史记忆；历史记忆也为空时，提交空 Knowledge 数组。答案未确定时，回复须按解析器约定提供澄清子问题。`tests/test_fault_tolerance.py` 验证子问题驱动的重新检索与打分、默认及自定义阈值下的低分和相等边界、初始空图后的恢复、连续多轮隐藏、历史证据保留及永久拒绝对照，并逐轮核对实际提示词中的证据。测试属于成员 D 接口的受控离线串联验证，未验证真实 C/E 检索打分接线或真实模型质量。
 
+## MSM 重打分轮次接口
+
+[`memory_management.py`](../src/agent/memory_management.py) 提供 `manage_memory(state, triples, scores, client, potential_threshold=0.7)`，完成 TODO 2.1.13。成员 C 传入反馈传播后按位置对齐的展开三元组和重打分分数；成员 E 管理问题快照、检索循环和客户端生命周期。输入格式、有限数值校验、原字符串保持、严格阈值及张量显式转换沿用上文潜在子图约定。若从 YAML 加载阈值，应显式传入；接口不读取文件或配置。
+
+```python
+from src.agent.memory_management import manage_memory
+from src.agent.memory_state import QuestionMemory
+
+state = QuestionMemory(original_question)  # Once per independent question run.
+# Repeat these steps in E's loop; retrieval and C's scorer are caller supplied.
+candidates = state.filter_expansion_triplets(retrieve(sub_questions))
+scores = refine_scores(candidates)  # Aligned 1-D Python scalar sequence.
+result = manage_memory(state, candidates, scores, client, potential_threshold=0.7)
+state = result.state  # Publish only when the entire call succeeds.
+sub_questions = result.response.subsequent_question
+```
+
+示例中的检索和打分函数表示调用方依赖，并非已实现函数。调用入口会产生 LLM 用量，空输入或空潜在图也会请求。入口仅调用一次现有记忆更新编排器，传输重试和用量记录仍由 `LLMClient` 负责。
+
+| 返回字段 | C/E 用途 |
+| --- | --- |
+| `result.state.memory_triplets` | 更新后的不可变证据图 |
+| `result.response.predict_answer` | 按模型排名保留的试探性答案元组 |
+| `result.response.subsequent_question` | 下一轮有序检索问题 |
+| `result.state.excluded_triplets` | 当前记忆与永久拒绝并集；每步展开均须排除 |
+| `result.state.rejected_triplets` | 问题级永久屏蔽集合 |
+| `result.response.selected_triplets` | 保留模型顺序及重复项的有效选择 |
+
+`MSMResult` 是冻结容器，包含 `state: QuestionMemory` 和 `response: MemoryResponse`，复用现有不可变约定，不重复维护状态。过滤前校验全部三元组和分数，包括已有记忆、永久拒绝及低分行。先按对齐行比较阈值，再精确去重：同一三元组任一出现位置超过阈值即可入选潜在图。入口防御性移除新潜在输入中的已有记忆和永久拒绝；历史记忆仍独立提交，即使当前未检索到或分数较低。底层 `update_memory` 则对含永久拒绝的潜在输入直接报错。E 仍须在检索和每步展开之前过滤，以免浪费展开及打分；对已打分列表过滤时，必须同步处理对应分数，不能破坏对齐。
+
+完整输出校验通过后才返回新结果。输入或输出无效抛出 `ValueError`，传输和记账错误原样传递；旧快照不被修改，不增加业务重试或服务回退，也不关闭客户端。E 在异常时保留旧状态，并负责停止条件和轮次限制；接口不根据试探性答案或空问题元组自动终止循环。永久省略判定和阈值暂时隐藏沿用上文规则。`tests/test_memory_management.py` 覆盖重复行分数对齐、已有屏蔽、全部输出字段、空图与自定义阈值、多轮恢复及移除、问题隔离和失败状态保持。真实 C/E 接线与模型质量仍待集成验证。
+
 ## 后续子问题
 
 TODO 2.1.9 对应 FoG 第 3.3 节公式 11 和附录 C：图 8 要求 LLM 在选中证据无法确定答案时生成 $1$ 至 $3$ 个澄清问题。`update_memory` 通过 `response.subsequent_question` 返回这些有序字符串元组，表示下一轮检索的 $Q'_{\mathrm{sub}}$。调用方应将其传给检索模块，无需重新执行初始问题分解；后续记忆管理仍使用 `state.original_question` 中的原问题。检索器和推理循环接线留待集成。

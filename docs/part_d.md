@@ -31,6 +31,18 @@ Exit code $0$ means parsing and state checks passed; semantic review remains pen
 
 `tests/test_part_d_validation.py` checks free preview, bounded full execution through public parsing and isolated usage accounting, fail-fast behavior, old-state preservation, cleanup and sensitive-error suppression offline. Synthetic transport is confined to tests. No paid calls were made for TODO 2.3.1.
 
+### Single-round live result
+
+TODO 2.3.2 passed on 2026/11/09 using `python scripts/validate_part_d.py --suite single` with the unchanged private DeepSeek configuration. All $4$ logical calls returned `deepseek-flash`, one HTTP attempt each, without manual response edits, parser bypass, output repair or retries. Decomposition returned “Who is the author of The Glass Orchard?” and “In which city was the author of The Glass Orchard born?”. The second question retains an unresolved author reference; retrieval usefulness needs the broader TODO 2.3.4 review.
+
+| Case | Validated output and state |
+| --- | --- |
+| Sufficient evidence | Both author and birthplace triples selected; answer `Linden City`; no subsequent questions; both triples in expansion exclusions |
+| Insufficient evidence | Author triple retained; no answer; clarification `Which city was Mira Vale born in?`; author triple in expansion exclusions |
+| Empty potential graph and memory | Empty selection, answer, memory and exclusions; clarification `Who is the author of The Glass Orchard?` |
+
+All three MSM calls preserved original snapshots, produced no permanent rejections and satisfied memory/rejection/exclusion invariants. The four appended rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:31:25 (UTC+08:00), report $860$ input and $851$ output tokens, all successful; request IDs were not supplied and remain blank. Full outputs and states remain in private `tmp/tmp_part_d_validation_20261108T163125709480Z.json`; its automatic semantic-review flag remains pending. These fixtures do not exercise rejection transitions or multi-answer ranking. TODO 2.3.3-2.3.6, including broader semantic review and final GPT-4o-mini acceptance, remain pending; C/E integration is also unverified.
+
 ## Per-attempt usage accounting
 
 [`llm_usage.py`](../src/agent/llm_usage.py) appends one UTF-8 CSV row per actual HTTP attempt, including retries and failures. Metadata records request start time, model, returned token counts, outcome, exception class and request ID. Unknown values remain blank. Credentials and request/response content are excluded. A later application validation failure does not change a successful HTTP accounting row. Configuration and accounting tests are in `tests/test_llm_configuration.py` and `tests/test_llm_usage.py`.

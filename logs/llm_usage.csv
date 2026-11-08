@@ -2,3 +2,7 @@ timestamp,model,input_tokens,output_tokens,status,error_type,request_id
 2026-11-08T12:05:26.728011+00:00,gpt-4o-mini-2024-07-18,11,2,success,,req_116bce4515a84404921bb8c7691c5f54
 2026-11-08T12:05:54.014506+00:00,gpt-4o-mini-2024-07-18,11,2,success,,req_86fc54edcae94cd69e260f2b4924fbdd
 2026-11-08T12:41:05.624829+00:00,deepseek-flash,34,12,success,,
+2026-11-08T16:31:25.709480+00:00,deepseek-flash,115,239,success,,
+2026-11-08T16:31:28.345608+00:00,deepseek-flash,263,143,success,,
+2026-11-08T16:31:29.790339+00:00,deepseek-flash,249,262,success,,
+2026-11-08T16:31:31.976515+00:00,deepseek-flash,233,207,success,,

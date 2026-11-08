@@ -1,7 +1,8 @@
 """Parse the structured Figure 8 output against the submitted knowledge graph.
 
-This offline boundary validates syntax, field types and literal input membership.
-It does not assess evidence sufficiency, call the LLM or publish memory updates.
+This offline boundary validates syntax, field types and literal input membership,
+including answer membership in selected evidence. Semantic sufficiency and ranking
+remain LLM responsibilities; parsing neither calls the LLM nor publishes updates.
 """
 
 from collections.abc import Iterable, Sequence
@@ -21,7 +22,7 @@ class MemoryResponse:
 
     Attributes:
         selected_triplets: Exact head/relation/tail tuples in model order.
-        predict_answer: Literal input entity strings in model ranking order.
+        predict_answer: Literal selected-evidence entities in model ranking order.
         subsequent_question: Up to three nonblank clarification strings.
     """
 
@@ -99,10 +100,12 @@ def parse_memory_response(
     Returns:
         Detached immutable output preserving model order, duplicates and literal
         strings. Selected triples must occur in the submitted graph union; answers
-        must equal a head or tail there, not merely a relation or substring.
+        must equal a selected triple's head or tail, not merely a relation or
+        substring. Input entities occurring only in unselected triples fail.
         Clarification count is zero to three. Empty arrays are structurally valid;
-        whether clarification is needed and answers follow selected evidence is
-        a later semantic concern, not inferred from array emptiness here.
+        whether clarification is needed is not inferred from array emptiness.
+        Figure 8 instructs evidence-based ranking; the parser preserves that
+        order without claiming to verify entailment or relative support.
 
     Raises:
         ValueError: Inputs, JSON, field names, types or membership are invalid.
@@ -131,9 +134,9 @@ def parse_memory_response(
     if not selected_graph <= knowledge:
         raise ValueError("Selected triplets must match submitted triples exactly")
     answers = _string_array(output["predict_answer"])
-    entities = {entity for head, _, tail in knowledge for entity in (head, tail)}
+    entities = {entity for head, _, tail in selected_graph for entity in (head, tail)}
     if any(answer not in entities for answer in answers):
-        raise ValueError("Answers must match submitted entity strings exactly")
+        raise ValueError("Answers must match selected triple entity strings exactly")
     questions = _string_array(output["subsequent_question"])
     if len(questions) > 3:
         raise ValueError("At most three subsequent questions are allowed")

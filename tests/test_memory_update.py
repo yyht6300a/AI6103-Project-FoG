@@ -148,6 +148,41 @@ class MemoryUpdateTests(unittest.TestCase):
             client.complete.assert_called_once()
             self.assertEqual(state.memory_triplets, {A})
 
+    def test_unselected_answers_preserve_state_without_retry(self) -> None:
+        """Keep both old sets when an answer relies on discarded input evidence.
+
+        Historical and potential entities are equally ineligible when their only
+        supporting triple was omitted; invalid answers cannot publish selection.
+        """
+        state = QuestionMemory("Who?", [A], [REJECTED])
+        client = Mock(spec=LLMClient)
+        for response in (completion([A], [B[2]]), completion([B], [A[2]]),
+                         completion([], [B[0]])):
+            client.reset_mock()
+            client.complete.return_value = response
+            with self.subTest(response=response), self.assertRaises(ValueError):
+                update_memory(state, [B], client)
+            client.complete.assert_called_once()
+            self.assertEqual(state.memory_triplets, {A})
+            self.assertEqual(state.rejected_triplets, {REJECTED})
+
+    def test_tentative_ranking_uses_selected_cross_round_evidence(self) -> None:
+        """Return model-ranked literal entities after retaining a multi-hop path.
+
+        The paper prompt carries evidence-only answering and ranking instructions;
+        orchestration preserves the ranking without alphabetical resorting.
+        """
+        state = QuestionMemory("Where was the leader born?", [A, B])
+        client = Mock(spec=LLMClient)
+        client.complete.return_value = completion([B, C], [C[2], B[2]])
+        updated, result = update_memory(state, [C], client)
+        self.assertEqual(updated.memory_triplets, {B, C})
+        self.assertEqual(result.predict_answer, (C[2], B[2]))
+        self.assertEqual(state.memory_triplets, {A, B})
+        prompt = client.complete.call_args.args[0][0]["content"]
+        self.assertIn("Using only selected triples, predict the answer", prompt)
+        self.assertIn("if multiple answers, rank by likelihood from triples", prompt)
+
     def test_transport_and_accounting_failures_preserve_state(self) -> None:
         """Propagate shared-client errors while keeping the caller's snapshot.
 

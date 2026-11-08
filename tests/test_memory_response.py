@@ -149,16 +149,49 @@ class MemoryResponseTests(unittest.TestCase):
         """Validate literal entity range without guessing answer semantics.
 
         Relation-only names, partial names, case changes, normalization and
-        external entities fail. Selection support is a later semantic check.
+        external entities fail even when the submitted graph is fully selected.
         """
         knowledge = [("Country A", "led_by", "Person B"), (" é", "r", "C")]
         for answer in ("led_by", "Person", "person b", "Person B ", "é", " e\u0301", "External"):
             with self.subTest(answer=answer), self.assertRaises(ValueError):
-                parse_memory_response(response_json(answers=[answer]), knowledge, [])
-        result = parse_memory_response(response_json(answers=["Person B", "Country A"]), [], knowledge)
+                parse_memory_response(response_json(knowledge, [answer]), knowledge, [])
+        result = parse_memory_response(
+            response_json(knowledge, ["Person B", "Country A"]), [], knowledge,
+        )
         self.assertEqual(result.predict_answer, ("Person B", "Country A"))
         with self.assertRaises(ValueError):
             parse_memory_response(response_json(answers=["Person B"]), [], [])
+
+    def test_answers_exclude_unselected_evidence(self) -> None:
+        """Reject answers drawn only from omitted historical or potential rows.
+
+        An empty selection cannot support any answer, even if the answer is an
+        exact entity in the submitted knowledge. Empty answers remain valid.
+        """
+        old = ("Country", "anthem", "Song")
+        new = ("Country", "leader", "Person")
+        for selected, answer in (([old], "Person"), ([new], "Song"), ([], "Country")):
+            with self.subTest(selected=selected), self.assertRaises(ValueError):
+                parse_memory_response(response_json(selected, [answer]), [old], [new])
+        for selected in ([], [old], [new]):
+            result = parse_memory_response(response_json(selected), [old], [new])
+            self.assertEqual(result.predict_answer, ())
+
+    def test_ranked_answers_can_span_selected_multi_hop_evidence(self) -> None:
+        """Preserve model ranking across a selected path and multiple candidates.
+
+        No graph-order or alphabetical sorting may replace the model's ranking;
+        literal endpoint membership also allows entities shared with omitted rows.
+        """
+        bridge = ("Song", "anthem_of", "Country")
+        first = ("Country", "leader", "Z Person")
+        second = ("Country", "leader", "A Person")
+        omitted = ("Z Person", "birthplace", "Town")
+        result = parse_memory_response(
+            response_json([bridge, second, first], ["Z Person", "A Person", "Z Person"]),
+            (row for row in [bridge]), (row for row in [first, second, omitted]),
+        )
+        self.assertEqual(result.predict_answer, ("Z Person", "A Person", "Z Person"))
 
     def test_prompt_union_threshold_and_state_preservation(self) -> None:
         """Use exactly the graph submitted in the prompt and preserve old state.

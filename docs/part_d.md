@@ -158,6 +158,10 @@ Only completed (`finish_reason: stop`), nonrefused responses with all three vali
 
 `tests/test_memory_update.py` covers controlled multi-round retention, removal and empty replacement, literal generator evidence, ordered outputs, preserved rejection state, invalid-input prevention, full-output validation, refused/truncated completions, failure preservation, question isolation and mocked HTTP retry/accounting integration. All checks are offline.
 
+### Controlled multi-round validation
+
+TODO 2.2.1 is covered by `tests/test_memory_rounds.py` through `manage_memory` and the real `LLMClient`, with only the HTTP adapter mocked. A five-round script accumulates one, two and three triples, removes an old triple with no new candidates, then clears memory with an empty selection. Each round checks the actual submitted evidence union, unchanged original question, exact selected memory, ordered answers and follow-up questions, distinct returned snapshots and preservation of every earlier snapshot. Five successful accounting rows establish one HTTP attempt per round. Run this check with `python -m unittest discover -s tests -p test_memory_rounds.py -v` using the project environment. It validates controlled state transitions without paid requests; real-model selection quality and C/E pipeline integration remain unverified.
+
 ## Exploration efficiency
 
 TODO 2.1.11 implements the two exclusion rules in FoG §3.3. `state.excluded_triplets` is the immutable union of current memory and cumulative permanent rejections. Call `state.filter_expansion_triplets(candidates)` at each retrieval/expansion boundary, before scoring or further expansion. It returns an ordered list of eligible tuples, preserving first occurrences and literal strings while removing exact duplicates. It validates every row, including excluded candidates, consumes generators once and leaves state and input containers unchanged. Filtering is by complete triple identity; sharing an entity or reversing an edge does not by itself exclude another triple.

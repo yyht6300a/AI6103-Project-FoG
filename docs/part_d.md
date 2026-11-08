@@ -1,6 +1,6 @@
 # Member D modules
 
-The 2026/11/09 real GPT ordering diagnostic reproduced a ranking failure: confirmed-first presentation passed four of four unequal-support calls, while possible-first presentation passed only one of four. Both answers were present in all ten calls, including two equal-support controls. See the [current investigation and pending Sol Extra High review](part_d.zh-CN.md#多答案排序可能受证据展示顺序影响) for the controlled matrix, private reproduction artifacts, usage and limitations. Production behavior remains unchanged; TODO 2.3.5 remains open.
+The 2026/11/09 real GPT ordering diagnostic reproduced a ranking failure: confirmed-first presentation passed four of four unequal-support calls, while possible-first presentation passed only one of four. Both answers were present in all ten calls, including two equal-support controls. See the [current investigation and latest diagnostic and remediation plan](part_d.zh-CN.md#多答案排序可能受证据展示顺序影响) for the evidence, paired prompt comparisons, proposed ranking instructions and acceptance criteria. The plan has not been executed; production behavior remains unchanged and TODO 2.3.5 remains open.
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 

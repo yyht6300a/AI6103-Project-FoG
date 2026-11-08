@@ -34,6 +34,10 @@ BRANCH_QUESTION = (
 )
 PUBLISHER = ("The Glass Orchard", "published_by", "Bronze Press")
 OTHER_BIRTH = ("Nolan Reed", "born_in", "Cedar City")
+RANKING_QUESTION = "Which cities are candidate birthplaces of Mira Vale?"
+CONFIRMED_BIRTH = ("Mira Vale", "confirmed_birthplace", "Linden City")
+POSSIBLE_BIRTH = ("Mira Vale", "reported_possible_birthplace", "Cedar City")
+RESIDENCE = ("Mira Vale", "lived_in", "Harbor City")
 CASES = {
     "single": [
         ("decomposition", "Nonempty standalone retrieval questions; review usefulness."),
@@ -52,6 +56,10 @@ CASES = {
         ("resolved", "Bronze Press activates the other branch; observe old evidence removal."),
         ("exclusion_probe", "Removed evidence stays masked when re-submitted at high score."),
     ],
+    "ranking": [
+        ("equal_support", "Both authors' cities have equal direct support; either order is valid."),
+        ("unequal_support", "Keep both birthplace candidates; confirmed precedes possible; residence is irrelevant."),
+    ],
 }
 
 
@@ -59,7 +67,7 @@ def case_plan(suite: str) -> list[dict]:
     """List the fixed calls and expectations without loading private settings.
 
     Args:
-        suite: CLI-validated single, multi, removal or all selection.
+        suite: CLI-validated single, multi, removal, ranking or all selection.
 
     Returns:
         Ordered plan; every entry permits one completion plus YAML retries.
@@ -173,7 +181,7 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     Args:
         client: Real LLMClient, shared across independent question states.
         report: Mutable report storing validated output for later semantic review.
-        suite: single, multi, removal or all; all permits eleven logical calls.
+        suite: single, multi, removal, ranking or all; all permits thirteen calls.
 
     Multi-round retrieval consumes the preceding response's questions but returns
     controlled rows rather than implementing C/E. Empty questions are recorded
@@ -255,6 +263,20 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
             "removed_not_resubmitted": bool(removed)
                 and not removed.intersection(map(tuple, last["submitted"])),
         }
+
+    if suite in ("ranking", "all"):
+        question = "Which cities were Mira Vale and Nolan Reed born in?"
+        memory_round(
+            client, report, "ranking.equal_support", QuestionMemory(question),
+            [BIRTH, OTHER_BIRTH], [0.95, 0.95], (question,),
+        )
+        # Evidence labels establish qualitative support, not calibrated probabilities.
+        # Equal retrieval scores deliberately cannot supply the answer ranking.
+        memory_round(
+            client, report, "ranking.unequal_support", QuestionMemory(RANKING_QUESTION),
+            [POSSIBLE_BIRTH, RESIDENCE, CONFIRMED_BIRTH], [0.95, 0.95, 0.95],
+            (RANKING_QUESTION,),
+        )
 
 
 def main(argv: list[str] | None = None) -> int:

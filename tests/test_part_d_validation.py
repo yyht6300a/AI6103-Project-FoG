@@ -49,7 +49,7 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count in (("single", 4), ("multi", 4), ("all", 8)):
+        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("all", 11)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:
@@ -61,7 +61,7 @@ class PartDValidationTests(unittest.TestCase):
                 client.assert_not_called()
 
     def test_all_cases_use_public_parsers_and_keep_semantic_review_pending(self) -> None:
-        """Exercise eight calls with independent state and true HTTP accounting.
+        """Exercise eleven calls with independent state and true HTTP accounting.
 
         The model keeps the useful path and rejects a distractor. Absence of old
         memory removal is recorded as unobserved rather than fabricated success.
@@ -78,6 +78,9 @@ class PartDValidationTests(unittest.TestCase):
             completion([author, birth], [birth[2]], []),
             completion([author, birth], [birth[2]], []),
             completion([distractor], [distractor[2]], []),
+            completion([birth], [], ["Who published The Glass Orchard?"]),
+            completion([validation.PUBLISHER, validation.OTHER_BIRTH], ["Cedar City"], []),
+            completion([validation.PUBLISHER, validation.OTHER_BIRTH], ["Cedar City"], []),
         ]
         (ROOT / "tmp").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / "tmp", prefix="tmp_acceptance_") as directory:
@@ -91,21 +94,25 @@ class PartDValidationTests(unittest.TestCase):
                 side_effect=[self.response(body) for body in envelopes],
             ) as send, patch.object(client, "close", wraps=client.close) as close, redirect_stdout(io.StringIO()):
                 self.assertEqual(validation.main([]), 0)
-                self.assertEqual(send.call_count, 8)
+                self.assertEqual(send.call_count, 11)
                 close.assert_called_once()
             report = json.loads(next((root / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8"))
-            self.assertEqual(report["http_attempt_limit"], 24)
-            self.assertEqual(report["logical_calls_started"], 8)
+            self.assertEqual(report["http_attempt_limit"], 33)
+            self.assertEqual(report["logical_calls_started"], 11)
             self.assertEqual(report["semantic_review"], "pending")
             self.assertFalse(report["multi_observations"]["old_memory_removal"])
             self.assertTrue(report["multi_observations"]["overlapping_rejection_isolation"])
             self.assertEqual(report["results"][5]["queries"], ["Where was Mira Vale born?"])
+            self.assertEqual(report["results"][9]["queries"], ["Who published The Glass Orchard?"])
+            self.assertTrue(all(report["removal_observations"].values()))
+            self.assertEqual(report["results"][9]["removed_memory"], [list(birth)])
+            self.assertNotIn(list(birth), report["results"][10]["submitted"])
             for record in report["results"][1:]:
                 self.assertTrue(record["old_state_unchanged"])
                 self.assertTrue(record["state_rules_match"])
             self.assertNotIn(config.api_key, json.dumps(report))
             with (root / "tmp_usage.csv").open(encoding="utf-8", newline="") as stream:
-                self.assertEqual(len(list(csv.DictReader(stream))), 8)
+                self.assertEqual(len(list(csv.DictReader(stream))), 11)
 
     def test_failure_stops_suite_closes_client_and_preserves_previous_state(self) -> None:
         """Stop on malformed content or exhausted timeout without leaking detail.

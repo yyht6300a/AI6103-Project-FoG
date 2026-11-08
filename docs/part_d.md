@@ -20,10 +20,11 @@ Run from the repository root with the project Python environment:
 python scripts/validate_part_d.py --list-cases
 python scripts/validate_part_d.py --suite single
 python scripts/validate_part_d.py --suite multi
+python scripts/validate_part_d.py --suite removal
 python scripts/validate_part_d.py --suite all
 ```
 
-`--list-cases` is free and does not read private configuration; other commands incur API usage. `single` permits $4$ logical calls: initial decomposition, sufficient two-hop evidence, insufficient evidence and empty potential input. `multi` permits $4$ MSM calls: partial evidence with a threshold-hidden birthplace, recovery using prior state and returned questions, a forced exclusion probe, and an independent question about the distractor. The probe runs even when the previous model returned no questions; it does not implement E's stopping policy. Default `all` permits $8$ calls. Including YAML retries, the HTTP-attempt bound is the logical-call limit times `(max_retries + 1)`, currently $12$, $12$ and $24$. Any terminal error stops the suite.
+`--list-cases` is free and does not read private configuration; other commands incur API usage. `single` permits $4$ logical calls: initial decomposition, sufficient two-hop evidence, insufficient evidence and empty potential input. `multi` permits $4$ MSM calls: partial evidence with a threshold-hidden birthplace, recovery using prior state and returned questions, a forced exclusion probe, and an independent question about the distractor. `removal` permits $3$ MSM calls: retain potentially useful evidence for an unresolved conditional branch, supply publisher evidence resolving the other branch, then probe permanent exclusion of removed history. Publisher is a single-valued relation in this synthetic fixture; the original conditional question remains unchanged across rounds. Probes run even when the previous model returned no questions; they do not implement E's stopping policy. Default `all` permits $11$ calls. Including YAML retries, the HTTP-attempt bound is the logical-call limit times `(max_retries + 1)`, currently $12$, $12$, $9$ and $33$. Any terminal error stops the suite.
 
 Each paid run writes a unique private `tmp/tmp_part_d_validation_<UTC timestamp>.json` with expectations, controlled triples and aligned scores, actual queries and validated outputs, submitted graphs, before/after state, exception classes and state-rule checks. It excludes keys, failed raw replies and exception messages. Actual attempts still append to `logs/llm_usage.csv`; reconcile returned model and usage metadata during TODO 2.3.6. Reports are private review material and are not automatically committed.
 
@@ -42,6 +43,24 @@ TODO 2.3.2 passed on 2026/11/09 using `python scripts/validate_part_d.py --suite
 | Empty potential graph and memory | Empty selection, answer, memory and exclusions; clarification `Who is the author of The Glass Orchard?` |
 
 All three MSM calls preserved original snapshots, produced no permanent rejections and satisfied memory/rejection/exclusion invariants. The four appended rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:31:25 (UTC+08:00), report $860$ input and $851$ output tokens, all successful; request IDs were not supplied and remain blank. Full outputs and states remain in private `tmp/tmp_part_d_validation_20261108T163125709480Z.json`; its automatic semantic-review flag remains pending. These fixtures do not exercise rejection transitions or multi-answer ranking. TODO 2.3.3-2.3.6, including broader semantic review and final GPT-4o-mini acceptance, remain pending; C/E integration is also unverified.
+
+### Multi-round live result
+
+TODO 2.3.3 passed on 2026/11/09 with the unchanged private DeepSeek configuration. Run `python scripts/validate_part_d.py --suite multi` for the original four calls and `python scripts/validate_part_d.py --suite removal` for the additional three calls. All seven returned `deepseek-flash` and passed strict parsing and state checks, one HTTP attempt each, with no output edits or parser bypass. Reports record actual previous questions and memory at each handoff; retrieval and scores remain controlled inputs.
+
+| Round | Actual selection and state transition |
+| --- | --- |
+| `multi.partial` | Retained `AUTHOR`; omitted submitted `DISTRACTOR`, making it permanently rejected; `BIRTH` at score $0.7$ was unsubmitted and remained eligible; asked `What city was Mira Vale born in?` |
+| `multi.recovery` | Used that query; retained `AUTHOR`, selected `BIRTH` at score $0.95$, and answered `Linden City`; rejected distractor absent from submission |
+| `multi.exclusion_probe` | Retained both path triples and `Linden City`; high-score distractor remained masked; no old memory removal observed |
+| `multi.independent` | Fresh empty memory and rejection state selected the same `DISTRACTOR` and answered `Nolan Reed`; earlier question's rejection did not transfer |
+| `removal.unresolved` | Retained Mira Vale's birthplace as potentially useful, gave no answer, and asked whether Silver Press published the book and where Nolan Reed was born |
+| `removal.resolved` | Used those queries with Bronze Press publisher and Nolan Reed birthplace evidence; selected both new triples, answered `Cedar City`, and removed and permanently rejected Mira Vale's old birthplace triple |
+| `removal.exclusion_probe` | Removed triple at score $0.95$ was absent from submission; rejection persisted, with the two selected branch triples and `Cedar City` retained |
+
+All seven old snapshots remained unchanged and all memory, rejection and exclusion invariants passed. `multi_observations.old_memory_removal` remains honestly `false` in the original report; all four additional `removal_observations` are `true`. Empty returned questions do not stop forced probes. The conditional fixture assumes one publisher and resolves the otherwise branch from a different publisher; this is controlled fixture semantics, not a general proof of negative facts in an open-world graph. Broader semantic quality, multiple-answer ranking and GPT-4o-mini acceptance remain TODO 2.3.4 and 2.3.5; C/E integration remains unverified.
+
+Seven new rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:35:53 and 00:37:47 (UTC+08:00), report $1866$ input and $3259$ output tokens, all successful. Request IDs were not supplied and remain blank. Private reports are `tmp/tmp_part_d_validation_20261108T163553245365Z.json` and `tmp/tmp_part_d_validation_20261108T163747907687Z.json`; automatic semantic-review flags remain pending. No production module or private configuration changed. Extended offline runner checks cover call bounds, parsing, query handoff, removal and repeated exclusion; all $89$ offline tests pass. TODO 2.3.6 will consolidate accounting and handoff.
 
 ## Per-attempt usage accounting
 

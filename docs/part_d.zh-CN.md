@@ -18,10 +18,11 @@ TODO 2.3.1 提供 [`scripts/validate_part_d.py`](../scripts/validate_part_d.py)�
 python scripts/validate_part_d.py --list-cases
 python scripts/validate_part_d.py --suite single
 python scripts/validate_part_d.py --suite multi
+python scripts/validate_part_d.py --suite removal
 python scripts/validate_part_d.py --suite all
 ```
 
-`--list-cases` 免费预览，不读取私有配置；其余命令产生真实 API 用量。`single` 最多 $4$ 次逻辑调用：初始问题分解、两跳证据充足、证据不足及空潜在输入。`multi` 最多 $4$ 次 MSM 调用：出生地证据被阈值隐藏的首轮、使用上轮状态与真实后续问题的恢复轮、强制排除探测轮，以及询问干扰证据的独立问题。即使上轮没有后续问题，探测轮仍执行；这不是 E 的停止策略。默认 `all` 最多 $8$ 次调用。计入 YAML 重试后，HTTP 请求上限为逻辑调用上限乘以 `(max_retries + 1)`，当前分别最多 $12$、$12$、$24$ 次。任何终止异常都会停止整组。
+`--list-cases` 免费预览，不读取私有配置；其余命令产生真实 API 用量。`single` 最多 $4$ 次逻辑调用：初始问题分解、两跳证据充足、证据不足及空潜在输入。`multi` 最多 $4$ 次 MSM 调用：出生地证据被阈值隐藏的首轮、使用上轮状态与真实后续问题的恢复轮、强制排除探测轮，以及询问干扰证据的独立问题。`removal` 最多 $3$ 次 MSM 调用：保留未确定条件分支的候选证据、补充出版社证据以确定另一分支、探测移除历史证据的永久屏蔽。该合成用例将出版社关系视为单值，各轮保持原条件问题不变。即使上轮没有后续问题，探测轮仍执行；这不是 E 的停止策略。默认 `all` 最多 $11$ 次调用。计入 YAML 重试后，HTTP 请求上限为逻辑调用上限乘以 `(max_retries + 1)`，当前分别最多 $12$、$12$、$9$、$33$ 次。任何终止异常都会停止整组。
 
 每次付费运行写入唯一的私有 `tmp/tmp_part_d_validation_<UTC timestamp>.json`，包含用例预期、受控三元组及对齐分数、实际查询与有效输出、提交图、前后状态、异常类名和状态规则检查；不含密钥、失败的原始回复及异常消息。实际请求仍追加到 `logs/llm_usage.csv`，实际模型和用量元数据在 TODO 2.3.6 核对；私有报告用于人工审阅，不自动提交。
 
@@ -40,6 +41,24 @@ python scripts/validate_part_d.py --suite all
 | 潜在图与历史记忆均为空 | 选择、答案、记忆及排除集合均为空；追问 `Who is the author of The Glass Orchard?` |
 
 三次 MSM 均保持原快照不变，无新增永久拒绝，记忆、拒绝及排除集合符合状态规则。[`logs/llm_usage.csv`](../logs/llm_usage.csv) 新增的 $4$ 行始于 2026/11/09 00:31:25（UTC+08:00），均成功，共报告输入 $860$、输出 $851$ tokens；服务未提供请求 ID，继续留空。完整输出与状态保存在私有 `tmp/tmp_part_d_validation_20261108T163125709480Z.json`，报告自动生成的语义审阅标记仍为待办。本组不覆盖拒绝状态转换或多答案排序；TODO 2.3.3 至 2.3.6（包括综合语义审阅及最终 GPT-4o-mini 验收）和 C/E 集成仍待完成。
+
+### 多轮真实验收结果
+
+2026/11/09 使用未变更的私有 DeepSeek 配置完成 TODO 2.3.3。运行 `python scripts/validate_part_d.py --suite multi` 执行原有 $4$ 次调用，再运行 `python scripts/validate_part_d.py --suite removal` 执行补充 $3$ 次调用。全部返回 `deepseek-flash`，通过严格解析和状态检查，每次仅一次 HTTP 请求，无手工修改回复或绕过校验。报告记录各轮实际传递的上轮问题与记忆，检索及对齐分数仍为受控输入。
+
+| 轮次 | 实际选择与状态转换 |
+| --- | --- |
+| `multi.partial` | 保留 `AUTHOR`；已提交但未选中的 `DISTRACTOR` 永久拒绝；分数 $0.7$ 的 `BIRTH` 未提交且保留检索资格；追问 `What city was Mira Vale born in?` |
+| `multi.recovery` | 使用上述后续问题；保留 `AUTHOR`，选入分数升至 $0.95$ 的 `BIRTH`，回答 `Linden City`；已拒绝干扰项未提交 |
+| `multi.exclusion_probe` | 保留两条路径证据与答案 `Linden City`；高分干扰项仍被屏蔽；未观察到旧记忆移除 |
+| `multi.independent` | 从空记忆和空拒绝集合开始，选入同一 `DISTRACTOR` 并回答 `Nolan Reed`，不继承先前问题的拒绝状态 |
+| `removal.unresolved` | 保留可能有用的 Mira Vale 出生地证据，答案为空；追问是否由 Silver Press 出版，以及 Nolan Reed 的出生地 |
+| `removal.resolved` | 使用上述问题及 Bronze Press 出版社、Nolan Reed 出生地证据；选入两条新证据并回答 `Cedar City`，移除旧 Mira Vale 出生地证据并永久拒绝 |
+| `removal.exclusion_probe` | 旧证据即使以 $0.95$ 高分重新输入仍未提交；拒绝持续保留，当前两条分支证据与答案 `Cedar City` 保持 |
+
+全部 $7$ 次旧快照不变，记忆、拒绝与展开排除规则均通过。原报告的 `multi_observations.old_memory_removal` 如实保持 `false`，补充报告的全部 $4$ 个 `removal_observations` 均为 `true`。返回空问题列表不终止强制排除探测。条件用例假设出版社为单值，以不同出版社确定否则分支；这属于受控用例语义，不能证明开放世界图谱中的一般否定事实。综合语义质量、多答案排序及 GPT-4o-mini 验收仍留待 TODO 2.3.4 和 2.3.5，C/E 集成仍未验证。
+
+[`logs/llm_usage.csv`](../logs/llm_usage.csv) 新增 $7$ 行，两组分别始于 2026/11/09 00:35:53 和 00:37:47（UTC+08:00），共报告输入 $1866$、输出 $3259$ tokens，全部成功；服务未提供请求 ID，继续留空。私有报告为 `tmp/tmp_part_d_validation_20261108T163553245365Z.json` 和 `tmp/tmp_part_d_validation_20261108T163747907687Z.json`，自动语义审阅标记仍为待办。未变更生产模块或私有配置；扩展入口离线检查覆盖调用上限、真实解析、问题传递、移除及持续屏蔽，全部 $89$ 项离线测试通过。完整用量汇总与交接仍由 TODO 2.3.6 处理。
 
 ## 逐次请求用量记录
 

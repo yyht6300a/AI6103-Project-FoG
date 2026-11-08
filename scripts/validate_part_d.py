@@ -1,6 +1,6 @@
 """Run bounded live acceptance cases through Member D's public interfaces.
 
-Use --list-cases for a free preview, or --suite single, multi or all for paid
+Use --list-cases for a free preview, or select a suite for paid
 requests. Synthetic retrieval inputs replace C/E only; HTTP and model responses
 are real. Reports under tmp contain public fixtures and validated outputs, never
 credentials, raw failed responses or exception messages.
@@ -28,6 +28,12 @@ QUESTION = "Which city was the author of The Glass Orchard born in?"
 AUTHOR = ("The Glass Orchard", "written_by", "Mira Vale")
 BIRTH = ("Mira Vale", "born_in", "Linden City")
 DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
+BRANCH_QUESTION = (
+    "If The Glass Orchard was published by Silver Press, which city was Mira Vale "
+    "born in? Otherwise, which city was Nolan Reed born in?"
+)
+PUBLISHER = ("The Glass Orchard", "published_by", "Bronze Press")
+OTHER_BIRTH = ("Nolan Reed", "born_in", "Cedar City")
 CASES = {
     "single": [
         ("decomposition", "Nonempty standalone retrieval questions; review usefulness."),
@@ -41,6 +47,11 @@ CASES = {
         ("exclusion_probe", "Re-submit candidates; previously rejected rows stay excluded."),
         ("independent", "A fresh question run can use evidence excluded in the other run."),
     ],
+    "removal": [
+        ("unresolved", "Birthplace may support one branch; ask which publisher applies."),
+        ("resolved", "Bronze Press activates the other branch; observe old evidence removal."),
+        ("exclusion_probe", "Removed evidence stays masked when re-submitted at high score."),
+    ],
 }
 
 
@@ -48,12 +59,12 @@ def case_plan(suite: str) -> list[dict]:
     """List the fixed calls and expectations without loading private settings.
 
     Args:
-        suite: CLI-validated single, multi or all selection.
+        suite: CLI-validated single, multi, removal or all selection.
 
     Returns:
         Ordered plan; every entry permits one completion plus YAML retries.
     """
-    groups = ("single", "multi") if suite == "all" else (suite,)
+    groups = tuple(CASES) if suite == "all" else (suite,)
     return [{"case": f"{group}.{name}", "expected": expected}
             for group in groups for name, expected in CASES[group]]
 
@@ -162,7 +173,7 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     Args:
         client: Real LLMClient, shared across independent question states.
         report: Mutable report storing validated output for later semantic review.
-        suite: single, multi or all; all permits exactly eight logical calls.
+        suite: single, multi, removal or all; all permits eleven logical calls.
 
     Multi-round retrieval consumes the preceding response's questions but returns
     controlled rows rather than implementing C/E. Empty questions are recorded
@@ -219,6 +230,32 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
                 and DISTRACTOR in independent.state.memory_triplets),
         }
 
+    if suite in ("removal", "all"):
+        first = memory_round(
+            client, report, "removal.unresolved", QuestionMemory(BRANCH_QUESTION),
+            [BIRTH], [0.95], (BRANCH_QUESTION,),
+        )
+        second = memory_round(
+            client, report, "removal.resolved", first.state,
+            [PUBLISHER, OTHER_BIRTH], [0.95, 0.95], first.response.subsequent_question,
+        )
+        third = memory_round(
+            client, report, "removal.exclusion_probe", second.state,
+            [BIRTH, PUBLISHER, OTHER_BIRTH], [0.95, 0.95, 0.95],
+            second.response.subsequent_question,
+        )
+        # Branch resolution changes relevance without editing prior model output.
+        removed = first.state.memory_triplets - second.state.memory_triplets
+        last = report["results"][-1]
+        report["removal_observations"] = {
+            "initial_branch_retained": BIRTH in first.state.memory_triplets,
+            "old_memory_removal": bool(removed),
+            "removed_permanently_rejected": bool(removed)
+                and removed <= second.state.rejected_triplets & third.state.rejected_triplets,
+            "removed_not_resubmitted": bool(removed)
+                and not removed.intersection(map(tuple, last["submitted"])),
+        }
+
 
 def main(argv: list[str] | None = None) -> int:
     """Preview or execute paid cases, closing the client even after failure.
@@ -232,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
         human review and the final GPT-4o-mini gate, even when exit status is zero.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=("single", "multi", "all"), default="all")
+    parser.add_argument("--suite", choices=(*CASES, "all"), default="all")
     parser.add_argument("--list-cases", action="store_true",
                         help="Print expectations and call counts without loading .env or using API.")
     args = parser.parse_args(argv)

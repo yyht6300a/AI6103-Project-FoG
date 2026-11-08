@@ -199,3 +199,100 @@ class MemoryFailureTests(unittest.TestCase):
         self.assertEqual(result.state.memory_triplets, {A, B})
         self.assertEqual(result.state.rejected_triplets, {REJECTED})
         self.assert_original_state()
+
+    def test_failed_round_after_success_preserves_state_until_explicit_recovery(self) -> None:
+        """Keep a live caller snapshot across failed rounds and later recovery.
+
+        Each scenario first establishes memory and rejection through the public
+        entry point. Failed assignment must preserve that exact snapshot; a
+        subsequent explicit call can select the failed round's candidate and
+        newly eligible threshold-hidden evidence without reviving rejections.
+        """
+        invalid_content = completion([B], [B[2]])
+        invalid_content["choices"][0]["message"]["content"] = "{invalid JSON"
+        scenarios = (
+            ("timeout", [requests.Timeout("private failure")] * 3,
+             requests.Timeout, ["error"] * 3, ["Timeout"] * 3),
+            ("rate_limit", [self.response({}, 429) for _ in range(3)],
+             requests.HTTPError, ["error"] * 3, ["HTTPError"] * 3),
+            ("outer_json", [self.response(b"{invalid JSON")],
+             ValueError, ["error"], ["JSONDecodeError"]),
+            ("content_json", [self.response(invalid_content)],
+             ValueError, ["success"], [""]),
+            ("unknown_triple", [self.response(completion(
+                [("Invented", "relation", "Outside")], ["Outside"],
+            ))], ValueError, ["success"], [""]),
+            ("unknown_answer", [self.response(completion([B], ["Outside entity"]))],
+             ValueError, ["success"], [""]),
+        )
+        for label, failures, exception, statuses, errors in scenarios:
+            with self.subTest(failure=label):
+                before = len(self.rows())
+                initial = QuestionMemory("Private original question?")
+                state = initial
+                attempts = [self.response(completion([A], [A[2]])), *failures,
+                            self.response(completion([C, B], [C[2], B[2]]))]
+                with patch("requests.adapters.HTTPAdapter.send", side_effect=attempts) as send, patch(
+                    "src.agent.llm_client.time.sleep",
+                ) as sleep:
+                    state = manage_memory(
+                        state, [A, REJECTED, C], [0.9, 0.9, 0.7], self.client,
+                    ).state
+                    established = state
+                    self.assertEqual(state.memory_triplets, {A})
+                    self.assertEqual(state.rejected_triplets, {REJECTED})
+
+                    # Mirror E's assignment: an exception must leave the caller
+                    # holding the snapshot from the last successful round.
+                    with self.assertRaises(exception):
+                        state = manage_memory(
+                            state, [B, C, REJECTED], [0.9, 0.7, 1.0], self.client,
+                        ).state
+                    self.assertIs(state, established)
+                    self.assertEqual(state.original_question, initial.original_question)
+                    self.assertEqual(state.memory_triplets, {A})
+                    self.assertEqual(state.rejected_triplets, {REJECTED})
+                    self.assertEqual(state.excluded_triplets, {A, REJECTED})
+                    self.assertEqual(state.filter_expansion_triplets([A, B, C, REJECTED]), [B, C])
+                    self.assertEqual(send.call_count, 1 + len(failures))
+                    self.assertEqual(sleep.call_args_list,
+                                     [call(1), call(2)] if len(failures) == 3 else [])
+
+                    recovered = manage_memory(
+                        state, [B, C, REJECTED], [0.9, 0.9, 1.0], self.client,
+                    )
+                    state = recovered.state
+                    self.assertEqual(send.call_count, len(attempts))
+                    unions = [{A, REJECTED}] + [{A, B}] * len(failures) + [{A, B, C}]
+                    for attempt, submitted in zip(send.call_args_list, unions):
+                        payload = json.loads(attempt.args[0].body)
+                        self.assertEqual(payload, {"model": "gpt-4o-mini", "messages": [
+                            {"role": "user", "content": build_memory_prompt(
+                                initial.original_question, submitted, [],
+                            )},
+                        ]})
+                        self.assertEqual(attempt.kwargs["timeout"], 2)
+
+                self.assertIsNot(state, established)
+                self.assertEqual(state.original_question, initial.original_question)
+                self.assertEqual(state.memory_triplets, {B, C})
+                self.assertEqual(state.rejected_triplets, {A, REJECTED})
+                self.assertEqual(state.excluded_triplets, {A, B, C, REJECTED})
+                self.assertEqual(state.filter_expansion_triplets([A, B, C, REJECTED]), [])
+                self.assertEqual(recovered.response.selected_triplets, (C, B))
+                self.assertEqual(recovered.response.predict_answer, (C[2], B[2]))
+                self.assertEqual(recovered.response.subsequent_question, ())
+                self.assertEqual(established.memory_triplets, {A})
+                self.assertEqual(established.rejected_triplets, {REJECTED})
+                self.assertEqual(established.excluded_triplets, {A, REJECTED})
+                self.assertEqual(initial.memory_triplets, frozenset())
+                self.assertEqual(initial.rejected_triplets, frozenset())
+                rows = self.rows()[before:]
+                self.assertEqual(len(rows), len(attempts))
+                self.assertEqual([row["status"] for row in rows], ["success", *statuses, "success"])
+                self.assertEqual([row["error_type"] for row in rows], ["", *errors, ""])
+                for row in rows:
+                    self.assertEqual((row["input_tokens"], row["output_tokens"]), ("", ""))
+                for private in (self.client.config.api_key, initial.original_question,
+                                "private failure", "Outside entity", A[2], B[2], C[2]):
+                    self.assertNotIn(private, self.path.read_text(encoding="utf-8"))

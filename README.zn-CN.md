@@ -54,7 +54,7 @@ python scripts/download_data.py --full          # 下载完整 parquet 文件
 
 ### LLM 配置
 
-将 [`env_example`](env_example) 复制为 `.env`，在本地填写 `LLM_API_KEY`。本地文件只保留 `LLM_MODEL_NAME`、`LLM_API_KEY` 和 `LLM_BASE_URL`；模型名和 URL 的非空值覆盖 [`config/config-dev.yml`](config/config-dev.yml) 中的默认值，留空时沿用 YAML。密钥仅从 `.env` 读取，该文件已被 Git 忽略。当前选用 OpenAI 官方服务 `https://api.openai.com/v1` 和 `gpt-4o-mini`，已于 2026/11/08 通过真实 Chat Completions 调用，返回模型为 `gpt-4o-mini-2024-07-18`。推理模型限于 `gpt-4o-mini`、`gpt-4` 和 `gpt-4o`。
+将 [`env_example`](env_example) 复制为 `.env`，在本地填写 `LLM_API_KEY`。本地文件只保留 `LLM_MODEL_NAME`、`LLM_API_KEY` 和 `LLM_BASE_URL`；模型名和 URL 的非空值覆盖 [`config/config-dev.yml`](config/config-dev.yml) 中的默认值，留空时沿用 YAML。密钥仅从 `.env` 读取，该文件已被 Git 忽略。共享 YAML 默认值保持 `gpt-4o-mini` 和 `https://api.openai.com/v1`。本地开发可在私有 `.env` 中指定 `deepseek-flash`、`https://api.deepseek.com` 和 DeepSeek 密钥，采用[官方 OpenAI 兼容接口](https://api-docs.deepseek.com/)。成员 D 模块开发完成后、交付之前，必须切回 `gpt-4o-mini`、OpenAI 地址及对应密钥，并完成模块验证。模型名和 URL 应同时设置，或同时留空以沿用 YAML；失败时不会自动切换服务商。支持的模型为 `deepseek-flash`、`gpt-4o-mini`、`gpt-4` 和 `gpt-4o`。此前 OpenAI 调用已于 2026/11/08 通过，返回模型为 `gpt-4o-mini-2024-07-18`。
 
 超时和重试上限仅在 YAML 的 `llm.timeout` 和 `llm.max_retries` 中设置。前者为每次 HTTP 连接或读取操作的超时秒数，必须是大于零的有限数；后者为首次请求后的额外重试次数，必须是非负整数。旧 `.env` 中的 `LLM_TIMEOUT` 和 `LLM_MAX_RETRIES` 会被忽略。`.env` 支持单行赋值、引号、可选的 `export` 前缀和注释，不支持 shell 命令、多行值或变量插值。配置加载不读取或修改进程环境变量。HTTP 客户端禁用环境中的代理、CA 证书和凭据配置，显式传入模型、密钥、服务地址和超时，采用 OpenAI 兼容的 `/chat/completions` 协议；其他协议需要另行适配。
 

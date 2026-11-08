@@ -105,6 +105,41 @@ class LLMConfigurationTests(unittest.TestCase):
             client.session.close.assert_called_once()
             self.assertEqual(dict(os.environ), before)
 
+    def test_deepseek_local_overrides_reach_transport(self) -> None:
+        """Send local development overrides without changing repository defaults.
+
+        Only a synthetic local key is loaded. The prepared request must target
+        DeepSeek with its exact model ID while preserving the existing policy.
+        """
+        defaults = load_llm_config(ROOT / "config/config-dev.yml", self.env_path)
+        self.assertEqual(defaults.model_name, "gpt-4o-mini")
+        self.assertEqual(defaults.base_url, "https://api.openai.com/v1")
+        with self.env_path.open("a", encoding="utf-8") as stream:
+            stream.write(
+                "LLM_MODEL_NAME=deepseek-flash\n"
+                "LLM_BASE_URL=https://api.deepseek.com\n"
+            )
+        config = load_llm_config(ROOT / "config/config-dev.yml", self.env_path)
+        self.assertEqual(config.model_name, "deepseek-flash")
+        self.assertEqual(config.base_url, "https://api.deepseek.com")
+        self.assertEqual((config.timeout, config.max_retries), (60, 2))
+        client = LLMClient(config, self.usage_path)
+        self.addCleanup(client.close)
+        response = requests.Response()
+        response.status_code = 200
+        response._content = b'{"choices": []}'
+        with patch("requests.adapters.HTTPAdapter.send", return_value=response) as send:
+            self.assertEqual(client.complete([]), {"choices": []})
+        prepared = send.call_args.args[0]
+        self.assertEqual(prepared.url, "https://api.deepseek.com/chat/completions")
+        self.assertEqual(prepared.headers["Authorization"], "Bearer offline-test-key")
+        self.assertIn(b'"model": "deepseek-flash"', prepared.body)
+        self.env_path.write_text("LLM_API_KEY=offline-openai-key\n", encoding="utf-8")
+        restored = load_llm_config(ROOT / "config/config-dev.yml", self.env_path)
+        self.assertEqual(restored.model_name, defaults.model_name)
+        self.assertEqual(restored.base_url, defaults.base_url)
+        self.assertEqual(restored.api_key, "offline-openai-key")
+
     def test_missing_key_does_not_fall_back(self) -> None:
         """Reject absent local credentials even if YAML and the process hold keys.
 

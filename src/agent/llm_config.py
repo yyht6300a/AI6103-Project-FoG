@@ -76,8 +76,10 @@ class LLMConfig:
         Raises:
             ValueError: A required value, supported model or numeric bound is invalid.
         """
-        if self.model_name not in ("gpt-4o-mini", "gpt-4", "gpt-4o"):
-            raise ValueError("LLM model_name must be gpt-4o-mini, gpt-4, or gpt-4o")
+        if self.model_name not in ("deepseek-flash", "gpt-4o-mini", "gpt-4", "gpt-4o"):
+            raise ValueError(
+                "LLM model_name must be deepseek-flash, gpt-4o-mini, gpt-4, or gpt-4o"
+            )
         if not isinstance(self.api_key, str) or not self.api_key.strip():
             raise ValueError("Set LLM_API_KEY in the local .env file")
         if isinstance(self.timeout, bool) or not isinstance(self.timeout, (int, float)):

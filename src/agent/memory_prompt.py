@@ -1,8 +1,9 @@
-"""Build FoG memory-management input from Appendix C, Figure 8.
+"""Build Figure 8 memory input with optional retrieval-question instructions.
 
 This offline boundary combines historical evidence and the potential subgraph
 into the figure's single Knowledge field. It neither calls the LLM nor changes
-question-local memory; response validation and state transitions come later.
+question-local memory. The default enhances retrieval wording; the paper
+baseline remains available for comparisons without response repair.
 """
 
 from collections.abc import Iterable, Sequence
@@ -39,10 +40,32 @@ Question: {question}
 Knowledge: {triplets}"""
 
 
+# Preserve Figure 8 verbatim above for reproducible baseline comparisons.
+RETRIEVAL_INSTRUCTIONS = """### Retrieval Questions (implementation enhancement)
+The subsequent_question strings go directly to a knowledge-graph retriever,
+not to a user. Ask only for missing relations needed to answer the original
+question. Use concrete factual questions anchored to named entities in the
+original question or supplied evidence, with explicit relation targets.
+Follow the unresolved path from a known entity: if an intermediate entity is
+unknown, first ask for the relation that identifies it; do not invent its name.
+Once evidence identifies it, use its exact name to ask for the next missing
+relation. Each question must be understandable without other questions or
+their future answers. Do not ask about unrelated topics, ask whether information
+is available, or request facts already established by the supplied evidence.
+If the selected evidence fully answers the original question, return the answer
+and an empty subsequent_question array. With empty Knowledge, keep selection
+and answer empty and ask for the first missing relation from the original query.
+These instructions do not authorize new selected triples or unsupported answers.
+
+"""
+
+
 def build_memory_prompt(
     question: str,
     memory_triplets: Iterable[Sequence[str]],
     potential_triplets: Iterable[Sequence[str]],
+    *,
+    prompt_variant: str = "retrieval_questions",
 ) -> str:
     """Insert the original query and both evidence graphs into Figure 8.
 
@@ -52,6 +75,8 @@ def build_memory_prompt(
             sequences containing exactly three nonblank strings each.
         potential_triplets: Newly discovered potential graph with the same
             contract. Either graph may be empty, unordered or a generator.
+        prompt_variant: Default retrieval-question enhancement, or ``paper``
+            for the unchanged Figure 8 instructions.
 
     Returns:
         Prompt with the exact graph union encoded as a Unicode JSON array of
@@ -61,12 +86,17 @@ def build_memory_prompt(
         Mutable containers are not changed; one-shot iterators are consumed.
 
     Raises:
-        ValueError: The question or either graph is malformed. Validation errors
+        ValueError: The question, variant or either graph is malformed. Validation errors
             exclude input text. No API request or state mutation occurs.
     """
     if not isinstance(question, str) or not question.strip():
         raise ValueError("Original question must be a nonblank string")
+    if prompt_variant not in ("paper", "retrieval_questions"):
+        raise ValueError("Unknown memory prompt variant")
     memory = _freeze_triplets(memory_triplets)
     potential = _freeze_triplets(potential_triplets)
     knowledge = json.dumps(sorted(memory | potential), ensure_ascii=False)
-    return MEMORY_MANAGEMENT_PROMPT.format(question=question, triplets=knowledge)
+    template = MEMORY_MANAGEMENT_PROMPT
+    if prompt_variant == "retrieval_questions":
+        template = template.replace("### Real Input", RETRIEVAL_INSTRUCTIONS + "### Real Input")
+    return template.format(question=question, triplets=knowledge)

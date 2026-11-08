@@ -69,6 +69,15 @@ CASES = {
     "empty_diagnostic": [
         ("probe", "Same conditional question with empty knowledge; diagnose strict validation."),
     ],
+    "clarification_diagnostic": [
+        (f"{variant}_{stage}", expected)
+        for variant in ("paper", "retrieval_questions")
+        for stage, expected in (
+            ("empty", "Ask for the book's author, not content or information availability."),
+            ("author", "Keep author evidence and ask for the named author's birth city."),
+            ("complete", "Keep the full path, answer Linden City and ask no further questions."),
+        )
+    ],
     "ranking": [
         ("equal_support", "Both authors' cities have equal direct support; either order is valid."),
         ("unequal_support", "Keep both birthplace candidates; confirmed precedes possible; residence is irrelevant."),
@@ -131,6 +140,7 @@ def begin_case(report: dict, name: str) -> dict:
 def memory_round(
     client: LLMClient, report: dict, name: str, state: QuestionMemory,
     triples: list, scores: list, queries: tuple | list,
+    *, prompt_variant: str = "retrieval_questions",
 ):
     """Call public MSM once, recording inputs and publishing only on success.
 
@@ -142,6 +152,7 @@ def memory_round(
         triples: Controlled retrieval rows, including exclusion probes.
         scores: Positionally aligned controlled scores; cutoff stays 0.7.
         queries: Actual initial or preceding model questions driving this fixture.
+        prompt_variant: Memory prompt variant recorded and passed to public MSM.
 
     Returns:
         Validated MSM result with a new state and ordered response.
@@ -158,9 +169,11 @@ def memory_round(
         if score > 0.7 and tuple(row) in eligible
     }
     record.update(queries=queries, triples=triples, scores=scores, threshold=0.7,
+                  prompt_variant=prompt_variant,
                   state_before=before, submitted=sorted(submitted))
     try:
-        result = manage_memory(state, triples, scores, client, potential_threshold=0.7)
+        result = manage_memory(state, triples, scores, client, potential_threshold=0.7,
+                               prompt_variant=prompt_variant)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,
                       **failure_diagnostics(error),
@@ -195,13 +208,24 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     Args:
         client: Real LLMClient, shared across independent question states.
         report: Mutable report storing validated output for later semantic review.
-        suite: single, multi, removal, ranking or all; all permits thirteen calls.
+        suite: Standard acceptance group, an explicit diagnostic group, or all.
+            Diagnostics are excluded from all, which permits thirteen calls.
 
     Multi-round retrieval consumes the preceding response's questions but returns
     controlled rows rather than implementing C/E. Empty questions are recorded
     honestly; the last round is a forced exclusion probe, not a stopping policy.
     Model choices are never replaced to manufacture a desired state transition.
     """
+    if suite == "clarification_diagnostic":
+        for variant in ("paper", "retrieval_questions"):
+            for stage, triples in (("empty", []), ("author", [AUTHOR]),
+                                   ("complete", [AUTHOR, BIRTH])):
+                memory_round(
+                    client, report, f"clarification_diagnostic.{variant}_{stage}",
+                    QuestionMemory(QUESTION), triples, [0.95] * len(triples),
+                    (QUESTION,), prompt_variant=variant,
+                )
+
     if suite == "reference_diagnostic":
         for variant in ("paper", "explicit_references"):
             record = begin_case(report, f"reference_diagnostic.{variant}")

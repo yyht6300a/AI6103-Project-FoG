@@ -28,6 +28,46 @@ class PartDValidationTests(unittest.TestCase):
     loads the user's dotenv or writes to the shared usage CSV.
     """
 
+    def test_unknown_memory_variant_fails_before_a_paid_request(self) -> None:
+        """Reject configuration mistakes without publishing or sending anything.
+
+        The public scored-round entry point must validate a variant even when
+        its evidence is empty, preserving the caller's original snapshot.
+        """
+        client = Mock(spec=LLMClient)
+        state = validation.QuestionMemory(validation.QUESTION)
+        before = validation.snapshot(state)
+        with self.assertRaises(ValueError):
+            validation.manage_memory(state, [], [], client, prompt_variant="unknown")
+        client.complete.assert_not_called()
+        self.assertEqual(validation.snapshot(state), before)
+
+    def test_clarification_comparison_routes_variants_without_changing_evidence(self) -> None:
+        """Compare identical evidence stages through the public MSM boundary.
+
+        Mocked model content verifies prompt routing, immutable states and the
+        six-call budget; it makes no claim about real clarification quality.
+        """
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = [
+            envelope for _ in range(2) for envelope in (
+                completion([], [], ["Who wrote The Glass Orchard?"]),
+                completion([validation.AUTHOR], [], ["Where was Mira Vale born?"]),
+                completion([validation.AUTHOR, validation.BIRTH], ["Linden City"], []),
+            )
+        ]
+        report = {"plan": validation.case_plan("clarification_diagnostic"), "results": []}
+        validation.run_cases(client, report, "clarification_diagnostic")
+        self.assertEqual(client.complete.call_count, 6)
+        records = report["results"]
+        for index, record in enumerate(records):
+            prompt = client.complete.call_args_list[index].args[0][0]["content"]
+            self.assertEqual("### Retrieval Questions" in prompt, index >= 3)
+            self.assertTrue(record["old_state_unchanged"])
+            self.assertTrue(record["state_rules_match"])
+        self.assertEqual([r["submitted"] for r in records[:3]],
+                         [r["submitted"] for r in records[3:]])
+
     def test_reference_comparison_records_actual_queries_and_author_evidence(self) -> None:
         """Keep the comparison bounded and expose the actual MSM handoff.
 
@@ -74,7 +114,7 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("reference_diagnostic", 3), ("all", 13)):
+        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("reference_diagnostic", 3), ("clarification_diagnostic", 6), ("all", 13)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:

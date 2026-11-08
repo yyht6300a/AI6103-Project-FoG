@@ -24,7 +24,7 @@ class MemoryPromptTests(unittest.TestCase):
 
         The schema example must remain literal JSON after interpolation.
         """
-        prompt = build_memory_prompt("Who?", [], [])
+        prompt = build_memory_prompt("Who?", [], [], prompt_variant="paper")
         for instruction in (
             'Given a question and several knowledge triples ("subject","relation","object"):',
             "Select relevant triples (high recall).",

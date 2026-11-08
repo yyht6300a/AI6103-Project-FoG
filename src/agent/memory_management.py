@@ -40,6 +40,8 @@ def manage_memory(
     scores: Sequence[Real],
     client: LLMClient,
     potential_threshold: Real = 0.7,
+    *,
+    prompt_variant: str = "retrieval_questions",
 ) -> MSMResult:
     """Process member C's aligned refined triples in one memory round.
 
@@ -53,6 +55,8 @@ def manage_memory(
         client: Caller-owned LLMClient; configuration and closing stay external.
         potential_threshold: Finite real strict cutoff, default 0.7. Callers
             loading YAML must pass its potential_threshold explicitly.
+        prompt_variant: Default retrieval-question enhancement or ``paper``
+            baseline, forwarded unchanged to the memory prompt builder.
 
     Returns:
         New state and structured output after complete validation. All input
@@ -76,5 +80,5 @@ def manage_memory(
     # Validate aligned pairs before filtering; never deduplicate scored inputs.
     potential = build_potential_subgraph(triples, scores, potential_threshold)
     eligible = state.filter_expansion_triplets(potential)
-    updated, response = update_memory(state, eligible, client)
+    updated, response = update_memory(state, eligible, client, prompt_variant=prompt_variant)
     return MSMResult(updated, response)

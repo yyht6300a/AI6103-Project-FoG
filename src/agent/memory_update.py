@@ -18,6 +18,8 @@ def update_memory(
     state: QuestionMemory,
     potential_triplets: Iterable[Sequence[str]],
     client: LLMClient,
+    *,
+    prompt_variant: str = "retrieval_questions",
 ) -> tuple[QuestionMemory, MemoryResponse]:
     """Request a high-recall selection and strictly replace historical memory.
 
@@ -28,6 +30,8 @@ def update_memory(
             previously rejected triples must already be excluded by the caller.
         client: Caller-owned configured client, including transport retries and
             per-attempt usage accounting. This function does not close it.
+        prompt_variant: Retrieval-question enhancement by default; ``paper``
+            retains Figure 8 for controlled comparisons without extra requests.
 
     Returns:
         New snapshot and validated structured response. The new evidence set is
@@ -55,7 +59,9 @@ def update_memory(
     potential = _freeze_triplets(potential_triplets)
     if potential & state.rejected_triplets:
         raise ValueError("Potential graph must exclude permanently rejected triples")
-    prompt = build_memory_prompt(state.original_question, state.memory_triplets, potential)
+    prompt = build_memory_prompt(
+        state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
+    )
     completion = client.complete([{"role": "user", "content": prompt}])
     try:
         choice = completion["choices"][0]

@@ -73,6 +73,10 @@ Run offline checks with `python -m unittest discover -s tests -v`. These use syn
 
 Every HTTP attempt, including failures and retries, appends a row to [`logs/llm_usage.csv`](logs/llm_usage.csv), using UTF-8 and the columns `timestamp, model, input_tokens, output_tokens, status, error_type, request_id`. The timestamp is the request start time in UTC with an explicit offset. Model uses the returned model when available, otherwise the requested model; token counts come from `usage.prompt_tokens` and `usage.completion_tokens`, and request ID comes from the `x-request-id` header, following the [OpenAI Chat Completions reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) and [request debugging reference](https://developers.openai.com/api/reference/overview#debugging-requests). Unknown counts and IDs stay blank; reported zero counts remain zero. Status is `success` or `error`; error type contains only the exception class. HTTP success with invalid JSON is an error; application-level validation after the client returns does not change the HTTP accounting row. Keys, prompts, triples, model replies and error messages are excluded. Keep real usage rows in Git for later bill reconciliation; usage alone does not establish billed cost. Clients check the CSV header and writability before sending; append failures propagate without retrying. Concurrent processes must serialize CSV writes externally. Memory management remains a subsequent reproduction task.
 
+### Module reference
+
+See [Member D modules](docs/part_d.md) for interfaces and usage examples.
+
 ## Threshold optimization experiments
 
 The `experiments/` package implements the fixed and adaptive threshold policies and the retrieval metrics described in the plan. See `experiments/sweep.py` for the validation sweep.

@@ -62,6 +62,10 @@ python scripts/download_data.py --full          # 下载完整 parquet 文件
 
 每次 HTTP 请求（包括失败和重试）均向 UTF-8 文件 [`logs/llm_usage.csv`](logs/llm_usage.csv) 追加一行，字段固定为 `timestamp, model, input_tokens, output_tokens, status, error_type, request_id`。时间戳为请求开始时的 UTC 时间，含时区偏移；模型优先采用返回值，缺失时使用请求模型；token 数读取 `usage.prompt_tokens` 和 `usage.completion_tokens`，请求 ID 读取 `x-request-id` 响应头，依据 [OpenAI Chat Completions 文档](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)和[请求调试文档](https://developers.openai.com/api/reference/overview#debugging-requests)。未知用量及 ID 留空，服务返回的零用量保留为零。状态为 `success` 或 `error`，错误类型只记录异常类名；HTTP 成功但 JSON 非法时记为错误，客户端返回后的业务校验不修改 HTTP 记录。不记录密钥、问题、三元组、回复或错误正文。真实记录随 Git 提交，用于后续核对账单；用量不能直接代表实际费用。客户端在请求前检查 CSV 表头和可写性，追加失败时直接报错，不触发重试；多进程并发时需由调用方串行化 CSV 写入。记忆管理仍属于后续复现任务。
 
+### 模块文档
+
+成员 D 各模块的接口与调用示例见[成员 D 模块说明](docs/part_d.md)。
+
 ## 阈值优化实验
 
 `experiments/` 包实现了规划中描述的固定阈值策略、自适应阈值策略和检索指标。验证集上的参数扫描见 `experiments/sweep.py`。

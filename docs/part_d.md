@@ -81,6 +81,20 @@ The unequal-support fixture treats confirmed and possible birthplaces as candida
 
 Both new calls preserved old snapshots and passed state invariants without retries, edited replies or parser bypass. No live transport or parsing failure occurred, so no paid fault was manufactured; failure localization and nonempty state preservation remain covered by TODO 2.2 and the runner's offline failure tests. Two new successful rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:44:41 (UTC+08:00), report $542$ input and $1813$ output tokens; request IDs remain blank. All $89$ offline tests pass, including expanded runner assertions for multiple-answer order, isolated states and irrelevant-residence rejection. TODO 2.3.5 must run GPT-4o-mini on the single, multi, removal and ranking cases and resolve semantic findings before TODO 2.4 delivery; TODO 2.3.6 accounting consolidation and real C/E integration remain pending.
 
+#### Follow-up diagnosis of candidate wording
+
+On 2026/11/09, three additional real `deepseek-flash` calls varied question wording with identical triples, scores, serialization and Figure 8 prompt, each from empty state. Private entry `python tmp/tmp_diagnose_ranking.py` captured actual synthetic prompts and allowlisted returned content before production parsing; evidence is `tmp/tmp_ranking_diagnosis.json`. Both temporary artifacts remain excluded from Git; the earlier report is preserved.
+
+| Question control | Actual model output |
+| --- | --- |
+| Original “candidate birthplaces” repeated | Selected only the possible-birthplace edge and answered only `Cedar City`; unlike the earlier run, confirmed evidence was also omitted from memory |
+| Explicitly include confirmed and possible birthplaces | Selected both birthplace edges, answered `["Linden City", "Cedar City"]`, excluded residence |
+| Same inclusion plus confirmed-first instruction | Same selection and answer order as the preceding control |
+
+All three raw answer arrays exactly equaled parsed answers, completions ended with `stop`, and old states stayed empty. Code inspection confirms all input edges pass the threshold and reach the request, `CASES` expectations are report-only, and no parser/report truncation occurs. The observed repeated single answer therefore originates in model output. Question-scope ambiguity is the leading explanation supported by this small comparison: “candidate” may exclude confirmed facts. Selection also varied, so this is not proof of internal reasoning or a statistical causal estimate. Membership validation cannot detect semantic incompleteness. The original repeat permanently rejects omitted confirmed evidence under the configured omission policy, illustrating a downstream risk from semantic selection despite valid state updates.
+
+Maintained `RANKING_QUESTION` now uses only the explicit-inclusion wording, without the confirmed-first instruction or changes to the paper prompt. The second control already exercised this exact question through public MSM. Preserve the original anomaly as a fixture-wording finding, not a demonstrated ranking defect. Confirmed-first order was observed once without the added instruction, but confirmed evidence is also first after graph sorting; order robustness and GPT quality remain unverified. Three successful calls without retries append $878$ input and $1423$ output tokens, starting at 2026/11/09 00:55:51 (UTC+08:00); request IDs remain blank. TODO 2.3.5 must still validate the clarified fixture on GPT-4o-mini before delivery.
+
 ## Per-attempt usage accounting
 
 [`llm_usage.py`](../src/agent/llm_usage.py) appends one UTF-8 CSV row per actual HTTP attempt, including retries and failures. Metadata records request start time, model, returned token counts, outcome, exception class and request ID. Unknown values remain blank. Credentials and request/response content are excluded. A later application validation failure does not change a successful HTTP accounting row. Configuration and accounting tests are in `tests/test_llm_configuration.py` and `tests/test_llm_usage.py`.

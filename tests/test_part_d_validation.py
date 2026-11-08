@@ -113,6 +113,8 @@ class PartDValidationTests(unittest.TestCase):
             self.assertEqual(report["results"][11]["predict_answer"], ["Cedar City", "Linden City"])
             self.assertEqual(report["results"][12]["predict_answer"], ["Linden City", "Cedar City"])
             self.assertEqual(report["results"][12]["state_before"]["memory"], [])
+            self.assertEqual(report["results"][12]["state_before"]["question"],
+                             validation.RANKING_QUESTION)
             self.assertEqual(report["results"][12]["newly_rejected"], [list(validation.RESIDENCE)])
             for record in report["results"][1:]:
                 self.assertTrue(record["old_state_unchanged"])

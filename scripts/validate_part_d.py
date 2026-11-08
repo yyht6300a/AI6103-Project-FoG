@@ -34,7 +34,10 @@ BRANCH_QUESTION = (
 )
 PUBLISHER = ("The Glass Orchard", "published_by", "Bronze Press")
 OTHER_BIRTH = ("Nolan Reed", "born_in", "Cedar City")
-RANKING_QUESTION = "Which cities are candidate birthplaces of Mira Vale?"
+RANKING_QUESTION = (
+    "Which cities are listed as confirmed or possible birthplaces of Mira Vale? "
+    "Include both confirmed and possible birthplaces."
+)
 CONFIRMED_BIRTH = ("Mira Vale", "confirmed_birthplace", "Linden City")
 POSSIBLE_BIRTH = ("Mira Vale", "reported_possible_birthplace", "Cedar City")
 RESIDENCE = ("Mira Vale", "lived_in", "Harbor City")

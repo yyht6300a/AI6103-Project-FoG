@@ -44,6 +44,11 @@ CONFIRMED_BIRTH = ("Mira Vale", "confirmed_birthplace", "Linden City")
 POSSIBLE_BIRTH = ("Mira Vale", "reported_possible_birthplace", "Cedar City")
 RESIDENCE = ("Mira Vale", "lived_in", "Harbor City")
 CASES = {
+    "reference_diagnostic": [
+        ("paper", "Review each baseline sub-question in isolation for entity references."),
+        ("explicit_references", "Full entity descriptions without invented author names."),
+        ("named_author", "With authorship evidence, ask for Mira Vale's birthplace."),
+    ],
     "single": [
         ("decomposition", "Nonempty standalone retrieval questions; review usefulness."),
         ("sufficient", "Retain the two-hop path; answer Linden City from selected evidence."),
@@ -80,7 +85,7 @@ def case_plan(suite: str) -> list[dict]:
     Returns:
         Ordered plan; every entry permits one completion plus YAML retries.
     """
-    groups = tuple(group for group in CASES if group != "empty_diagnostic") if suite == "all" else (suite,)
+    groups = tuple(group for group in CASES if not group.endswith("_diagnostic")) if suite == "all" else (suite,)
     return [{"case": f"{group}.{name}", "expected": expected}
             for group in groups for name, expected in CASES[group]]
 
@@ -197,6 +202,16 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     honestly; the last round is a forced exclusion probe, not a stopping policy.
     Model choices are never replaced to manufacture a desired state transition.
     """
+    if suite == "reference_diagnostic":
+        for variant in ("paper", "explicit_references"):
+            record = begin_case(report, f"reference_diagnostic.{variant}")
+            record.update(question=QUESTION, prompt_variant=variant)
+            questions = decompose_question(QUESTION, client, prompt_variant=variant)
+            record.update(status="validated", sub_questions=questions)
+        # These are recorded queries, not a substitute for real C/E retrieval.
+        memory_round(client, report, "reference_diagnostic.named_author",
+                     QuestionMemory(QUESTION), [AUTHOR], [0.95], questions)
+
     if suite == "empty_diagnostic":
         memory_round(client, report, "empty_diagnostic.probe",
                      QuestionMemory(BRANCH_QUESTION), [], [], (BRANCH_QUESTION,))

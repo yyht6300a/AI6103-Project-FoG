@@ -16,6 +16,7 @@ import requests
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import LLMConfig, ROOT
 from src.agent.question_decomposition import (
+    QUESTION_DECOMPOSITION_PROMPT,
     build_decomposition_prompt,
     decompose_question,
     parse_sub_questions,
@@ -27,6 +28,32 @@ class QuestionDecompositionTests(unittest.TestCase):
 
     The HTTP integration case exercises the actual client and private CSV log.
     """
+
+    def test_variant_selection_reaches_client_without_response_rewriting(self) -> None:
+        """Preserve the baseline and send the chosen instructions exactly once.
+
+        Mocked answers intentionally contain a pronoun: format validation must
+        not claim to establish reference clarity or silently rewrite semantics.
+        """
+        question = "Which city was the author of The Glass Orchard born in?"
+        client = Mock(spec=LLMClient)
+        client.complete.return_value = {"choices": [{"finish_reason": "stop",
+            "message": {"content": '["Where was this author born?"]'}}]}
+        self.assertEqual(build_decomposition_prompt(question, prompt_variant="paper"),
+                         QUESTION_DECOMPOSITION_PROMPT.format(question=question))
+        for variant in ("paper", "explicit_references"):
+            client.reset_mock()
+            self.assertEqual(decompose_question(question, client, prompt_variant=variant),
+                             ["Where was this author born?"])
+            client.complete.assert_called_once_with([{"role": "user", "content":
+                build_decomposition_prompt(question, prompt_variant=variant)}])
+        enhanced = build_decomposition_prompt(question)
+        self.assertIn("without the other", enhanced)
+        self.assertIn("do not invent its name", enhanced)
+        client.reset_mock()
+        with self.assertRaises(ValueError):
+            decompose_question(question, client, prompt_variant="unknown")
+        client.complete.assert_not_called()
 
     def test_prompt_preserves_paper_instructions_and_input(self) -> None:
         """Retain Figure 7's constraints and interpolate arbitrary text once.

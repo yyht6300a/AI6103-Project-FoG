@@ -1,4 +1,4 @@
-"""Produce the initial Q_sub for FoG retrieval using the paper's Figure 7.
+"""Produce initial Q_sub using Figure 7 or an explicit reference enhancement.
 
 The caller owns the configured LLMClient and its lifetime. This module validates
 the model's JSON list without repairing responses or changing retrieval state.
@@ -23,21 +23,45 @@ Given a complex question, break it into a set of standalone sub-questions whose 
 Question: {question}"""
 
 
-def build_decomposition_prompt(question: str) -> str:
-    """Insert the original question into Figure 7 without rewriting it.
+# Keep the paper template intact for reproduction and controlled comparisons.
+REFERENCE_INSTRUCTIONS = """### Standalone Entity References (implementation enhancement)
+Each sub-question will be sent to retrieval independently, without the other
+sub-questions or their answers. Make every entity reference understandable from
+that sub-question alone. Repeat the relevant entity names and full relational
+descriptions from the original question instead of referring to a previous
+sub-question with phrases such as "this author", "he", or "that person".
+When an entity's name is unknown, use its full description anchored to a known
+entity; do not invent its name or assume an earlier sub-question has been answered.
+For example, for "Which city was the author of The Glass Orchard born in?", ask
+"Who is the author of The Glass Orchard?" and "In which city was the author of
+The Glass Orchard born?". The latter identifies the author descriptively; the
+actual author name must still be resolved from retrieved evidence.
+
+"""
+
+
+def build_decomposition_prompt(question: str, *, prompt_variant: str = "explicit_references") -> str:
+    """Insert the original question into the selected decomposition template.
 
     Args:
         question: Nonblank original natural-language question.
+        prompt_variant: ``explicit_references`` adds independent-reference
+            instructions by default; ``paper`` retains the original Figure 7.
 
     Returns:
         Prompt text with the question inserted once, preserving its characters.
 
     Raises:
-        ValueError: The input is not a nonblank string.
+        ValueError: The input is not a nonblank string or the variant is unknown.
     """
     if not isinstance(question, str) or not question.strip():
         raise ValueError("Question must be a nonblank string")
-    return QUESTION_DECOMPOSITION_PROMPT.format(question=question)
+    if prompt_variant not in ("paper", "explicit_references"):
+        raise ValueError("Unknown decomposition prompt variant")
+    template = QUESTION_DECOMPOSITION_PROMPT
+    if prompt_variant == "explicit_references":
+        template = template.replace("### Real Input", REFERENCE_INSTRUCTIONS + "### Real Input")
+    return template.format(question=question)
 
 
 def parse_sub_questions(content: str) -> list[str]:
@@ -69,13 +93,17 @@ def parse_sub_questions(content: str) -> list[str]:
     return questions
 
 
-def decompose_question(question: str, client: LLMClient) -> list[str]:
+def decompose_question(
+    question: str, client: LLMClient, *, prompt_variant: str = "explicit_references",
+) -> list[str]:
     """Request and validate the initial sub-questions through the shared client.
 
     Args:
         question: Nonblank original question, validated before any API request.
         client: Caller-owned client with explicit configuration and per-attempt
             usage logging. Transport retries follow its existing policy.
+        prompt_variant: Default independent-reference enhancement or ``paper``
+            for the unchanged Figure 7 baseline. Selection adds no API calls.
 
     Returns:
         Validated initial Q_sub as an ordered list suitable for retrieval.
@@ -88,7 +116,7 @@ def decompose_question(question: str, client: LLMClient) -> list[str]:
             or a nonretryable HTTP failure occurs.
         OSError: The client's usage accounting cannot be persisted.
     """
-    prompt = build_decomposition_prompt(question)
+    prompt = build_decomposition_prompt(question, prompt_variant=prompt_variant)
     response = client.complete([{"role": "user", "content": prompt}])
     try:
         choice = response["choices"][0]

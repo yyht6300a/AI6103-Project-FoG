@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import requests
 
@@ -27,6 +27,31 @@ class PartDValidationTests(unittest.TestCase):
     Reports and usage rows stay inside private project tmp directories. No test
     loads the user's dotenv or writes to the shared usage CSV.
     """
+
+    def test_reference_comparison_records_actual_queries_and_author_evidence(self) -> None:
+        """Keep the comparison bounded and expose the actual MSM handoff.
+
+        Synthetic completions verify orchestration, not semantic quality or
+        retrieval recall. Both decomposition variants use the public parser.
+        """
+        client = Mock(spec=LLMClient)
+        envelopes = []
+        for questions in (["Who wrote it?"], ["Who wrote The Glass Orchard?"]):
+            envelope = completion([], [], [])
+            envelope["choices"][0]["message"]["content"] = json.dumps(questions)
+            envelopes.append(envelope)
+        envelopes.append(completion([validation.AUTHOR], [], ["Where was Mira Vale born?"]))
+        client.complete.side_effect = envelopes
+        report = {"plan": validation.case_plan("reference_diagnostic"), "results": []}
+        validation.run_cases(client, report, "reference_diagnostic")
+        self.assertEqual(client.complete.call_count, 3)
+        records = report["results"]
+        self.assertEqual([item["prompt_variant"] for item in records[:2]],
+                         ["paper", "explicit_references"])
+        self.assertEqual(records[2]["queries"], records[1]["sub_questions"])
+        self.assertEqual(records[2]["submitted"], [validation.AUTHOR])
+        self.assertEqual(records[2]["subsequent_question"], ("Where was Mira Vale born?",))
+        self.assertTrue(records[2]["state_rules_match"])
 
     def response(self, body: dict) -> requests.Response:
         """Wrap a synthetic envelope in a real requests response.
@@ -49,7 +74,7 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("all", 13)):
+        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("reference_diagnostic", 3), ("all", 13)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:

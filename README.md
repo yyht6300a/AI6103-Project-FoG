@@ -52,6 +52,25 @@ The full Freebase knowledge graph is intentionally not committed. Set it up with
 
 All choices that must be made during reproduction (source-entity extraction, mid-to-text mapping, gold-path conversion, threshold scale, FFP depth, sub-question LLM, negative-sampling filter, full-Freebase vs subset, adaptive-threshold initial values, oracle definition) are listed in the analysis document under `docs/`.
 
+### LLM configuration
+
+Copy [`env_example`](env_example) to `.env` and fill in `LLM_API_KEY` locally. Public defaults live in [`config/config-dev.yml`](config/config-dev.yml); nonempty `.env` values override them. Blank non-secret values retain YAML defaults. The key is read only from `.env`, which Git ignores. The current model (`gpt-4o-mini`) and endpoint are provisional defaults; no API service has been confirmed or tested. The allowed inference models are `gpt-4o-mini`, `gpt-4`, and `gpt-4o`.
+
+`LLM_TIMEOUT` is a positive finite number of seconds per HTTP connect/read operation. `LLM_MAX_RETRIES` is the non-negative number of additional attempts after the first request. Dotenv files support single-line assignments, quotes, optional `export` prefixes and comments; shell commands, multiline values and variable interpolation are unsupported. Configuration loading neither reads nor modifies process environment variables. The HTTP client disables environment-derived proxies, CA bundles and credentials and passes the model, key, endpoint and timeout explicitly. It uses the OpenAI-compatible `/chat/completions` protocol; other protocols need a separate adapter.
+
+```python
+from src.agent.llm_config import load_llm_config
+from src.agent.llm_client import LLMClient
+
+client = LLMClient(load_llm_config())  # Validates before any request.
+try:
+    response = client.complete([{"role": "user", "content": "Reply with OK."}])
+finally:
+    client.close()
+```
+
+Run offline checks with `python -m unittest discover -s tests -v`. These use synthetic credentials and mocked transport. A real API smoke test remains pending provider/model selection and a local key. Per-attempt usage logging and memory management belong to the subsequent reproduction task and are not implemented by this configuration entry point.
+
 ## Threshold optimization experiments
 
 The `experiments/` package implements the fixed and adaptive threshold policies and the retrieval metrics described in the plan. See `experiments/sweep.py` for the validation sweep.

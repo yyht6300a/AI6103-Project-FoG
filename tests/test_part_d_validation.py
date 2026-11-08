@@ -49,7 +49,7 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("all", 13)):
+        for suite, count in (("single", 4), ("multi", 4), ("removal", 3), ("ranking", 2), ("empty_diagnostic", 1), ("all", 13)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:

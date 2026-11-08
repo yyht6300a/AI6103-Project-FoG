@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.agent.validation_error import failure_diagnostics
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
 from src.agent.memory_management import manage_memory
@@ -60,6 +61,9 @@ CASES = {
         ("resolved", "Bronze Press activates the other branch; observe old evidence removal."),
         ("exclusion_probe", "Removed evidence stays masked when re-submitted at high score."),
     ],
+    "empty_diagnostic": [
+        ("probe", "Same conditional question with empty knowledge; diagnose strict validation."),
+    ],
     "ranking": [
         ("equal_support", "Both authors' cities have equal direct support; either order is valid."),
         ("unequal_support", "Keep both birthplace candidates; confirmed precedes possible; residence is irrelevant."),
@@ -76,7 +80,7 @@ def case_plan(suite: str) -> list[dict]:
     Returns:
         Ordered plan; every entry permits one completion plus YAML retries.
     """
-    groups = tuple(CASES) if suite == "all" else (suite,)
+    groups = tuple(group for group in CASES if group != "empty_diagnostic") if suite == "all" else (suite,)
     return [{"case": f"{group}.{name}", "expected": expected}
             for group in groups for name, expected in CASES[group]]
 
@@ -127,7 +131,7 @@ def memory_round(
 
     Args:
         client: Real configured client; its retry policy remains unchanged.
-        report: Mutable report; failure records expose only exception classes.
+        report: Mutable report; failure records expose exception classes and fixed validation diagnostics.
         name: Planned case identifier, used for failure localization.
         state: Prior question-local immutable snapshot.
         triples: Controlled retrieval rows, including exclusion probes.
@@ -154,6 +158,7 @@ def memory_round(
         result = manage_memory(state, triples, scores, client, potential_threshold=0.7)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,
+                      **failure_diagnostics(error),
                       state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
         raise
 
@@ -192,6 +197,10 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     honestly; the last round is a forced exclusion probe, not a stopping policy.
     Model choices are never replaced to manufacture a desired state transition.
     """
+    if suite == "empty_diagnostic":
+        memory_round(client, report, "empty_diagnostic.probe",
+                     QuestionMemory(BRANCH_QUESTION), [], [], (BRANCH_QUESTION,))
+
     if suite in ("single", "all"):
         record = begin_case(report, "single.decomposition")
         record["question"] = QUESTION
@@ -331,7 +340,8 @@ def main(argv: list[str] | None = None) -> int:
         report["status"] = "structurally_valid_semantic_review_pending"
         exit_code = 0
     except Exception as error:
-        report.update(status="error", error_type=type(error).__name__)
+        report.update(status="error", error_type=type(error).__name__,
+                      **failure_diagnostics(error))
     finally:
         if client is not None:
             client.close()

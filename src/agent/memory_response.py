@@ -9,6 +9,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 import json
 
+from src.agent.validation_error import MemoryValidationError
 from src.agent.memory_state import _freeze_triplets
 from src.agent.potential_subgraph import Triple
 
@@ -46,7 +47,7 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result = {}
     for key, value in pairs:
         if key in result:
-            raise ValueError("Memory output contains duplicate fields")
+            raise MemoryValidationError("duplicate_fields")
         result[key] = value
     return result
 
@@ -60,14 +61,15 @@ def _reject_constant(value: str) -> None:
     Raises:
         ValueError: Always, because Figure 8 requires standard JSON.
     """
-    raise ValueError("Memory output must use standard JSON")
+    raise MemoryValidationError("nonstandard_json")
 
 
-def _string_array(value: object) -> tuple[str, ...]:
+def _string_array(value: object, code: str) -> tuple[str, ...]:
     """Validate an output string array without normalizing its values.
 
     Args:
         value: Decoded answer or clarification field; an empty array is valid.
+        code: Fixed field-specific diagnostic identifier.
 
     Returns:
         Immutable strings preserving order, whitespace and duplicates.
@@ -78,7 +80,7 @@ def _string_array(value: object) -> tuple[str, ...]:
     if not isinstance(value, list) or any(
         not isinstance(item, str) or not item.strip() for item in value
     ):
-        raise ValueError("Memory output requires arrays of nonblank strings")
+        raise MemoryValidationError(code)
     return tuple(value)
 
 
@@ -122,30 +124,35 @@ def parse_memory_response(
     """
     knowledge = _freeze_triplets(memory_triplets) | _freeze_triplets(potential_triplets)
     if not isinstance(content, str):
-        raise ValueError("Memory output content must be a string")
+        raise MemoryValidationError("content_type")
     try:
         output = json.loads(content, object_pairs_hook=_unique_object,
                             parse_constant=_reject_constant)
+    except MemoryValidationError:
+        raise
     except (ValueError, RecursionError):
-        raise ValueError("Memory output must be one unambiguous JSON object") from None
+        raise MemoryValidationError("invalid_json") from None
     fields = {"selected_triplets", "predict_answer", "subsequent_question"}
     if not isinstance(output, dict) or set(output) != fields:
-        raise ValueError("Memory output must contain exactly the three required fields")
+        raise MemoryValidationError("required_fields")
 
     selected = output["selected_triplets"]
     if not isinstance(selected, list):
-        raise ValueError("Selected triplets must be a JSON array")
+        raise MemoryValidationError("selected_array")
     # Reuse graph validation without losing the model's row order or duplicates.
-    selected_graph = _freeze_triplets(selected)
+    try:
+        selected_graph = _freeze_triplets(selected)
+    except ValueError:
+        raise MemoryValidationError("selected_shape") from None
     if not selected_graph <= knowledge:
-        raise ValueError("Selected triplets must match submitted triples exactly")
-    answers = _string_array(output["predict_answer"])
+        raise MemoryValidationError("selected_membership")
+    answers = _string_array(output["predict_answer"], "answer_array")
     entities = {entity for head, _, tail in selected_graph for entity in (head, tail)}
     if any(answer not in entities for answer in answers):
-        raise ValueError("Answers must match selected triple entity strings exactly")
-    questions = _string_array(output["subsequent_question"])
+        raise MemoryValidationError("answer_membership")
+    questions = _string_array(output["subsequent_question"], "question_array")
     if len(questions) > 3:
-        raise ValueError("At most three subsequent questions are allowed")
+        raise MemoryValidationError("question_limit")
     if not answers and not questions:
-        raise ValueError("Unanswered memory output requires subsequent questions")
+        raise MemoryValidationError("questions_required")
     return MemoryResponse(tuple(tuple(triple) for triple in selected), answers, questions)

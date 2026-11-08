@@ -7,6 +7,7 @@ the caller retains its old snapshot if any step raises.
 
 from collections.abc import Iterable, Sequence
 
+from src.agent.validation_error import MemoryValidationError
 from src.agent.llm_client import LLMClient
 from src.agent.memory_prompt import build_memory_prompt
 from src.agent.memory_response import MemoryResponse, parse_memory_response
@@ -59,11 +60,13 @@ def update_memory(
     try:
         choice = completion["choices"][0]
         message = choice["message"]
-        if choice["finish_reason"] != "stop" or message.get("refusal"):
-            raise ValueError("Memory completion was refused or unfinished")
+        if message.get("refusal"):
+            raise MemoryValidationError("completion_refused")
+        if choice["finish_reason"] != "stop":
+            raise MemoryValidationError("completion_unfinished")
         content = message["content"]
     except (KeyError, IndexError, TypeError, AttributeError):
-        raise ValueError("Invalid memory completion envelope") from None
+        raise MemoryValidationError("completion_envelope") from None
     result = parse_memory_response(content, state.memory_triplets, potential)
     # User-approved omission criterion: only evidence actually submitted counts.
     selected = frozenset(result.selected_triplets)

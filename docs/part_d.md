@@ -1,5 +1,9 @@
 # Member D modules
 
+The final suite contains $145$ passing tests after adding the newly observed irrelevant-relation extraction as a negative regression; production and runner code did not change after acceptance.
+
+The bounded ranking repair adds strict safe failure projections, source fingerprints, stage progress and fixture-specific completeness/support gates, plus a minimal independent-versus-dependent extraction contrast. All $144$ offline tests passed before the paid run. Equal ranking passed automatic and original-completion manual review; unequal ranking extracted irrelevant residence evidence and returned a third city, correctly stopped by the controlled gate. Six HTTP successes without retries used $6327$ input / $323$ output tokens. No further paid requests or conditional-chain reruns followed. Business acceptance and TODO 2.3.5 remain incomplete; see the [execution evidence](part_d.zh-CN.md#20261110-最小修复执行与有界验收). Historical Bronze/Silver results remain valid for their earlier prompt, while validation of the revised shared prompt remains pending.
+
 `manage_memory` and `update_memory` now default to `evidence_decision`: extract requirements, evaluate them against the complete graph, then select evidence and answer. The `paper` baseline remains explicit. Step 5 adoption passed $117$ offline tests and exact replay of $8$ accepted transactions ($16$ stages), without new paid requests. Independent GPT-4o-mini acceptance under TODO 2.3.5 remains pending. See the [current architecture](part_d.zh-CN.md#当前默认架构) and [acceptance status](part_d.zh-CN.md#当前验收状态与剩余事项) for the controlled GPT-4o results and remaining gates. Superseded evidence-retention investigations are retained in Git history.
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)

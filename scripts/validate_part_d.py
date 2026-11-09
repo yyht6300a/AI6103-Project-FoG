@@ -7,6 +7,8 @@ credentials, raw failed responses or exception messages.
 """
 
 import argparse
+from collections import Counter
+import hashlib
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -19,7 +21,9 @@ if str(ROOT) not in sys.path:
 
 from src.agent.validation_error import failure_diagnostics
 from src.agent.evidence_decision import decode_description, derive_decision
+from src.agent.evidence_decision import validate_decision_response
 from src.agent.memory_response import parse_memory_response
+from src.agent.memory_response import _unique_object, _reject_constant
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
 from src.agent.memory_management import manage_memory
@@ -210,6 +214,7 @@ class CountingClient:
         self.record = record
         self.calls = []
         record["logical_calls_started"] = 0
+        record["logical_calls_received"] = 0
 
     def complete(self, messages: list[dict], **options) -> dict:
         """Count one request before forwarding, including terminal failures.
@@ -228,9 +233,38 @@ class CountingClient:
         if self.record["logical_calls_started"] >= self.record["logical_call_limit"]:
             raise RuntimeError("Case logical request budget exhausted")
         self.record["logical_calls_started"] += 1
+        self.record["stage_progress"] = [
+            {"stage": stage, "started": i < self.record["logical_calls_started"],
+             "received": i < len(self.calls), "transaction_validated": False}
+            for i, stage in enumerate(("extraction", "selection", "ranking"))]
         completion = self.client.complete(messages, **options)
         self.calls.append({"messages": messages, "options": options, "completion": completion})
+        self.record["logical_calls_received"] = len(self.calls)
+        self.record["stage_progress"][len(self.calls) - 1]["received"] = True
         return completion
+
+
+def safe_payload(call: dict) -> dict:
+    """Decode only finished, non-refused bounded strict JSON completions.
+
+    Args:
+        call: Captured transport result, never serialized on failure.
+
+    Returns:
+        Decoded object for subsequent vocabulary checks.
+
+    Raises:
+        ValueError: Envelope or content cannot be safely inspected.
+    """
+    choice = call["completion"]["choices"][0]
+    message = choice["message"]
+    if choice.get("finish_reason") != "stop" or message.get("refusal"):
+        raise ValueError("Unavailable envelope")
+    content = message["content"]
+    if not isinstance(content, str) or len(content) > 12000:
+        raise ValueError("Unavailable content")
+    return json.loads(content, object_pairs_hook=_unique_object,
+                      parse_constant=_reject_constant)
 
 
 def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> dict:
@@ -247,10 +281,7 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
     """
     unavailable = {"status": "unavailable"}
     try:
-        content = call["completion"]["choices"][0]["message"]["content"]
-        if not isinstance(content, str) or len(content) > 12000:
-            return unavailable
-        payload = json.loads(content)
+        payload = safe_payload(call)
         decode_description(payload, state.original_question)
         description = payload["description"]
         vocabulary = {part for row in submitted for part in row} | {
@@ -259,7 +290,7 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
             "born_in", "author", "authored_by", "birthplace", "place_of_birth",
             "published_by", "publisher", "",
         }
-        def bounded(value):
+        def bounded(value, depth=0):
             """Check nested values against public fixture strings and size bounds.
 
             Args:
@@ -268,13 +299,21 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
             Returns:
                 Whether every string is safe to retain in the private report.
             """
+            if depth > 12:
+                return False
             if isinstance(value, str):
                 return len(value) <= 512 and (value in vocabulary or value in state.original_question)
             if isinstance(value, dict):
-                return len(value) <= 16 and all(bounded(v) for v in value.values())
+                keys = {"kind", "branch", "branches", "requirements", "entity",
+                        "fact_queries", "relation", "binding", "evidence_ids",
+                        "direction", "root_entity", "steps", "condition",
+                        "subject", "operator", "value", "condition_quote",
+                        "uniqueness_quote", "true", "false", "quote"}
+                return len(value) <= 16 and set(value) <= keys and all(
+                    bounded(v, depth + 1) for v in value.values())
             if isinstance(value, list):
-                return len(value) <= 32 and all(bounded(v) for v in value)
-            return type(value) is int and 0 <= value < len(submitted)
+                return len(value) <= 32 and all(bounded(v, depth + 1) for v in value)
+            return type(value) is int and 0 <= value <= 1000000
         if not bounded(description):
             return unavailable
         hits = []
@@ -286,7 +325,23 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
                                  "relation": query["relation"], "graph_ids": [
                                      i for i, row in enumerate(sorted(submitted))
                                      if row[1] == query["relation"] and group["entity"] in (row[0], row[2])]})
-        return {"status": "validated_projection", "description": description, "hits": hits}
+        ids = []
+        def collect(value):
+            """Collect bounded evidence identifiers from the safe description.
+
+            Args:
+                value: Already bounded subtree; identifiers remain unchanged.
+            """
+            if isinstance(value, dict):
+                ids.extend(value.get("evidence_ids", []))
+                for child in value.values():
+                    collect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect(child)
+        collect(description)
+        return {"status": "validated_projection", "description": description, "hits": hits,
+                "production_validated": False, "out_of_range_ids": [i for i in ids if i >= len(submitted)]}
     except (KeyError, IndexError, TypeError, ValueError):
         return unavailable
 
@@ -304,7 +359,8 @@ def conditional_failure_projection(calls: list, state: QuestionMemory, submitted
         or unsafe stages carry fixed markers and never raw failed content.
     """
     unavailable = {"status": "unavailable"}
-    result = {"extraction": unavailable, "decision": unavailable, "final": unavailable}
+    result = {"extraction": unavailable, "decision": unavailable, "final": unavailable,
+              "ranking": unavailable}
     if calls:
         result["extraction"] = extraction_projection(calls[0], state, submitted)
     if result["extraction"].get("status") == "validated_projection":
@@ -314,21 +370,40 @@ def conditional_failure_projection(calls: list, state: QuestionMemory, submitted
             result["decision"] = {key: decision[key] for key in (
                 "condition_status", "query_matches", "answer_candidates",
                 "required_triplets", "missing_relations")}
+            result["decision"]["description_kind"] = decision.get("description_kind")
         except Exception:
             pass  # Diagnostic failures must never replace the public exception.
+    result["extraction_decodable"] = result["extraction"].get("status") == "validated_projection"
+    result["evaluation_succeeded"] = "condition_status" in result["decision"]
     if len(calls) > 1:
         try:
-            content = calls[1]["completion"]["choices"][0]["message"]["content"]
-            if not isinstance(content, str) or len(content) > 12000:
-                return result
+            payload = safe_payload(calls[1])
+            content = json.dumps(payload)
             response = parse_memory_response(content, state.memory_triplets, submitted)
             from src.agent.evidence_decision import missing_relation_queries
             allowed = missing_relation_queries(result["decision"]["missing_relations"]) if "condition_status" in result["decision"] else []
-            if all(query in allowed for query in response.subsequent_question):
+            if (len(response.predict_answer) <= 32 and len(response.selected_triplets) <= 32
+                    and all(query in allowed for query in response.subsequent_question)):
                 result["final"] = {"status": "validated_projection",
                                    "selected_triplets": response.selected_triplets,
                                    "predict_answer": response.predict_answer,
                                    "subsequent_question": response.subsequent_question}
+                try:
+                    validate_decision_response(result["decision"], response)
+                    result["final"]["decision_consistent"] = True
+                except Exception:
+                    result["final"]["decision_consistent"] = False
+        except Exception:
+            pass
+    if len(calls) > 2 and result["final"].get("status") == "validated_projection":
+        try:
+            payload = safe_payload(calls[2])
+            answers = payload["predict_answer"]
+            candidates = result["final"]["predict_answer"]
+            if (set(payload) == {"predict_answer"} and isinstance(answers, list)
+                    and len(answers) <= 32 and all(isinstance(a, str) and a in candidates for a in answers)):
+                result["ranking"] = {"status": "safe_projection", "predict_answer": answers,
+                    "multiset_matches": Counter(answers) == Counter(candidates)}
         except Exception:
             pass
     return result
@@ -379,13 +454,31 @@ def memory_round(
         record.update(status="error", error_type=type(error).__name__,
                       **failure_diagnostics(error),
                       state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
-        if name in PATH_CASE_NAMES and counted.calls and prompt_variant == "evidence_decision":
-            record["failed_extraction"] = extraction_projection(counted.calls[0], state, submitted)
-        if name.startswith("conditional.") and prompt_variant == "evidence_decision":
-            record["failure_projection"] = conditional_failure_projection(counted.calls, state, submitted)
+        if prompt_variant == "evidence_decision":
+            try:
+                record["failure_projection"] = conditional_failure_projection(counted.calls, state, submitted)
+                record["failed_extraction"] = record["failure_projection"]["extraction"]
+            except Exception:
+                record["failure_projection"] = {"status": "unavailable"}
+        record["local_validation"] = {
+            "extraction": record.get("failure_projection", {}).get("evaluation_succeeded", False),
+            "selection": record.get("failure_projection", {}).get("final", {}).get("decision_consistent", False),
+            "ranking": record.get("failure_projection", {}).get("ranking", {}).get("multiset_matches", False),
+        }
+        locations = []
+        trace = error.__traceback__
+        while trace is not None:
+            if trace.tb_frame.f_code.co_name in {"derive_decision", "derive_path_decision", "resolve_query", "validate_decision_response"}:
+                locations.append({"function": trace.tb_frame.f_code.co_name, "line": trace.tb_lineno})
+            trace = trace.tb_next
+        record["failure_locations"] = locations
         raise
 
     selected = result.state.memory_triplets
+    record["local_validation"] = {"extraction": True, "selection": True,
+                                  "ranking": len(counted.calls) == 3}
+    for stage in record.get("stage_progress", []):
+        stage["transaction_validated"] = stage["received"]
     record.update(
         stages=counted.calls,
         status="validated", state_after=snapshot(result.state),
@@ -407,7 +500,52 @@ def memory_round(
         raise RuntimeError("Acceptance state invariant failed")
     if name in PATH_CASE_NAMES and prompt_variant == "evidence_decision":
         check_two_hop(record)
+    if name.startswith("ranking.") and prompt_variant == "evidence_decision":
+        check_ranking(record)
     return result
+
+
+def check_ranking(record: dict) -> None:
+    """Enforce the two public ranking fixtures before starting another case.
+
+    Args:
+        record: Successful transaction with captured original stages.
+
+    Raises:
+        RuntimeError: Extraction, completeness, evidence or support order differs.
+    """
+    equal = record["case"] == "ranking.equal_support"
+    required = {BIRTH, OTHER_BIRTH} if equal else {CONFIRMED_BIRTH, POSSIBLE_BIRTH}
+    stages = record["stages"]
+    description = safe_payload(stages[0])["description"]
+    expected = {(t[0], t[1]) for t in required}
+    groups = description.get("branch", {}).get("requirements", [])
+    observed = {(g["entity"], q["relation"]) for g in groups for q in g["fact_queries"]}
+    graph = list(map(tuple, record["submitted"]))
+    bindings = all(q["binding"]["kind"] == "observed" and
+        all(graph[i][0] == g["entity"] and graph[i][1] == q["relation"]
+            for i in q["binding"]["evidence_ids"])
+        for g in groups for q in g["fact_queries"])
+    candidates = Counter([BIRTH[2], OTHER_BIRTH[2]])
+    selection = safe_payload(stages[1])
+    checks = {
+        "independent_extraction": description["kind"] == "nonconditional"
+            and observed == expected and bindings
+            and len(groups) == (2 if equal else 1)
+            and sum(len(g["fact_queries"]) for g in groups) == 2,
+        "exact_evidence": set(map(tuple, record["selected_triplets"])) == required,
+        "complete_answers": Counter(record["predict_answer"]) == candidates,
+        "no_questions": not record["subsequent_question"],
+        "rejection": set(map(tuple, record["state_after"]["rejected"])) == (set() if equal else {RESIDENCE}),
+        "ranking_executed": len(stages) == 3,
+        "selection_complete": Counter(selection["predict_answer"]) == candidates,
+        "support_order": equal or tuple(record["predict_answer"]) == (BIRTH[2], OTHER_BIRTH[2]),
+        "old_state_unchanged": record["old_state_unchanged"],
+    }
+    record["controlled_checks"] = checks
+    if not all(checks.values()):
+        record["status"] = "controlled_check_failure"
+        raise RuntimeError("Ranking acceptance expectation failed")
 
 
 def check_two_hop(record: dict) -> None:
@@ -718,6 +856,10 @@ def main(argv: list[str] | None = None) -> int:
         "plan": plan, "results": [],
         "semantic_review": "pending", "status": "not_started",
         "usage_csv": "logs/llm_usage.csv",
+        "source_sha256": {str(path.relative_to(Path(__file__).resolve().parents[1])):
+                          hashlib.sha256(path.read_bytes()).hexdigest()
+                          for path in [Path(__file__).resolve(), *sorted(
+                              (Path(__file__).resolve().parents[1] / "src" / "agent").glob("*.py"))]},
     }
     report["logical_call_limit"] = sum(case["logical_call_limit"] for case in report["plan"])
     if args.list_cases:

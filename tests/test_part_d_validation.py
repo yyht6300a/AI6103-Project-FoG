@@ -28,6 +28,175 @@ class PartDValidationTests(unittest.TestCase):
     loads the user's dotenv or writes to the shared usage CSV.
     """
 
+    def ranking_envelopes(self, unequal=False):
+        """Build synthetic independent requirements, selection and sorting.
+
+        Args:
+            unequal: Use one subject with two independently supported relations.
+
+        Returns:
+            Three mocked completions; these are not recovered live replies.
+        """
+        v = validation
+        rows = [v.CONFIRMED_BIRTH, v.POSSIBLE_BIRTH] if unequal else [v.BIRTH, v.OTHER_BIRTH]
+        graph = sorted(rows + ([v.RESIDENCE] if unequal else []))
+        groups = []
+        for entity in dict.fromkeys(t[0] for t in rows):
+            groups.append({"entity": entity, "fact_queries": [
+                {"relation": t[1], "binding": {"kind": "observed", "evidence_ids": [graph.index(t)]}}
+                for t in rows if t[0] == entity]})
+        first = completion()
+        first["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional", "branch": {"requirements": groups}}})
+        answers = [v.BIRTH[2], v.OTHER_BIRTH[2]]
+        last = completion()
+        last["choices"][0]["message"]["content"] = json.dumps({"predict_answer": answers})
+        return [first, completion(rows, answers, []), last]
+
+    def test_ranking_complete_and_first_error_stop(self):
+        """Require six synthetic completions and stop immediately on omission.
+
+        Both fixtures use public production parsing with an isolated mock client.
+        """
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = self.ranking_envelopes() + self.ranking_envelopes(True)
+        report = {"plan": validation.case_plan("ranking"), "results": []}
+        validation.run_cases(client, report, "ranking")
+        self.assertEqual(client.complete.call_count, 6)
+        self.assertTrue(all(all(r["controlled_checks"].values()) for r in report["results"]))
+        for mode in ("extraction", "omission", "support"):
+            with self.subTest(mode=mode):
+                calls = self.ranking_envelopes()
+                if mode == "extraction":
+                    calls[0]["choices"][0]["message"]["content"] = "private-sentinel"
+                if mode == "omission":
+                    calls[1] = completion([validation.BIRTH, validation.OTHER_BIRTH], [validation.BIRTH[2]], [])
+                if mode == "support":
+                    calls += self.ranking_envelopes(True)
+                    calls[-1]["choices"][0]["message"]["content"] = json.dumps({
+                        "predict_answer": [validation.OTHER_BIRTH[2], validation.BIRTH[2]]})
+                client.complete.side_effect = calls
+                client.reset_mock()
+                report = {"plan": validation.case_plan("ranking"), "results": []}
+                with self.assertRaises((ValueError, RuntimeError)):
+                    validation.run_cases(client, report, "ranking")
+                self.assertEqual(client.complete.call_count, {"extraction": 1, "omission": 2, "support": 6}[mode])
+                self.assertEqual(len(report["results"]), 2 if mode == "support" else 1)
+                self.assertNotIn("private-sentinel", json.dumps(report))
+
+    def test_ranking_failure_projection_preserves_original_exception(self):
+        """Keep the exact original exception even if the entire projection fails.
+
+        Each stage uses synthetic transport failures and immutable empty state.
+        """
+        from src.agent.memory_state import QuestionMemory
+        for index in range(3):
+            error = OSError("private-sentinel")
+            client = Mock(spec=LLMClient)
+            client.complete.side_effect = self.ranking_envelopes()[:index] + [error]
+            report = {"plan": validation.case_plan("ranking"), "results": []}
+            state = QuestionMemory("Which cities were Mira Vale and Nolan Reed born in?")
+            with patch.object(validation, "conditional_failure_projection", side_effect=RuntimeError("private-sentinel")):
+                with self.assertRaises(OSError) as caught:
+                    validation.memory_round(client, report, "ranking.equal_support", state,
+                        [validation.BIRTH, validation.OTHER_BIRTH], [0.95, 0.95], ())
+            self.assertIs(caught.exception, error)
+            self.assertEqual(client.complete.call_count, index + 1)
+            self.assertEqual(report["results"][0]["logical_calls_received"], index)
+            self.assertFalse(state.memory_triplets)
+            self.assertNotIn("private-sentinel", json.dumps(report))
+
+    def test_projection_rejects_unsafe_envelopes_and_json(self):
+        """Reject refusal, truncation, duplicate fields and unknown vocabulary.
+
+        A valid-looking body never overrides an invalid completion envelope.
+        """
+        from src.agent.memory_state import QuestionMemory
+        state = QuestionMemory("Which cities were Mira Vale and Nolan Reed born in?")
+        for mode in ("refusal", "length", "duplicate", "constant", "unknown"):
+            call = self.ranking_envelopes()[0]
+            choice = call["choices"][0]
+            if mode == "refusal":
+                choice["message"]["refusal"] = "private-sentinel"
+            elif mode == "length":
+                choice["finish_reason"] = "length"
+            else:
+                choice["message"]["content"] = {
+                    "duplicate": '{"description":{},"description":{}}',
+                    "constant": '{"description":NaN}',
+                    "unknown": '{"description":{"kind":"private-sentinel"}}'}[mode]
+            result = validation.extraction_projection({"completion": call}, state,
+                {validation.BIRTH, validation.OTHER_BIRTH})
+            self.assertEqual(result, {"status": "unavailable"})
+
+    def test_ranking_safe_stage_projections_and_out_of_range_ids(self):
+        """Inspect each synthetic failure stage without copying raw envelopes.
+
+        Out-of-range IDs remain unchanged while successful evaluation is distinct.
+        """
+        from src.agent.memory_state import QuestionMemory
+        state = QuestionMemory("Which cities were Mira Vale and Nolan Reed born in?")
+        graph = {validation.BIRTH, validation.OTHER_BIRTH}
+        envelopes = self.ranking_envelopes()
+        calls = [{"completion": value} for value in envelopes]
+        for count in range(4):
+            result = validation.conditional_failure_projection(calls[:count], state, graph)
+            self.assertEqual(result["evaluation_succeeded"], count > 0)
+            self.assertEqual(result["final"].get("decision_consistent", False), count > 1)
+            self.assertEqual(result["ranking"].get("multiset_matches", False), count > 2)
+        payload = validation.safe_payload(calls[0])
+        payload["description"]["branch"]["requirements"][0]["fact_queries"][0]["binding"]["evidence_ids"] = [999]
+        envelopes[0]["choices"][0]["message"]["content"] = json.dumps(payload)
+        result = validation.conditional_failure_projection(calls[:1], state, graph)
+        self.assertEqual(result["extraction"]["out_of_range_ids"], [999])
+        self.assertTrue(result["extraction_decodable"])
+        self.assertFalse(result["evaluation_succeeded"])
+
+    def test_ranking_competing_path_is_controlled_failure(self):
+        """Reject a graph-valid bounce path that asks a different question.
+
+        This is a synthetic adversarial path, not the missing real extraction.
+        """
+        envelopes = self.ranking_envelopes()
+        envelopes[0]["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional_path", "root_entity": "Mira Vale", "steps": [
+                {"relation": "born_in", "binding": {"kind": "observed", "evidence_ids": [0]}},
+                {"relation": "born_in", "binding": {"kind": "observed", "evidence_ids": [0]}}]}})
+        envelopes[1] = completion([validation.BIRTH], ["Mira Vale"], [])
+        report = {"plan": validation.case_plan("ranking"), "results": []}
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = envelopes
+        with self.assertRaises(RuntimeError):
+            validation.run_cases(client, report, "ranking")
+        self.assertEqual(client.complete.call_count, 2)
+        self.assertEqual(report["results"][0]["status"], "controlled_check_failure")
+
+    def test_observed_unequal_residence_contamination_is_rejected(self):
+        """Fix the newly observed legal extraction as a semantic negative case.
+
+        Public fixture fields transcribe the 2026/11/10 bounded acceptance reply;
+        transport metadata and the private original report are not imported.
+        """
+        calls = self.ranking_envelopes() + self.ranking_envelopes(True)
+        payload = json.loads(calls[3]["choices"][0]["message"]["content"])
+        payload["description"]["branch"]["requirements"].append({
+            "entity": "Mira Vale", "fact_queries": [{"relation": "lived_in",
+                "binding": {"kind": "observed", "evidence_ids": [1]}}]})
+        calls[3]["choices"][0]["message"]["content"] = json.dumps(payload)
+        answers = ["Linden City", "Cedar City", "Harbor City"]
+        calls[4] = completion([validation.CONFIRMED_BIRTH, validation.RESIDENCE,
+                              validation.POSSIBLE_BIRTH], answers, [])
+        calls[5]["choices"][0]["message"]["content"] = json.dumps({"predict_answer": answers})
+        report = {"plan": validation.case_plan("ranking"), "results": []}
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = calls
+        with self.assertRaises(RuntimeError):
+            validation.run_cases(client, report, "ranking")
+        self.assertEqual(client.complete.call_count, 6)
+        checks = report["results"][-1]["controlled_checks"]
+        for name in ("independent_extraction", "exact_evidence", "complete_answers", "rejection"):
+            self.assertFalse(checks[name])
+
     def test_selected_case_and_dependencies(self):
         """Execute only the chosen transaction and reject missing prior rounds.
 

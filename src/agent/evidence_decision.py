@@ -22,6 +22,12 @@ ORIGINAL QUESTION before filling fields: conditional_equals for a supported
 explicit equality branch condition; nonconditional_path for a nonconditional two-hop
 dependency; nonconditional for independent one-hop requirements only; unsupported
 with a verbatim quote for requirements outside these supported forms.
+Multiple already named objects queried separately for attributes, or one named
+object queried for several independent relations, use grouped nonconditional.
+For example, asking for the headquarters of Helios Ltd and Selene Ltd queries
+two known objects independently. Asking for the headquarters of the company
+owning Aurora Tower depends on the other endpoint of the ownership relation.
+Only the latter needs an ordered path; sharing a question does not link facts.
 Finding an entity and then asking its attribute is a dependency: ALWAYS use
 nonconditional_path even when the graph already names the intermediate entity.
 For example, "Where is the headquarters of the company that owns Aurora Tower?"

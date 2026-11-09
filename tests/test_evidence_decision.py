@@ -23,6 +23,29 @@ GRAPH = sorted([FACT, LEFT, RIGHT])
 QUESTION = "Book has exactly one publisher. If Expected, Person A; otherwise Person B."
 
 
+class IndependentRequirementTests(unittest.TestCase):
+    """Fix the independent-query boundary with synthetic protocol descriptions.
+
+    Existing path and conditional tests retain their stricter dependency gates.
+    """
+
+    def test_multiple_objects_and_multiple_relations_remain_independent(self):
+        """Derive both answers for separately named objects or relations.
+
+        These fixtures test local contracts, not a model's response to the prompt.
+        """
+        for graph in ([LEFT, RIGHT], [LEFT, (LEFT[0], "possible_birthplace", RIGHT[2])]):
+            graph = sorted(graph)
+            groups = [{"entity": entity, "fact_queries": [
+                {"relation": t[1], "binding": {"kind": "observed", "evidence_ids": [i]}}
+                for i, t in enumerate(graph) if t[0] == entity]}
+                for entity in dict.fromkeys(t[0] for t in graph)]
+            result = derive_decision({"description": {"kind": "nonconditional",
+                "branch": {"requirements": groups}}}, "Person A and Person B", graph)
+            self.assertEqual(set(result["answer_candidates"]), {LEFT[2], RIGHT[2]})
+            self.assertEqual(set(map(tuple, result["required_triplets"])), set(graph))
+
+
 def description(value="Expected", unique=True):
     """Create an independent extraction using this graph's stable IDs.
 

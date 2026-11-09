@@ -78,6 +78,53 @@ class PartDValidationTests(unittest.TestCase):
             self.assertEqual(result, {"status": "unavailable"})
             self.assertNotIn("secret-key", json.dumps(result))
 
+    def test_observed_false_condition_and_binding_only_counterfactual(self):
+        """Replay the observed conditional misrouting without a provider call.
+
+        Fixing only the false-branch gap must still fail the controlled path
+        gate, even when production returns the correct city and both edges.
+        """
+        from src.agent.memory_state import QuestionMemory
+        for binding_only in (False, True):
+            with self.subTest(binding_only=binding_only):
+                observed = {"kind": "observed", "evidence_ids": [0]}
+                description = {"kind": "conditional_equals", "condition": {
+                    "subject": validation.AUTHOR[0], "relation": "written_by",
+                    "operator": "eq", "value": validation.BIRTH[0],
+                    "condition_quote": validation.QUESTION,
+                    "uniqueness_quote": "the author of The Glass Orchard",
+                }, "branches": {case: {"requirements": [{
+                    "entity": validation.BIRTH[0], "fact_queries": [{
+                        "relation": "born_in", "binding": observed if
+                        case == "true" or binding_only else {
+                            "kind": "missing", "direction": "outgoing"},
+                    }],
+                }]} for case in ("true", "false")}}
+                extraction = completion()
+                extraction["choices"][0]["message"]["content"] = json.dumps({
+                    "description": description})
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = [extraction, completion(
+                    [validation.AUTHOR, validation.BIRTH], [validation.BIRTH[2]], [])]
+                state = QuestionMemory(validation.QUESTION)
+                report = {"plan": validation.case_plan(
+                    "multihop", cases=["single.sufficient"]), "results": []}
+                with self.assertRaises((ValueError, RuntimeError)):
+                    validation.memory_round(client, report, "single.sufficient", state,
+                                            [validation.AUTHOR, validation.BIRTH], [0.95, 0.95], ())
+                record = report["results"][0]
+                self.assertTrue(record["old_state_unchanged"])
+                self.assertFalse(state.memory_triplets)
+                self.assertFalse(state.rejected_triplets)
+                self.assertEqual(client.complete.call_count, 2 if binding_only else 1)
+                if binding_only:
+                    self.assertFalse(record["controlled_checks"]["two_hop_extraction"])
+                else:
+                    self.assertEqual(record["error_code"], "decision_conflict")
+                    self.assertEqual(record["failed_extraction"]["description"], description)
+                    self.assertTrue(any(hit["graph_ids"] == [0]
+                                        for hit in record["failed_extraction"]["hits"]))
+
     def path_envelopes(self, keep_distractor: bool = False) -> list:
         """Build six valid path transactions for real public-parser replay.
 

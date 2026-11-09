@@ -361,6 +361,14 @@ DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
 
    **执行后再归因与下一轮方案**
 
+   > 2026/11/09 执行结果：已实施下述条件准入修订，仅修改 `DECISION_INSTRUCTIONS`，增加依赖题与真实条件题对照，明确比较值来自原题、禁止由图制造条件和由定冠词补出单值前提；schema、解码、求值及发布规则保持原契约。新增实际错误结构与“仅修假缺口仍抽错类型”的免费回归，原错误保持 `decision_conflict`／一次调用／旧快照不变，反事实仍被 `two_hop_extraction` 拦截；完整离线 $132$ 项通过，字符扫描通过。以下历史方案已执行到真实复验，不再是全部待实施。
+   >
+   > 首例报告 `tmp/tmp_part_d_validation_20261109T123849256549Z.json`：GPT-4o-mini／OpenAI 实际返回 `nonconditional_path`，根为 `The Glass Orchard`，路径为 `written_by/outgoing → born_in/outgoing`；两边必留、无缺口、唯一候选及答案为 `Linden City`、无后续查询，全部受控断言通过，实际 $2$ 次请求。随后报告 `tmp/tmp_part_d_validation_20261109T123903269418Z.json`：`single.insufficient`、`single.empty`、`multi.partial`、`multi.recovery` 通过，恢复轮真实继承部分轮快照和查询；干扰边已在部分轮自然拒绝，隐藏出生边未被提交或拒绝，恢复轮成功作答。空图实际将首关系命名为 `author`，其余路径使用 `written_by`；空图允许描述缺失关系，受控检查通过，但实际检索召回仍未验证。
+   >
+   > 最后一例 `multi.exclusion_probe` 首阶段失败，立即停止，未执行条件冒烟。受限投影为正确题型和根实体，但路径是 `written_by/outgoing → born_in/incoming`；提交图中的出生事实为 `Mira Vale → born_in → Linden City`，从作者继续应使用 `outgoing`。反向声明触发 `evidence_decision / decision_path_conflict`，未进入最终选择或排序，旧快照（两条记忆及一条永久拒绝）保持不变。此次是方向抽取错误，不能归因为条件误判复发或拒绝过滤失效；模型内部原因未知。路径段尚未明确说明方向相对于“当前可达节点”，现有 head/tail 说明位于仅适用于分组一跳绑定的段落，这是下一处可针对性修订的提示边界。
+   >
+   > 本轮累计新增 $11$ 次逻辑调用／成功 HTTP，无重试，账本新增 $11$ 行，输入 $14055$、输出 $457$ tokens；实际模型均为 `gpt-4o-mini-2024-07-18`。私有 `.env` SHA-256 前后相同。不能推进第 $5$ 步；TODO 2.3.5 独立交付关卡保持待办。下一轮只在路径说明中明确每一步从当前节点出发：当前节点为头则 `outgoing`、为尾则 `incoming`，下一节点取另一端；用其他实体给出正反向对照，不靠题目词序猜方向，不自动翻转模型输出或放宽反向冲突检查。先用本次投影补免费回归，再从 `multi.partial → multi.recovery → multi.exclusion_probe` 重建真实链，正常 $6$ 次、保守上限 $9$ 次逻辑调用／$27$ 次 HTTP，单列追加预算。提示共用，链通过后补三个独立场景（正常 $6$ 次，上限 $9$ 次／$27$ 次 HTTP），六例在同一修订均通过才推进第 $5$ 步两张条件完整图（正常 $4$ 次，上限 $6$ 次／$18$ 次 HTTP）。下一轮合计正常 $16$ 次，上限 $24$ 次／$72$ 次 HTTP，不包含本轮已发生的 $11$ 次；任何失败继续按实际阶段停止归因。
+
    2026/11/09：核对上述最新失败报告、账本、当前提示、解码及求值代码，并用私有 `tmp/tmp_step4_latest_attribution.py` 免费重放已保存的抽取投影和两个受控改动。未读取 `.env`、调用 API、修改生产代码或账本。下文取代本节上一版待实施方案；四类路由、受限失败投影和 `--case` 已实现，不再列为待办。首次无投影报告仍不能还原；以下精确归因仅针对第二次失败。
 
    **失败链与修复层次**

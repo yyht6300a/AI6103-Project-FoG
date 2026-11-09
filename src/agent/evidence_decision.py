@@ -12,11 +12,14 @@ from src.agent.validation_error import MemoryValidationError
 
 
 CASES = ("true", "false", "not_conditional")
-DECISION_INSTRUCTIONS = """Extract the original question's condition and branch requirements.
+DECISION_INSTRUCTIONS = """Extract the original question's requirements.
+First determine whether the ORIGINAL QUESTION explicitly specifies different
+requirements for a true and a false equality condition. Only that form permits
+conditional_equals. Never invent a condition from a relation in the graph.
 Return only the specified JSON. Do not evaluate the condition yourself.
 Wrap the extraction in description. Choose exactly one of four kinds from the
 ORIGINAL QUESTION before filling fields: conditional_equals for a supported
-equality branch condition; nonconditional_path for a nonconditional two-hop
+explicit equality branch condition; nonconditional_path for a nonconditional two-hop
 dependency; nonconditional for independent one-hop requirements only; unsupported
 with a verbatim quote for requirements outside these supported forms.
 Finding an entity and then asking its attribute is a dependency: ALWAYS use
@@ -24,17 +27,27 @@ nonconditional_path even when the graph already names the intermediate entity.
 For example, "Where is the headquarters of the company that owns Aurora Tower?"
 uses root_entity Aurora Tower and ordered outgoing steps owned_by, headquarters.
 Do not represent that dependency as independent nonconditional entity groups.
+Entity-locating relations (the author of a book, the company that owns a tower)
+and relative clauses are dependencies, not true/false branch conditions.
+Contrast the tower question above with: "Aurora Tower has exactly one owner.
+If its owner is Helios Ltd, where was Ada Linn born? Otherwise, where was
+Owen Pike born?" Only the latter has an equality condition and two branches.
 Question type is independent of graph values and missing evidence.
 A false or unknown condition is still conditional_equals. Quote the original
-branch-determining condition in condition_quote. An instruction to ask first
+branch-determining condition in condition_quote; never use an entire
+unconditional question to fill this field. An instruction to ask first
 when evidence is missing is an answering prerequisite, not the branch condition.
 conditional_equals contains condition and branches true/false only.
 nonconditional contains only branch (requirements), without condition.
-The condition describes a single relation equality. subject and value must occur
-verbatim in the original question or graph; relation is the exact graph relation
+Only within conditional_equals, condition describes a single relation equality.
+Its comparison value must be a verbatim constraint in the ORIGINAL QUESTION.
+The graph supplies actual values and evidence, never a new branch condition.
+subject must occur verbatim in the original question or graph;
+relation is the exact graph relation
 name (if absent, describe the required relation). operator is eq. uniqueness_quote
 is the exact original-question passage explicitly establishing a single value,
-or empty if absent.
+or empty if absent. A definite article such as "the author" does not explicitly
+establish a single value and cannot supply uniqueness_quote.
 The comparison value is a query constraint, NEVER an observed fact.
 Only for conditional_equals and nonconditional, the following grouped one-hop
 binding instructions apply. For each branch supply requirements: groups with entity and fact_queries.

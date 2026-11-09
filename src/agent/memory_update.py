@@ -10,6 +10,8 @@ from collections.abc import Iterable, Sequence
 from src.agent.validation_error import MemoryValidationError
 from src.agent.llm_client import LLMClient
 from src.agent.memory_prompt import build_memory_prompt
+from src.agent.memory_prompt import build_decision_memory_prompt
+from src.agent.evidence_decision import request_evidence_decision
 from src.agent.memory_response import MemoryResponse, parse_memory_response
 from src.agent.memory_state import QuestionMemory, _freeze_triplets
 
@@ -31,7 +33,8 @@ def update_memory(
         client: Caller-owned configured client, including transport retries and
             per-attempt usage accounting. This function does not close it.
         prompt_variant: Default ``retrieval_questions``, unchanged ``paper``,
-            or opt-in ``answer_ranking``. All use one logical request.
+            or opt-in ``answer_ranking``. ``evidence_decision`` adds a separate
+            decision request before final selection; other variants use one.
 
     Returns:
         New snapshot and validated structured response. The new evidence set is
@@ -59,9 +62,17 @@ def update_memory(
     potential = _freeze_triplets(potential_triplets)
     if potential & state.rejected_triplets:
         raise ValueError("Potential graph must exclude permanently rejected triples")
-    prompt = build_memory_prompt(
-        state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
-    )
+    if prompt_variant == "evidence_decision":
+        decision = request_evidence_decision(
+            state.original_question, state.memory_triplets | potential, client,
+        )
+        prompt = build_decision_memory_prompt(
+            state.original_question, state.memory_triplets, potential, decision,
+        )
+    else:
+        prompt = build_memory_prompt(
+            state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
+        )
     completion = client.complete([{"role": "user", "content": prompt}])
     try:
         choice = completion["choices"][0]

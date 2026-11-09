@@ -12,6 +12,32 @@ import json
 from src.agent.memory_state import _freeze_triplets
 
 
+def build_decision_memory_prompt(question, memory_triplets, potential_triplets, decision):
+    """Provide the full graph and checked decision to final selection.
+
+    Args:
+        question: Unmodified original question.
+        memory_triplets: Historical evidence, without pruning.
+        potential_triplets: Eligible new evidence, without pruning.
+        decision: Structurally checked first-stage JSON record.
+
+    Returns:
+        Final-stage prompt retaining the existing answer membership constraints.
+    """
+    prompt = build_memory_prompt(question, memory_triplets, potential_triplets)
+    instructions = """\n### Validated Evidence Decision
+Use the decision below to answer the original question. Select every
+required_triplets entry. If condition_status is unknown, return no answer and
+preserve the available evidence for all possible targets. If the condition is
+resolved (or not_conditional) and missing_relations is empty, answer the original
+question and ask no further questions. Otherwise ask only for missing relations.
+subsequent_question must be an array of strings, never objects.
+Targets from the question do not bypass the existing selected-entity answer
+constraint. Return only the existing three output fields.
+"""
+    return prompt + instructions + json.dumps(decision, ensure_ascii=False)
+
+
 # Figure 8, Appendix C, paper page 21. Double braces escape the JSON example.
 MEMORY_MANAGEMENT_PROMPT = """### Task
 Given a question and several knowledge triples ("subject","relation","object"):

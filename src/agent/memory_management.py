@@ -57,7 +57,7 @@ def _manage_memory_once(
         potential_threshold: Finite real strict cutoff, default 0.7. Callers
             loading YAML must pass its potential_threshold explicitly.
         prompt_variant: Default ``retrieval_questions``, ``paper`` baseline,
-            or opt-in ``answer_ranking``, forwarded unchanged to the builder.
+            opt-in ``answer_ranking``, or two-stage ``evidence_decision``.
 
     Returns:
         New state and structured output after complete validation. All input
@@ -107,7 +107,8 @@ def manage_memory(
         scores: Positionally aligned finite refined scores passed to MSM.
         client: Caller-owned client shared by both stages; never closed here.
         potential_threshold: Strict cutoff forwarded unchanged to MSM.
-        prompt_variant: Stage-one prompt variant; even ``paper`` retains the
+        prompt_variant: Selection variant, including opt-in ``evidence_decision``
+            with a preliminary decision request. Every variant retains the
             mandatory separate ranking stage for multiple candidate answers.
 
     Returns:

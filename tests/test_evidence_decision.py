@@ -6,7 +6,7 @@ These cases establish protocol behavior, not real model semantic correctness.
 import copy
 import json
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from src.agent.evidence_decision import derive_decision, resolve_query, decode_branch
 from src.agent.memory_management import manage_memory
@@ -456,3 +456,256 @@ class EvidenceDecisionTests(unittest.TestCase):
             self.assertEqual(result.state.memory_triplets, set(selected))
             if status == "unknown":
                 self.assertIn("condition_unknown", str(active["missing_relations"]))
+
+
+class TwoHopDefaultEntryTests(unittest.TestCase):
+    """Establish bounded path acceptance through the public default transaction.
+
+    Synthetic extraction and selection exercise real parsing, graph evaluation,
+    thresholding and publication. No private configuration or HTTP is involved.
+    """
+
+    question = "Which city was the author of The Glass Orchard born in?"
+    author = ("The Glass Orchard", "written_by", "Mira Vale")
+    birth = ("Mira Vale", "born_in", "Linden City")
+    distractor = ("The Copper Harbor", "written_by", "Nolan Reed")
+    orphan_birth = ("Nolan Reed", "born_in", "Harbor City")
+    author_query = 'Which entity does "The Glass Orchard" connect to through relation "written_by"?'
+    birth_query = 'Which entity does "Mira Vale" connect to through relation "born_in"?'
+
+    def extraction(self):
+        """Build a fresh two-hop response without binding an intermediate name.
+
+        Returns:
+            Wire description rooted in the literal question entity, with exact
+            outgoing relation names shared by all controlled scenarios.
+        """
+        return {"description": {
+            "kind": "nonconditional_path", "root_entity": self.author[0],
+            "steps": [{"relation": "written_by", "direction": "outgoing"},
+                      {"relation": "born_in", "direction": "outgoing"}]}}
+
+    def run_round(self, state, graph, scores, selected, answers, questions,
+                  submitted, required, gaps, candidates):
+        """Assert both requests and the returned snapshot for one valid round.
+
+        Args:
+            state: Actual caller snapshot, preserved after the call.
+            graph: Controlled retrieval rows before thresholding and exclusions.
+            scores: Positionally aligned refined scores.
+            selected: Synthetic final selection and expected next memory.
+            answers: Exact expected final answer sequence.
+            questions: Exact expected next retrieval sequence.
+            submitted: Expected full graph visible to both LLM stages.
+            required: Expected code-protected path prefixes.
+            gaps: Expected currently reachable missing relation queries.
+            candidates: Expected code-derived terminal answer entities.
+
+        Returns:
+            Public result whose state can be inherited by the next round.
+        """
+        before = copy.deepcopy(state)
+        client = Mock()
+        client.complete.side_effect = [envelope(self.extraction()),
+                                       completion(selected, answers, questions)]
+        # Deliberately omit prompt_variant: every case must use the public default.
+        result = manage_memory(state, graph, scores, client)
+        self.assertEqual(client.complete.call_count, 2)
+        first = client.complete.call_args_list[0].args[0][0]["content"]
+        numbered = json.loads(first.split("\nNumbered knowledge: ", 1)[1])
+        self.assertEqual(numbered, [[i, list(t)] for i, t in enumerate(sorted(submitted))])
+        final = client.complete.call_args_list[1].args[0][0]["content"]
+        knowledge, remainder = final.split("Knowledge: ", 1)[1].split(
+            "\n### Validated Evidence Decision", 1)
+        self.assertEqual(json.loads(knowledge), [list(t) for t in sorted(submitted)])
+        active_text = remainder.split("Return only the existing three output fields.\n", 1)[1]
+        active = json.loads(active_text.split("\nAllowed retrieval questions:", 1)[0])
+        self.assertEqual(active["path"], self.extraction()["description"])
+        self.assertEqual(set(map(tuple, active["required_triplets"])), set(required))
+        self.assertEqual(active["missing_relations"], gaps)
+        self.assertEqual(active["answer_candidates"], candidates)
+        if gaps:
+            allowed = final.split("\nAllowed retrieval questions: ", 1)[1].split("\n", 1)[0]
+            self.assertEqual(json.loads(allowed), questions)
+        else:
+            self.assertNotIn("\nAllowed retrieval questions:", final)
+        self.assertEqual(result.response.selected_triplets, tuple(selected))
+        self.assertEqual(result.response.predict_answer, tuple(answers))
+        self.assertEqual(result.response.subsequent_question, tuple(questions))
+        self.assertEqual(result.state.memory_triplets, frozenset(selected))
+        self.assertEqual(result.state.rejected_triplets,
+                         state.rejected_triplets | (set(submitted) - set(selected)))
+        self.assertEqual(result.state.original_question, state.original_question)
+        self.assertEqual(state, before)
+        self.assertIsNot(result.state, state)
+        return result
+
+    def test_single_sufficient_insufficient_and_empty(self):
+        """Cover each single-round fixture with exact path and query assertions.
+
+        Complete evidence has no false gap; partial and empty graphs ask only
+        for the next reachable relation and never name an unobserved author.
+        """
+        for name, graph, answers, questions, gaps, candidates in (
+            ("single.sufficient", [self.author, self.birth], [self.birth[2]], [], [], [self.birth[2]]),
+            ("single.insufficient", [self.author], [], [self.birth_query],
+             [{"target": self.author[2], "relation": "born_in", "direction": "outgoing"}], []),
+            ("single.empty", [], [], [self.author_query],
+             [{"target": self.author[0], "relation": "written_by", "direction": "outgoing"}], []),
+        ):
+            with self.subTest(case=name):
+                self.run_round(QuestionMemory(self.question), graph, [0.95] * len(graph),
+                               graph, answers, questions, graph, graph, gaps, candidates)
+
+    def test_multi_partial_recovery_and_exclusion_probe(self):
+        """Inherit actual snapshots across the three multi-round fixtures.
+
+        The threshold-equal birth fact remains retrievable, then connects to
+        historical author memory. A submitted omitted distractor stays masked.
+        """
+        graph = [self.author, self.birth, self.distractor]
+        initial = QuestionMemory(self.question)
+        partial = self.run_round(
+            initial, graph, [0.95, 0.7, 0.95], [self.author], [], [self.birth_query],
+            [self.author, self.distractor], [self.author],
+            [{"target": self.author[2], "relation": "born_in", "direction": "outgoing"}], [])
+        self.assertNotIn(self.birth, partial.state.excluded_triplets)
+        self.assertEqual(partial.state.filter_expansion_triplets(graph), [self.birth])
+        self.assertEqual(partial.state.rejected_triplets, {self.distractor})
+        retrieval = Mock(return_value=graph)
+        recovered = self.run_round(
+            partial.state, retrieval(partial.response.subsequent_question), [0.95] * 3,
+            [self.author, self.birth], [self.birth[2]], [],
+            [self.author, self.birth], [self.author, self.birth], [], [self.birth[2]])
+        retrieval.assert_called_once_with((self.birth_query,))
+        probe = self.run_round(
+            recovered.state, graph, [0.95] * 3, [self.author, self.birth], [self.birth[2]], [],
+            [self.author, self.birth], [self.author, self.birth], [], [self.birth[2]])
+        self.assertEqual(probe.state, recovered.state)
+        self.assertEqual(partial.state.memory_triplets, {self.author})
+        self.assertEqual(initial, QuestionMemory(self.question))
+
+    def test_preexisting_rejection_is_filtered_without_requiring_model_omission(self):
+        """Test an explicitly seeded rejection independently of model preference.
+
+        Both request graphs must exclude a high-scoring rejected distractor;
+        memory remains available even when its current retrieval score is low.
+        """
+        state = QuestionMemory(self.question, [self.author], [self.distractor])
+        self.assertEqual(state.filter_expansion_triplets(
+            [self.distractor, self.author, self.birth]), [self.birth])
+        self.run_round(state, [self.distractor, self.author, self.birth], [0.95, 0.0, 0.95],
+                       [self.author, self.birth], [self.birth[2]], [],
+                       [self.author, self.birth], [self.author, self.birth], [], [self.birth[2]])
+
+    def test_orphan_birth_cannot_replace_missing_root_connection(self):
+        """Ask for the author when even the correct birth lacks its bridge.
+
+        A disconnected known city cannot produce a terminal candidate or a
+        downstream query anchored to the otherwise unbound person.
+        """
+        self.run_round(QuestionMemory(self.question), [self.birth], [0.95], [], [],
+                       [self.author_query], [self.birth], [],
+                       [{"target": self.author[0], "relation": "written_by",
+                         "direction": "outgoing"}], [])
+
+    def test_disconnected_birth_does_not_join_the_correct_path(self):
+        """Keep the reachable city as the only terminal beside unrelated births.
+
+        Selecting optional unrelated evidence is allowed; it must not expand the
+        terminal candidates or make a different city a valid answer.
+        """
+        graph = [self.author, self.birth, self.orphan_birth]
+        self.run_round(QuestionMemory(self.question), graph, [0.95] * 3, graph,
+                       [self.birth[2]], [], graph, [self.author, self.birth], [], [self.birth[2]])
+
+    def test_one_of_two_authors_missing_birth_blocks_answer(self):
+        """Protect every author prefix while one reachable candidate has a gap.
+
+        The completed branch remains protected, but its city alone cannot end
+        retrieval while the second author's birth relation is unresolved.
+        """
+        other_author = (self.author[0], "written_by", "Nolan Reed")
+        graph = [self.author, other_author, self.birth]
+        query = 'Which entity does "Nolan Reed" connect to through relation "born_in"?'
+        self.run_round(QuestionMemory(self.question), graph, [0.95] * 3, graph, [],
+                       [query], graph, graph,
+                       [{"target": "Nolan Reed", "relation": "born_in", "direction": "outgoing"}],
+                       [self.birth[2]])
+
+    def test_final_failures_precede_snapshot_construction(self):
+        """Reject omitted prefixes, invalid terminal answers and premature answers.
+
+        Incorrect answers remain selected graph endpoints so the path gate,
+        rather than generic entity membership, must reject them. No failure
+        may construct a candidate snapshot or erase prior memory/rejections.
+        """
+        other_author = (self.author[0], "written_by", "Nolan Reed")
+        full = [self.author, self.birth, self.orphan_birth]
+        for name, graph, final, code in (
+            ("omitted_author", full, completion([self.birth], [self.birth[2]]),
+             "decision_required_omitted"),
+            ("intermediate_answer", full, completion(full, [self.author[2]]),
+             "decision_path_answer"),
+            ("disconnected_city", full, completion(full, [self.orphan_birth[2]]),
+             "decision_path_answer"),
+            ("unconnected_birth", [self.birth], completion([self.birth], [self.birth[2]]),
+             "decision_path_incomplete"),
+            ("partial_other_author", [self.author, other_author, self.birth],
+             completion([self.author, other_author, self.birth], [self.birth[2]]),
+             "decision_path_incomplete"),
+            ("wrong_gap_query", [self.author], completion([self.author], questions=[self.author_query]),
+             "decision_questions"),
+        ):
+            with self.subTest(case=name):
+                state = QuestionMemory(self.question, [self.distractor], [("Old", "edge", "Rejected")])
+                before = copy.deepcopy(state)
+                client = Mock()
+                client.complete.side_effect = [envelope(self.extraction()), final]
+                with patch.object(QuestionMemory, "__post_init__",
+                                  side_effect=AssertionError("Unexpected snapshot construction")) as constructor:
+                    with self.assertRaises(MemoryValidationError) as caught:
+                        manage_memory(state, graph, [0.95] * len(graph), client)
+                self.assertEqual((caught.exception.code, caught.exception.stage),
+                                 (code, "decision_consistency"))
+                constructor.assert_not_called()
+                self.assertEqual(client.complete.call_count, 2)
+                self.assertEqual(state, before)
+
+    def test_invalid_path_structures_stop_before_selection(self):
+        """Reject malformed or ungrounded plans during the extraction stage.
+
+        Each mutation starts from a valid wire description. Both nonempty
+        historical memory and permanent rejection survive without a final call.
+        """
+        valid = self.extraction()["description"]
+        invalid = [
+            {**valid, "root_entity": "Mira Vale"},
+            {**valid, "root_entity": " "},
+            {**valid, "root_entity": 1},
+            {**valid, "steps": []},
+            {**valid, "steps": valid["steps"][:1]},
+            {**valid, "steps": valid["steps"] * 2},
+            {**valid, "steps": {}},
+            {**valid, "steps": [None, valid["steps"][1]]},
+            {**valid, "steps": [{"relation": "written_by", "direction": "sideways"}, valid["steps"][1]]},
+            {**valid, "steps": [{"relation": " ", "direction": "outgoing"}, valid["steps"][1]]},
+            {**valid, "steps": [{"relation": "written_by"}, valid["steps"][1]]},
+            {**valid, "steps": [{**valid["steps"][0], "entity": "Mira Vale"}, valid["steps"][1]]},
+            {**valid, "branch": {}},
+        ]
+        for record in invalid:
+            with self.subTest(description=record):
+                state = QuestionMemory(self.question, [self.author], [self.distractor])
+                before = copy.deepcopy(state)
+                client = Mock()
+                client.complete.return_value = envelope({"description": record})
+                with patch.object(QuestionMemory, "__post_init__",
+                                  side_effect=AssertionError("Unexpected snapshot construction")) as constructor:
+                    with self.assertRaises(MemoryValidationError) as caught:
+                        manage_memory(state, [self.birth], [0.95], client)
+                self.assertEqual((caught.exception.code, caught.exception.stage),
+                                 ("decision_path", "evidence_decision"))
+                constructor.assert_not_called()
+                self.assertEqual(client.complete.call_count, 1)
+                self.assertEqual(state, before)

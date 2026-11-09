@@ -4,6 +4,8 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
+The bounded two-hop repair has completed its offline gate through the public default `manage_memory` entry: six controlled scenarios inherit actual returned snapshots, with additional disconnected-evidence, incomplete-candidate, publication-failure and seeded-rejection checks. All $125$ offline tests passed without live API calls. The authoritative [Step 2 result and next steps](part_d.zh-CN.md#最短实施与验收顺序) retain the detailed evidence and limits; next is Step 3, adding the focused live runner assertions. Live two-hop acceptance and TODO 2.3.5 remain pending.
+
 This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots, LLM-guided memory replacement, permanent rejection tracking and expansion exclusions are implemented. Member D acceptance demonstrates correct module behavior and reasonable outputs using controlled retrieval/scoring inputs and real LLM calls. Member E owns C/E pipeline integration; it is outside Member D's delivery scope and is not a prerequisite for accepting these modules. Historical references below to unverified integration describe coverage limits, not additional Member D tasks.
 
 ## LLM configuration and requests

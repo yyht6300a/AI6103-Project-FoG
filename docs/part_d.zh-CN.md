@@ -575,6 +575,109 @@ Bronze unknown 正确抽取条件及两分支，保留两条出生事实，无�
 
 新私有基线为 `tmp/tmp_bounded_acceptance_baseline_20261109T174838393707Z.json`；ranking 报告为 `tmp/tmp_part_d_validation_20261109T174845118055Z.json`，Bronze 报告为 `tmp/tmp_part_d_validation_20261109T175040950698Z.json`；核账及人工结论为 `tmp/tmp_bounded_acceptance_review_20261109T175040950698Z.json`。机器 UTC 文件名按原样保留，与本地 2026/11/10 记录日期区分。历史独立成功记录及原失败材料均保留。本次无共享代码变化，复用已通过的 $149$ 项离线基线，只检查本轮文档、真实用量、字符和 diff。TODO 2.3.5 因本修订人工验收失败保持开放；2.3.6 全历史核账及 2.4 最终交付未完成，不因 ranking 通过而关闭。
 
+#### 2026/11/10 Bronze probe 缺失单跳方向独立复核与最短方案
+
+本节复核上一节的人工失败判定并给出最短后续方案。本轮只改分析与方案：生产提示、schema、decoder、求值器、运行器、正式测试和私有配置均未修改，真实 API 调用为 $0$，未读取 `.env`，未增写用量账本。生产模块、运行器、两份测试文件、两份真实报告、旧审阅记录及账本（$572$ 行）的 SHA-256 摘要在诊断前后一致。机器 UTC 文件名与本地 2026/11/10 日期差异按原样保留，原报告和历史判定不修改。
+
+##### 事实链与当轮可见图
+
+Bronze 三轮使用同一原题：`The Glass Orchard has exactly one publisher. If it was published by Silver Press, which city was Mira Vale born in? Otherwise, which city was Nolan Reed born in? If the publisher is unknown, ask for it before answering.`。实际编号图与真实抽取如下。
+
+| 轮次 | 提交的编号图 | 首阶段真实抽取 | 派生与输出 |
+| --- | --- | --- | --- |
+| unknown | $0$ Mira 出生、$1$ Nolan 出生 | `conditional_equals`；条件关系 `publisher`（图中无此名）、值 `Silver Press`；true 为 Mira `born_in` observed [0]，false 为 Nolan `born_in` observed [1] | `unknown`，合并两分支；无答案，只问出版社；记忆保留两条出生边 |
+| resolved | $0$ Mira 出生、$1$ Nolan 出生、$2$ 出版社 | 条件关系 `published_by`；true 为 Mira observed [0]，false 为 Nolan observed [1] | `false`，只选 Nolan 与出版社；Mira 出生边未选中，按永久拒绝规则移除；答 `Cedar City` |
+| probe | $0$ Nolan 出生、$1$ 出版社 | 条件仍为 `published_by`/`Silver Press`；true 为 Mira `born_in` **missing/incoming**，false 为 Nolan observed [0] | `false`，只用 false 分支；答 `Cedar City`，旧状态、拒绝与过滤不变 |
+
+Mira 出生边在 resolved 轮被提交但未被选中，因此按提交并集内的省略规则成为永久拒绝（`memory_update.py:101–106`）；probe 轮该边被 `filter_expansion_triplets`（`memory_state.py:93–114`）滤除，故当轮编号图只有 Nolan 出生与出版社，模型看不到 Mira 的出生边，也看不到 `Linden City`。它能依据的是原题本身、当轮唯一同关系事实 `(Nolan Reed, born_in, Cedar City)` 的角色，以及同一问题运行前两轮自己以 observed 绑定 Mira 为 head 的链历史；后者不是当轮可见输入，不能当作当轮图证据。题意要求的事实是 `(Mira Vale, born_in, 城市)`，Mira 为 head；`incoming` 表示城市为 head、Mira 为 tail，与该事实不符。
+
+##### 首次偏离与传播边界
+
+| 层次（当前行号） | 实际行为与结论 |
+| --- | --- |
+| `DECISION_INSTRUCTIONS`，`evidence_decision.py:15–110` | 只有 `:73–75` 定义方向含义（head/tail）与缺失声明的存在性校验，`:76–77` 要求每个目标即使缺失也要描述。没有“如何由原题决定缺失方向”的规则，也没有任何缺失单跳方向的示例；observed 绑定的方向由代码派生（`:72`），模型只在缺失时自报方向。首个可观察偏离即 probe 首阶段 JSON 的 `incoming` |
+| `decode_description`、`decode_branch`，`:185–247`、`:250–281` | 题型、条件引文、分组、关系名与枚举方向均合法；外形无法否决 |
+| `resolve_query`，`:284–331` | 缺失分支只做存在性检查（`:323–328`）：两个方向都无命中即接受，不比较方向与题意角色。`tests/test_evidence_decision.py:268–269` 已把“空图接受 incoming”固定为契约 |
+| `derive_decision`，`:403–508` | 所有分支都解码并解析（`:459–479`），但只扫描 active 分支（`:480–493`）。probe 状态 `false`，true 分支不进入 `required_triplets`、`answer_candidates` 或 `missing_relations`，既不报缺口也不影响候选 |
+| `build_decision_memory_prompt`，`memory_prompt.py:15–50` | 最终阶段只收到 active 派生字段，`targets_by_case` 被移除（`:47–49`）；probe 的真实第二阶段请求不含该分支，`incoming` 不可见（已核对请求原文） |
+| `validate_decision_response` 与快照发布，`:578–613`、`memory_update.py:99–106` | 必留、候选、答案、问题与快照规则全部成立，错误未进入输出或状态 |
+| 条件断言，`validate_part_d.py:682–723` | 只断言 memory、answers、questions、rejection、filtered 五项（`:710–722`），没有首阶段抽取断言；这与 `check_two_hop`（`:615–654`）和 `check_ranking`（`:555–558`）不同 |
+
+因此错误停留在首阶段未激活分支，未传播到当轮候选、输出、记忆或拒绝集合；“自动全部通过”只说明输出与状态契约成立，不代表抽取忠实。反事实地把 publisher 值改为 `Silver Press` 后，同一抽取会派生 incoming 缺口并渲染 `Which entity connects to "Mira Vale" through relation "born_in"?`，而正确 outgoing 渲染 `Which entity does "Mira Vale" connect to through relation "born_in"?`；这是合成图改变后的确定性求值结果，不是新的模型输出，也不证明该分支在真实运行中必然激活。
+
+##### 前次人工判定复核与限定
+
+方向失败成立，属抽取忠实性缺陷，不是当前错答。
+
+| 判定维度 | 结论 | 依据 |
+| --- | --- | --- |
+| 抽取协议有效性 | 通过 | 四类枚举、条件引文、两分支结构与必需字段均合法 |
+| 完整抽取忠实性 | 失败（仅未激活 true 分支的方向） | 题意要求 `(Mira Vale, born_in, 城市)`，声明却是 `missing/incoming` |
+| 当前活跃分支、输出与状态 | 通过 | false 分支派生、`Cedar City`、记忆、永久拒绝与高分过滤均正确 |
+| 自动门槛覆盖 | 不足 | 条件断言只覆盖输出与状态；同一夹具的两次未激活改动仍全部通过 |
+| 人工停止合理性 | 合理 | 与“两分支都必须忠实描述题意”的标准一致；依据需限定为链历史与题意语义 |
+
+这不属于验收范围歧义：协议在评估条件前就要求描述两分支，条件 fixture 也要求两分支非空，因此忠实性理应覆盖未激活分支；但该要求只把问题定位为潜在语义缺陷，不把潜在缺陷提升为当前业务失败。
+
+需要追加三点限定，也不改动原记录。
+
+1. **依据来源**：方向期望来自原题语义（人物是出生关系的主体）、当轮可见同关系事实的角色（Nolan 为 head），以及同一运行前两轮模型自己以 observed 绑定 Mira 为 head。probe 当轮编号图不含 Mira 出生边，前次表述“题目与此前图事实要求 Mira 为 head”容易读成当轮图证据，应限定为链历史与题意语义。
+2. **影响范围**：这是潜在语义缺陷而非当前业务失败。当前 active 为 `false`，答案 `Cedar City`、记忆、永久拒绝与高分重输过滤均正确；只有 true 分支被激活时，反向缺口与反向检索问题才会成为业务风险，本链未发生。
+3. **验收位置**：该字段不受任何自动断言约束，判定位置是 `semantic_review=pending` 与独立人工审阅记录。不能因最终城市正确而宣布抽取通过，也不应把该失败改写成生产异常、固定错误码或新成功记录。
+
+前次判定不被推翻，也不重复其表述；本节只补充依据与范围，不声称已知模型内部原因。
+
+##### 竞争解释与免费证据
+
+| 候选机制 | 支持 | 反证或限制 |
+| --- | --- | --- |
+| 提示缺少缺失方向的决定规则与示例 | `:73–75` 只定义 head/tail，无规则与示例；两跳缺失明确不带方向；同一模型在事实可见时用 observed（方向由代码派生），事实消失后改报 incoming | 离线重放只能证明契约；不能证明模型按哪一种读法出错，也不能据此断言某句提示的因果效应 |
+| `target` 指代不清（组实体还是答案端点） | 同一词在缺失定义句与 observed 说明中反复出现，定义句未说明答案端点 | schema 的 `entity` 描述已明确“不是答案值”；属于可解释风险，未被测量 |
+| 同图关系角色约束不足 | 当轮唯一 `born_in` 事实以人物为 head；代码只在事实存在时否决缺失声明 | 合法 incoming 反例：同一 `written_by` 关系、同类实体，问“写了哪本书”时人物必须是 tail；方向由题目而非图模式决定，不能做成确定性代码规则 |
+| 永久过滤后缺失约束不足 | `resolve_query` 只在任一方向已有事实时拒绝；无事实时两种方向都接受（守卫探针） | 这是已记录的保守设计（`tests/test_evidence_decision.py:268–269`），不是本次新增缺陷；它使错误不可被本地否决，但不产生错误输出 |
+| 单跳与两跳缺失协议不对称 | 两跳 `{kind: missing}` 无方向、incident 检索、方向延后；单跳强制 direction | 两跳带方向的缺失绑定被 `decision_path` 拒绝，证明两种契约独立；不能把两跳的延迟决定当成单跳已支持 |
+| 未激活分支不属于验收范围 | 条件断言只覆盖输出与状态，两次合成改动（正确 outgoing、无关 `lived_in`）仍全部通过 | 但 active 分支的关系改动在解码阶段即被拒绝，说明生产确实校验 active 分支；差别在覆盖范围，不能据此放宽标准 |
+
+| 免费实验（合成或深拷贝均标注来源） | 观察 |
+| --- | --- |
+| 保存的 Bronze 三轮经维护运行器重放 | $6$ 次 mock；实际 messages／options、提交图、输出、前后状态与报告逐一相等，自动断言全真 |
+| 仅把 probe true 分支 `incoming` 改为 `outgoing` | 派生决策与原文完全相同，未激活方向对当前决策不可见 |
+| 反事实激活图（publisher 值改为 `Silver Press`） | 状态变 `true`，两版本分别产生相反方向的缺口与查询，候选为空 |
+| 守卫探针：空图、同关系事实在头端／尾端、合法 incoming、合法 outgoing | 空图两方向都接受；任一方向有事实即 `decision_conflict`；合法 incoming 与 outgoing 均被接受并渲染各自模板 |
+| 门槛变异：未激活分支改为正确方向、改为无关关系；active 分支改关系 | 前两者重放后仍 `validated` 且五项断言全真；后者在解码阶段 `decision_queries` 失败 |
+| 两跳缺失绑定带或不带方向 | 不带方向被接受并渲染 incident 查询；带方向被 `decision_path` 拒绝 |
+
+证据限制：重放恢复的是已保存回复的契约，不是新提示效果；单样本不能估计失败概率；合成改动不能冒充真实回复；本轮未新增真实调用。
+
+##### 最小方案比较与建议
+
+| 选项 | 能解决 | 不能保证／代价 | 取舍 |
+| --- | --- | --- | --- |
+| 仅澄清提示 | 补上缺失方向的决定规则与两个通用示例，保留四类、schema 与两跳契约 | 不能保证模型行为，仍需真实复验；共享提示对所有用例都有理论影响 | 推荐 |
+| 代码按可见关系角色校验方向 | 在事实缺失时也能拦截部分错误 | 同一关系在不同题目下方向本就不同，合法 incoming 与 outgoing 反例并存；代码无题意与类型语义，规则等于猜方向，会误拒合法查询 | 不采用 |
+| 单跳缺失方向延迟（incident） | 确定性消除该类方向错误 | 需改 schema、decoder、求值、查询渲染与条件 fixture，扩大检索，并把角色判断转移给到达事实，可能把反向事实纳入候选；目前只有一个样本，没有“方向声明整体不可靠”的证据 | 暂不采用，保留为澄清后仍失败时的备选 |
+| 把验收范围限定为 active 分支 | 让本链按输出判定通过 | 事后放宽标准，未激活分支的潜在缺陷不再被审阅；与“不能因答案正确忽略抽取语义”冲突 | 不采用 |
+| 条件 fixture 抽取覆盖 | 让自动门槛能拒绝本次同类失败，含未激活分支 | 只能证明该 fixture，不改善真实效果；需别名容忍与独立安全解码，存在误拒风险 | 推荐作为验证补充，不单独使用 |
+| 增加审题调用或在生产提示硬编码人物／关系／答案 | 可能提高分类稳定性 | 增加调用与契约，向模型泄露验收语义；没有证据支持 | 不采用 |
+
+推荐的最小实施顺序（本轮不实施，留待下一轮审阅实施）。
+
+1. **生产提示**：在 `:73–75` 之后补一句决定规则：“缺失方向描述所求事实中组实体的角色，而不是答案端点的位置；先由原题确定所求事实，再决定 head/tail。”随后给两个不含 fixture 实体、关系或答案的通用示例（询问某人的出生地要求该人为 head，即 outgoing；询问某人写了哪部作品要求该人为 tail，即 incoming），并明确 `target` 指组实体。保留四类枚举、schema、observed 由代码派生方向、两跳 incident 契约。
+2. **运行器条件抽取门槛**：在 `run_cases` 的条件分支内，按 `check_two_hop` 的现有风格，用 `safe_payload` 独立核对三轮两分支的 kind、条件主体与值、分支实体、关系别名、绑定种类与方向，包含未激活分支；关系别名沿用 `BIRTH_RELATIONS` 一类的固定集合，不对回复做修复或合并。保留的 probe 回复在新门槛下应失败，unknown／resolved 仍应通过；这是覆盖补充，不宣称改善真实抽取。
+3. **正式测试**：固定未激活方向错误被条件门槛拒绝、已保存 probe 回复作为负例、关系别名被接受、合法 observed 与合法 incoming 不被误拒、首错停止且调用数不变。
+4. **离线门槛**：先跑 `test_evidence_decision.py` 与 `test_part_d_validation.py` 定向检查，再用保留的 Bronze／Silver 回复做契约重放（probe 预期失败），最后在最终修改树跑一次全套；字符、AST、diff、文档链接检查同批完成。
+5. **有界真实验收**（须另行取得明确授权）：先 Bronze 三轮，通过后 Silver 三轮；每轮 $2$ 次逻辑调用，每链正常合计 $6$ 次；上限每链 $9$ 逻辑／$27$ HTTP，两链合计 $18$ 逻辑／$54$ HTTP；首个自动或人工语义失败即停，不重采样、不改门槛。不重跑 ranking：两例抽取都只用 observed 绑定，改动只涉及缺失单跳方向，保留其独立通过记录；若共享提示的真实影响超出该范围，应在报告中说明而不是默认加跑全部历史。若 Bronze 失败，不得进入 Silver，也不得循环改提示再试。
+
+不沿用旧 $18$／$24$／$72$ 预算，不把上述建议写成当前授权。Silver 在本修订仍从未执行，不能记为通过。TODO 2.3.5、2.3.6 与 2.4 不因本节离线分析或历史局部通过而关闭。
+
+##### 本轮边界与留证
+
+真实 API 调用为 $0$；脚本显式阻断 socket、生产配置、dotenv 入口与真实客户端创建，网络、配置、客户端与 dotenv 计数均为 $0$。未执行 smoke、付费 suite、真实请求或额外采样，未切换模型／服务，未改 `.env`、私有配置、ACL、所有权、认证或全局配置，未手改账本、历史报告或旧审阅记录。
+
+私有基线为 `tmp/tmp_bronze_direction_baseline_20261109T182712564630Z.json`，诊断脚本为 `tmp/tmp_bronze_direction_baseline.py` 与 `tmp/tmp_bronze_direction_diagnosis.py`，结果为 `tmp/tmp_bronze_direction_diagnosis_20261109T183041971104Z.json`；脚本复用维护运行器、生产 decoder／求值器与公开 `manage_memory`，未复制图算法。因当前沙箱下 `tmp/` 对子进程只读，私有脚本写入需要一次执行边界批准；未因此改变 ACL 或文件所有权。
+
+尚未知：提示措辞与模型内部原因、该夹具以外的缺失方向分布、Silver 链结果，以及新增提取门槛在合法别名下的误拒概率。以上均不影响“方向失败成立、当前输出正确、需澄清提示并补条件覆盖”这一结论，但也不构成业务验收通过。
+
 #### 2026/11/10 最小修复执行与有界验收
 
 已实现默认两阶段协议全用例失败投影，覆盖安全抽取、生产求值派生字段、最终选择一致性及排序多重集。信封先检查拒绝／截断；JSON 沿用生产重复字段与非标准常量拒绝规则；词表、键、深度、数组、字符串和整数有界，安全越界编号保留原值并标注。整个投影调用兜底后原异常原样重抛，不复制生产失败的原始 `stages`。增加请求开始／收到完成回复计数、阶段进度、本地校验标记、白名单函数抛出行及实际源码 SHA-256 指纹；指纹涵盖未提交工作树，不将 HEAD 冒充运行版本。成功生产事务仍保留合法回复供人工审阅，受控语义门槛失败另行标记。

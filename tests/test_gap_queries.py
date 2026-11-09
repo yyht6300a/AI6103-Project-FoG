@@ -37,7 +37,9 @@ class GapQueryTests(unittest.TestCase):
         self.assertEqual(queries[1], 'Which entity connects to "A\\"B" through relation "r"?')
         original = copy.deepcopy(MEMORY_RESPONSE_FORMAT)
         schema = decision_response_format({'missing_relations': gaps}, MEMORY_RESPONSE_FORMAT)
-        self.assertEqual(schema['json_schema']['schema']['properties']['subsequent_question']['items']['enum'], queries)
+        self.assertIs(schema, MEMORY_RESPONSE_FORMAT)
+        self.assertTrue(schema['json_schema']['strict'])
+        self.assertEqual(schema['json_schema']['schema']['properties']['subsequent_question']['items'], {'type': 'string'})
         self.assertEqual(MEMORY_RESPONSE_FORMAT, original)
         self.assertIs(decision_response_format({'missing_relations': []}, MEMORY_RESPONSE_FORMAT), MEMORY_RESPONSE_FORMAT)
 
@@ -64,3 +66,6 @@ class GapQueryTests(unittest.TestCase):
                     manage_memory(state, [RIGHT], [0.95], client, prompt_variant='evidence_decision')
             self.assertEqual(state, QuestionMemory(QUESTION, [LEFT], [('Other', 'r', 'Value')]))
             self.assertEqual(client.complete.call_count, 2)
+            final = client.complete.call_args_list[1]
+            self.assertEqual(final.kwargs['response_format'], MEMORY_RESPONSE_FORMAT)
+            self.assertIn(json.dumps([correct]), final.args[0][0]['content'])

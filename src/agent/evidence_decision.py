@@ -5,7 +5,6 @@ publishes memory; final selection remains subject to the original strict parser.
 """
 
 import json
-from copy import deepcopy
 
 from src.agent.memory_response import _unique_object, _reject_constant, _string_array
 from src.agent.memory_state import _freeze_triplets
@@ -388,22 +387,16 @@ def missing_relation_queries(missing):
 
 
 def decision_response_format(decision, base):
-    """Constrain only gap-bearing candidate requests without mutating defaults.
+    """Reuse the accepted strict schema while enforcing queries locally.
 
     Args:
-        decision: Derived decision containing validated missing relations.
-        base: Shared final response format, preserved for gap-free requests.
+        decision: Derived decision; gaps affect prompts and local validation only.
+        base: Shared final response format, preserved for every request.
 
     Returns:
-        Request-local schema with query enum, or the unchanged base when gap-free.
+        Unchanged base schema without a dynamic query enumeration.
     """
-    queries = missing_relation_queries(decision["missing_relations"])
-    if not queries:
-        return base
-    result = deepcopy(base)
-    result["json_schema"]["schema"]["properties"]["subsequent_question"]["items"] = {
-        "type": "string", "enum": queries}
-    return result
+    return base
 
 
 def validate_decision_response(decision, response):

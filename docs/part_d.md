@@ -1,6 +1,6 @@
 # Member D modules
 
-The opt-in `evidence_decision` candidate now converts derived gaps into deterministic open-value queries. Gap-bearing final requests use a request-local query enum; local validation rejects out-of-set or duplicate questions and requires unknown-condition queries before publication. Gap-free requests retain their existing contract. All 115 offline tests pass and both historical full-graph requests replay unchanged. The new Silver first round stopped on a final-request HTTP error without publishing state; neither new chain passed. The candidate remains opt-in. See the [execution record](part_d.zh-CN.md#修改计划分离条件决策与记忆发布) for evidence and remaining gates.
+The opt-in `evidence_decision` candidate converts derived gaps into deterministic open-value queries. All final requests reuse the base strict schema; local validation rejects out-of-set or duplicate questions and requires unknown-condition queries before publication. All 115 offline tests and both unchanged historical full-graph replays pass. New GPT-4o Silver and Bronze three-round chains pass retention, branch answers, removal and permanent filtering, with 12 HTTP attempts and no retries. Step 5 can proceed; default adoption and the independent GPT-4o-mini delivery gate remain pending. See the [execution record](part_d.zh-CN.md#修改计划分离条件决策与记忆发布) for evidence and remaining gates.
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 

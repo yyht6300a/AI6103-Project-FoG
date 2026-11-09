@@ -31,7 +31,8 @@ def decision_completion(status="not_conditional", required=(A, B), **overrides):
         A normal completion envelope carrying the five decision fields.
     """
     decision = {"condition_status": status, "condition_triplets": [],
-                "answer_targets": [], "required_triplets": list(required),
+                "targets_by_case": {"true": [], "false": [], "not_conditional": []},
+                "required_triplets": list(required),
                 "missing_relations": []}
     decision.update(overrides)
     result = completion()
@@ -45,6 +46,36 @@ class EvidenceDecisionTests(unittest.TestCase):
     Synthetic decisions deliberately avoid any fixture-specific branch logic.
     """
 
+    def test_branch_targets_are_derived_before_final_prompt(self):
+        """Forward only applicable targets, allowing missing facts and many objects.
+
+        Unknown targets use a stable union. Objects from the question need no
+        supporting triple yet; graph components must match exactly.
+        """
+        targets = {"true": [A[0], "Unseen Person"], "false": [B[2], A[0]],
+                   "not_conditional": []}
+        cases = [("true", targets, targets["true"]),
+                 ("false", targets, targets["false"]),
+                 ("unknown", targets, [A[0], "Unseen Person", B[2]]),
+                 ("not_conditional", {"true": [], "false": [],
+                                      "not_conditional": ["Unseen Person", A[0]]},
+                  ["Unseen Person", A[0]])]
+        for status, table, expected in cases:
+            with self.subTest(status=status):
+                state = QuestionMemory("What about Unseen Person?", [A], [REJECTED])
+                client = Mock()
+                client.complete.side_effect = [
+                    decision_completion(status, targets_by_case=table,
+                                        missing_relations=["birthplace"]),
+                    completion([A, B], questions=["Where was Unseen Person born?"]),
+                ]
+                manage_memory(state, [B], [0.95], client, prompt_variant="evidence_decision")
+                prompt = client.complete.call_args_list[1].args[0][0]["content"]
+                active = json.loads(prompt.split("Return only the existing three output fields.\n")[-1])
+                self.assertEqual(active["answer_targets"], expected)
+                self.assertNotIn("targets_by_case", active)
+                self.assertEqual(state, QuestionMemory("What about Unseen Person?", [A], [REJECTED]))
+
     def test_candidate_passes_full_graph_and_runs_ranking(self):
         """Send historical and new evidence to both stages before ranking.
 
@@ -52,7 +83,8 @@ class EvidenceDecisionTests(unittest.TestCase):
         """
         state = QuestionMemory("Who?", [A])
         decision = {"condition_status": "not_conditional", "condition_triplets": [],
-                    "answer_targets": [], "required_triplets": [list(A), list(B)],
+                    "targets_by_case": {"true": [], "false": [], "not_conditional": []},
+                    "required_triplets": [list(A), list(B)],
                     "missing_relations": []}
         first = completion()
         first["choices"][0]["message"]["content"] = json.dumps(decision)
@@ -68,6 +100,8 @@ class EvidenceDecisionTests(unittest.TestCase):
             prompt = call.args[0][0]["content"]
             self.assertIn(state.original_question, prompt)
             self.assertIn(json.dumps(sorted([A, B]), ensure_ascii=False), prompt)
+        decision.pop("targets_by_case")
+        decision["answer_targets"] = []
         self.assertIn(json.dumps(decision, ensure_ascii=False),
                       client.complete.call_args_list[1].args[0][0]["content"])
         self.assertEqual(result.response.predict_answer, (A[0], B[2]))
@@ -108,8 +142,19 @@ class EvidenceDecisionTests(unittest.TestCase):
             (decision_completion(condition_triplets=[C]), "decision_membership"),
             (decision_completion(condition_triplets=["bad"]), "decision_triplets"),
             (decision_completion(condition_triplets={}, required=[]), "decision_triplets"),
-            (decision_completion(answer_targets="target"), "decision_strings"),
-            (decision_completion(answer_targets=[False]), "decision_strings"),
+            (decision_completion(answer_targets=[]), "decision_fields"),
+            (decision_completion(targets_by_case=[]), "decision_targets"),
+            (decision_completion(targets_by_case={"true": []}), "decision_targets"),
+            (decision_completion(targets_by_case={"true": [], "false": [],
+                                                 "not_conditional": [False]}), "decision_strings"),
+            (decision_completion(targets_by_case={"true": [], "false": [],
+                                                 "not_conditional": ["Absent"]}),
+             "decision_target_membership"),
+            (decision_completion(targets_by_case={"true": [A[0]], "false": [],
+                                                 "not_conditional": []}), "decision_targets"),
+            (decision_completion("true", targets_by_case={"true": [], "false": [],
+                                                          "not_conditional": [A[0]]}),
+             "decision_targets"),
             (decision_completion(missing_relations=[" "]), "decision_strings"),
             (decision_completion(missing_relations={}), "decision_strings"),
             (decision_completion(required=[A], condition_triplets=[B]),
@@ -162,18 +207,21 @@ class EvidenceDecisionTests(unittest.TestCase):
         for status, birth, discarded in (("true", C, OTHER_BIRTH),
                                          ("false", OTHER_BIRTH, C)):
             with self.subTest(status=status):
-                state = QuestionMemory("Which town follows the conditional rule?")
+                state = QuestionMemory(f"Which town for {C[0]} if true, otherwise {OTHER_BIRTH[0]}?")
                 client = Mock()
                 client.complete.side_effect = [
                     decision_completion("unknown", [C, OTHER_BIRTH],
-                                        answer_targets=[C[0], OTHER_BIRTH[0]],
+                                        targets_by_case={"true": [C[0]], "false": [OTHER_BIRTH[0]],
+                                                         "not_conditional": []},
                                         missing_relations=[B[1]]),
                     completion([C, OTHER_BIRTH], questions=["Who leads Country A?"]),
                     decision_completion(status, [B, birth], condition_triplets=[B],
-                                        answer_targets=[birth[0]]),
+                                        targets_by_case={"true": [C[0]], "false": [OTHER_BIRTH[0]],
+                                                         "not_conditional": []}),
                     completion([B, birth], [birth[2]]),
                     decision_completion(status, [B, birth], condition_triplets=[B],
-                                        answer_targets=[birth[0]]),
+                                        targets_by_case={"true": [C[0]], "false": [OTHER_BIRTH[0]],
+                                                         "not_conditional": []}),
                     completion([B, birth], [birth[2]]),
                 ]
                 first = manage_memory(state, [C, OTHER_BIRTH, A], [0.95, 0.95, 0.7],
@@ -257,7 +305,8 @@ class EvidenceDecisionTests(unittest.TestCase):
                 state = QuestionMemory("Who?", [A], [REJECTED])
                 client = Mock()
                 client.complete.side_effect = [
-                    decision_completion(answer_targets=["External target"]), final]
+                    decision_completion(targets_by_case={"true": [], "false": [],
+                                                         "not_conditional": [A[0]]}), final]
                 with self.assertRaises(MemoryValidationError):
                     manage_memory(state, [B], [0.95], client,
                                   prompt_variant="evidence_decision")

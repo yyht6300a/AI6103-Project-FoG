@@ -35,7 +35,10 @@ subsequent_question must be an array of strings, never objects.
 Targets from the question do not bypass the existing selected-entity answer
 constraint. Return only the existing three output fields.
 """
-    return prompt + instructions + json.dumps(decision, ensure_ascii=False)
+    # Only the code-derived applicable targets reach selection; the branch table
+    # remains in the first-stage record for semantic review.
+    active_decision = {key: value for key, value in decision.items() if key != "targets_by_case"}
+    return prompt + instructions + json.dumps(active_decision, ensure_ascii=False)
 
 
 # Figure 8, Appendix C, paper page 21. Double braces escape the JSON example.

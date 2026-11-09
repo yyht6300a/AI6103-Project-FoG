@@ -14,24 +14,35 @@ from src.agent.validation_error import MemoryValidationError
 CASES = ("true", "false", "not_conditional")
 DECISION_INSTRUCTIONS = """Extract the original question's condition and branch requirements.
 Return only the specified JSON. Do not evaluate the condition yourself.
-condition.kind is equals for a single relation equality, none for a nonconditional
-question, unsupported for any other condition. subject and value must occur
+Wrap the extraction in description. Its kind is conditional_equals for a
+supported equality condition, nonconditional only when the ORIGINAL QUESTION
+has no branch condition, or unsupported with a verbatim quote of the unsupported
+requirement. Question type is independent of graph values and missing evidence.
+A false or unknown condition is still conditional_equals. Quote the original
+branch-determining condition in condition_quote. An instruction to ask first
+when evidence is missing is an answering prerequisite, not the branch condition.
+conditional_equals contains condition and branches true/false only.
+nonconditional contains only branch (targets and fact_queries), without condition.
+The condition describes a single relation equality. subject and value must occur
 verbatim in the original question or graph; relation is the exact graph relation
 name (if absent, describe the required relation). operator is eq. uniqueness_quote
 is the exact original-question passage explicitly establishing a single value,
-or empty if absent. For none, all other condition strings must be empty.
+or empty if absent.
 The comparison value is a query constraint, NEVER an observed fact.
 For each branch supply targets (entity names, not questions or predicted answers)
 and fact_queries. Each query has target, relation, direction (outgoing means
 target is head; incoming means target is tail). Describe every target's required
 one-hop fact even when absent from the graph. Use exact graph relation names
 when present. Never supply predicted values or select evidence. Both conditional
-branches must have nonempty targets and queries; not_conditional must be empty.
-For none, only not_conditional is active. Every target needs a query, and every
+branches must have nonempty targets and queries. The nonconditional branch also
+requires nonempty targets and queries. Every target needs a query, and every
 query target must belong to its branch. Multi-hop, aggregation and complex
 requirements are unsupported: use direction unsupported to fail explicitly.
 Code will query the COMPLETE graph for condition facts and select the branch.
 """
+
+# Generation and local decoding independently enforce the same tagged union.
+# Keep the downstream evaluator unchanged after decoding the wire protocol.
 
 
 STRING = {"type": "string"}
@@ -51,15 +62,73 @@ BRANCH_SCHEMA = {
         "properties": {"target": STRING, "relation": STRING, "direction": {
             "type": "string", "enum": ["outgoing", "incoming", "unsupported"]}}}}},
 }
+CONDITION_SCHEMA = {**CONDITION_SCHEMA,
+    "required": [key for key in CONDITION_SCHEMA["required"] if key != "kind"] + ["condition_quote"],
+    "properties": {key: value for key, value in CONDITION_SCHEMA["properties"].items() if key != "kind"}}
+CONDITION_SCHEMA["properties"].update(
+    operator={"type": "string", "enum": ["eq"]}, condition_quote=STRING)
+DESCRIPTION_VARIANTS = [
+    {"type": "object", "additionalProperties": False,
+     "required": ["kind", "condition", "branches"], "properties": {
+         "kind": {"type": "string", "enum": ["conditional_equals"]},
+         "condition": CONDITION_SCHEMA,
+         "branches": {"type": "object", "additionalProperties": False,
+                      "required": ["true", "false"],
+                      "properties": {case: BRANCH_SCHEMA for case in ("true", "false")}}}},
+    {"type": "object", "additionalProperties": False,
+     "required": ["kind", "branch"], "properties": {
+         "kind": {"type": "string", "enum": ["nonconditional"]}, "branch": BRANCH_SCHEMA}},
+    {"type": "object", "additionalProperties": False,
+     "required": ["kind", "quote"], "properties": {
+         "kind": {"type": "string", "enum": ["unsupported"]}, "quote": STRING}},
+]
 DECISION_RESPONSE_FORMAT = {"type": "json_schema", "json_schema": {
-    "name": "evidence_description", "strict": True,
-    "schema": {"type": "object", "additionalProperties": False,
-               "required": ["condition", "branches"],
-               "properties": {"condition": CONDITION_SCHEMA, "branches": {
-                   "type": "object", "additionalProperties": False,
-                   "required": list(CASES),
-                   "properties": {case: BRANCH_SCHEMA for case in CASES}}}},
-}}
+    "name": "evidence_description", "strict": True, "schema": {
+    "type": "object", "additionalProperties": False, "required": ["description"],
+    "properties": {"description": {"anyOf": DESCRIPTION_VARIANTS}}}}}
+
+
+def decode_description(record, question):
+    """Decode the tagged wire structure without inferring or repairing fields.
+
+    Args:
+        record: Untrusted response object containing a single description.
+        question: Original question used to validate literal condition quotes.
+
+    Returns:
+        Condition and three branch slots for the existing graph evaluator.
+
+    Raises:
+        MemoryValidationError: Mixed structures, invalid quotes or unsupported type.
+    """
+    if not isinstance(record, dict) or set(record) != {"description"}:
+        raise MemoryValidationError("decision_fields")
+    item = record["description"]
+    if not isinstance(item, dict):
+        raise MemoryValidationError("decision_fields")
+    kind = item.get("kind")
+    empty = {"targets": [], "fact_queries": []}
+    if kind == "conditional_equals" and set(item) == {"kind", "condition", "branches"}:
+        condition = item["condition"]
+        if (not isinstance(condition, dict) or set(condition) != set(CONDITION_SCHEMA["required"])
+                or any(not isinstance(v, str) for v in condition.values())):
+            raise MemoryValidationError("decision_condition")
+        quote = condition["condition_quote"]
+        if not quote.strip() or quote not in question:
+            raise MemoryValidationError("decision_condition")
+        branches = item["branches"]
+        if not isinstance(branches, dict) or set(branches) != {"true", "false"}:
+            raise MemoryValidationError("decision_targets")
+        return {"condition": {"kind": "equals", **{k: v for k, v in condition.items()
+                                                  if k != "condition_quote"}},
+                "branches": {**branches, "not_conditional": empty}}
+    if kind == "nonconditional" and set(item) == {"kind", "branch"}:
+        return {"condition": {"kind": "none", **dict.fromkeys(
+                    ("subject", "relation", "operator", "value", "uniqueness_quote"), "")},
+                "branches": {"true": empty, "false": empty, "not_conditional": item["branch"]}}
+    if kind == "unsupported" and set(item) == {"kind", "quote"}:
+        raise MemoryValidationError("decision_unsupported")
+    raise MemoryValidationError("decision_fields")
 
 
 def derive_decision(description, question, submitted):
@@ -77,11 +146,12 @@ def derive_decision(description, question, submitted):
         MemoryValidationError: Malformed extraction, unsupported condition,
             invalid fact query or conflicting single-value facts.
     """
+    description = decode_description(description, question)
     graph = sorted(_freeze_triplets(submitted))
     if not isinstance(description, dict) or set(description) != {"condition", "branches"}:
         raise MemoryValidationError("decision_fields")
     condition = description["condition"]
-    if not isinstance(condition, dict) or set(condition) != set(CONDITION_SCHEMA["required"]):
+    if not isinstance(condition, dict) or set(condition) != {"kind", "subject", "relation", "operator", "value", "uniqueness_quote"}:
         raise MemoryValidationError("decision_condition")
     if any(not isinstance(value, str) for value in condition.values()):
         raise MemoryValidationError("decision_condition")

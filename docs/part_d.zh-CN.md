@@ -42,7 +42,14 @@
 | `scores` | `Sequence[Real]` | 与 `triples` 位置对齐的有限精炼分数。 |
 | `client` | `LLMClient` | 调用方持有并负责关闭的 LLM 客户端。 |
 | `potential_threshold` | `Real` | 潜力子图的严格阈值，默认 `0.7`；从 YAML 读取时须显式传入。 |
-| `prompt_variant` | `str` | 仅关键字参数，默认 `"evidence_decision"`；其他值用于对照。 |
+| `prompt_variant` | `str` | 仅关键字参数，默认 `"evidence_decision"`；可选值及含义见下方列表。 |
+
+`prompt_variant` 的可选值：
+
+- `"evidence_decision"`（默认）：先执行一次结构化需求抽取，由代码校验题型、条件与事实端点，派生必留证据、答案候选和固定查询。最终选择须通过决策一致性校验，否则不发布快照。
+- `"paper"`：只使用图 8 原版提示做单次选择，不追加需求抽取或检索措辞增强；多答案仍在选择后独立排序。
+- `"retrieval_questions"`：在图 8 提示上追加检索问句增强，要求后续问题面向知识图谱检索器、锚定已命名实体并只询问缺失关系；仍为单次选择。
+- `"answer_ranking"`：在图 8 提示上追加检索问句和答案排序增强，让单次选择阶段按证据支持度排列候选；多答案时独立的排序阶段仍会执行。
 
 输出：
 
@@ -89,7 +96,7 @@ flowchart TD
 
 ## 初始问题分解
 
-[`question_decomposition.py`](../src/agent/question_decomposition.py) 实现 FoG 第 3.1 节和图 7 的初始子问题。`decompose_question(question, client, *, prompt_variant="explicit_references")` 默认要求每个子问题可独立检索：写全已知实体名或未知实体的关系描述，不假定前一问已得到答案，不编造实体名。提示变体的取值见[主要交付产物](#主要交付产物)。返回有序问题列表，供调用方分别检索。
+[`question_decomposition.py`](../src/agent/question_decomposition.py) 实现 FoG 第 3.1 节和图 7 的初始子问题。`decompose_question(question, client, *, prompt_variant="explicit_references")` 默认要求每个子问题可独立检索：写全已知实体名或未知实体的关系描述，不假定前一问已得到答案，不编造实体名。提示变体的取值见[`decompose_question`](#decompose_question)。返回有序问题列表，供调用方分别检索。
 
 `build_decomposition_prompt` 与 `parse_sub_questions` 可离线使用，不调用 API。问题必须为非空白字符串并逐字插入。完成且未拒答的回复必须是仅含非空白字符串的非空 JSON 数组；代码围栏、说明文字、非法 JSON 和非字符串项均失败，字符串、顺序和重复项原样保留。图 7 未限制子问题数量。非法输入或输出抛出 `ValueError`，消息不包含原文，也不触发额外请求或替代问题。
 
@@ -168,7 +175,7 @@ Find triples involving "<target>" with relation "<relation>".
 
 ### 显式对照接口
 
-`manage_memory` 和 `update_memory` 均默认选择上述两阶段决策流程。显式 `prompt_variant="paper"` 保留图 8 基线，`retrieval_questions` 保留原检索措辞增强版，`answer_ranking` 保留单次选择的实验对照；默认流程失败时不自动切换这些变体。所有公开 `manage_memory` 变体都保留多答案独立排序。
+`manage_memory` 和 `update_memory` 均默认选择上述两阶段决策流程。`prompt_variant` 的完整取值见[`manage_memory`](#manage_memory)；默认流程失败时不自动切换其他变体。所有公开 `manage_memory` 变体都保留多答案独立排序。
 
 `build_memory_prompt` 只构造单次选择提示，仍默认 `retrieval_questions`，不代表完整事务入口。它保留论文的高召回、仅依据证据作答和精确复制要求；调用方应使用 `manage_memory` 获得默认发布保护。
 

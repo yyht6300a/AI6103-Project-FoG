@@ -42,7 +42,14 @@ Inputs:
 | `scores` | `Sequence[Real]` | Finite refined scores positionally aligned with `triples`. |
 | `client` | `LLMClient` | Caller-owned LLM client that the caller closes. |
 | `potential_threshold` | `Real` | Strict cutoff for the potential subgraph, default `0.7`; a YAML-loaded value must be passed explicitly. |
-| `prompt_variant` | `str` | Keyword-only; defaults to `"evidence_decision"`, while other values are comparisons. |
+| `prompt_variant` | `str` | Keyword-only; defaults to `"evidence_decision"`; see the value list below. |
+
+`prompt_variant` values:
+
+- `"evidence_decision"` (default): runs a structured requirement extraction first, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks, or no snapshot is published.
+- `"paper"`: uses only the original Figure 8 prompt for a single selection, with no requirement-extraction or retrieval-wording addition; multiple answers are still ranked separately after selection.
+- `"retrieval_questions"`: adds retrieval-question instructions to the Figure 8 prompt, requiring follow-up questions to target a knowledge-graph retriever, anchor named entities and ask only for missing relations; it remains a single selection.
+- `"answer_ranking"`: adds both retrieval-question and answer-ranking instructions, asking the single selection stage to order candidates by evidential support; the separate ranking stage still runs for multiple answers.
 
 Outputs:
 
@@ -89,7 +96,7 @@ The timestamp records the attempt start in UTC with an offset. Model and token c
 
 ## Initial question decomposition
 
-[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial sub-questions from FoG §3.1 and Figure 7. `decompose_question(question, client, *, prompt_variant="explicit_references")` requires each sub-question to be independently retrievable by default: repeat known entity names or relational descriptions of unresolved entities, do not assume earlier answers, and do not invent names. Prompt variants are listed under [Primary deliverables](#primary-deliverables). The ordered question list is returned for the caller to retrieve separately.
+[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial sub-questions from FoG §3.1 and Figure 7. `decompose_question(question, client, *, prompt_variant="explicit_references")` requires each sub-question to be independently retrievable by default: repeat known entity names or relational descriptions of unresolved entities, do not assume earlier answers, and do not invent names. Prompt variants are listed under [`decompose_question`](#decompose_question). The ordered question list is returned for the caller to retrieve separately.
 
 `build_decomposition_prompt` and `parse_sub_questions` work offline without API calls. The question must be a nonblank string and is inserted verbatim. A completed, nonrefused reply must be only a nonempty JSON array of nonblank strings; code fences, prose, malformed JSON and nonstring items fail, while strings, order and duplicates are preserved. Figure 7 sets no sub-question count limit. Invalid input or output raises `ValueError` without disclosing text and adds no extra request or substitute question.
 
@@ -168,7 +175,7 @@ The final output first passes `parse_memory_response`, then `validate_decision_r
 
 ### Explicit comparison interfaces
 
-`manage_memory` and `update_memory` both default to the two-stage decision pipeline above. Explicit `prompt_variant="paper"` retains the Figure 8 baseline, `retrieval_questions` retains the earlier retrieval-wording enhancement and `answer_ranking` retains the single-selection experiment; a default failure never switches to these variants automatically. Every public `manage_memory` variant keeps separate multiple-answer ranking.
+`manage_memory` and `update_memory` both default to the two-stage decision pipeline above. All `prompt_variant` values are listed under [`manage_memory`](#manage_memory); a default failure never switches to another variant automatically. Every public `manage_memory` variant keeps separate multiple-answer ranking.
 
 `build_memory_prompt` only builds a single-selection prompt and still defaults to `retrieval_questions`; it is not the complete transaction entry point. It retains the paper's high-recall, evidence-only answering and exact-copying requirements, and callers should use `manage_memory` for the default publication protection.
 

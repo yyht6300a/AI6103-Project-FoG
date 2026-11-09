@@ -943,3 +943,17 @@ probe 当轮编号图没有 Mira 的出生边，唯一 `born_in` 事实是 Nolan
 本轮只完成离线提示澄清与门槛，不构成业务验收：新提示对真实模型的效果、模型内部原因、该形状的发生率、Silver 链结果与关系别名的误拒概率均未知。Silver 仍从未执行，ranking 保留其独立通过记录、默认不重跑。下一轮有界真实复验须另行授权：先 Bronze 三轮，通过后 Silver 三轮；每链正常 $6$ 次逻辑调用，上限每链 $9$ 逻辑／$27$ HTTP，两链合计 $18$／$54$；首个自动或人工语义失败即停，不重采样、不循环改提示、不修补回复、不放宽解码。付费前须确认有效模型为 `gpt-4o-mini`、端点为 `https://api.openai.com/v1`、密钥匹配，且不打印或上传私有配置。TODO 2.3.5、2.3.6 与 2.4 保持开放。
 
 私有产物为 `tmp_dsh/tmp_incidence_baseline.py`、`tmp_dsh/tmp_incidence_baseline_20261109T193010972448Z.json`、`tmp_dsh/tmp_incidence_prompt_replay.py` 与 `tmp_dsh/tmp_incidence_prompt_replay_20261109T193046854018Z.json`；测试诊断日志为 `tmp_dsh/tmp_focused_validation.log` 与 `tmp_dsh/tmp_diag_single.log`。
+
+#### 2026/11/10 observed 入射澄清后的有界 Bronze 复验结果
+
+2026/11/10，按[上一节](#边界与剩余未知)登记的预算与停止规则，执行 observed 入射澄清后的有界真实 Bronze 复验。运行修订为 `e04a390788718b66cf2e4a5939f280346a6c8142`，初始工作区干净，生产、运行器与测试均未修改；报告内源码指纹与基线一致，`scripts/validate_part_d.py` 为 `7baee1fdca080a24348e9b9ad410af4243e7344d30b51e1802b1aeca07104c10`，`src/agent/evidence_decision.py` 为 `d4b6cdadf23025db849643a0aea93d279799c01e3088ca320e9a4dac5c8cadc8`，即包含本轮澄清的生产提示确实生效。生产配置加载器确认有效模型 `gpt-4o-mini`、端点 `https://api.openai.com/v1`、私有 key 非空、timeout 为 $60$ 秒、最多额外重试 $2$ 次；未打印或上传私有配置，未执行 smoke。付费前免费预览 Bronze 三个用例，逻辑调用上限 $9$、HTTP 尝试上限 $27$。
+
+只执行 Bronze 三轮，Silver 未启动。unknown 与 resolved 各通过 $9$ 项受控检查：memory、answers、questions、rejection、filtered 及四项条件抽取检查全部为真。unknown 保留两条出生事实、无答案、只追问出版社；resolved 回答 `Cedar City`，移除并永久拒绝 Mira Vale 的另一分支出生事实。probe 在第 $1$ 次逻辑调用后以 `MemoryValidationError`／`decision_queries` 失败，`derive_decision:485` 调用 `resolve_query:330` 拒绝：true 分支把 Mira Vale 的 `born_in` 声明为 `observed` 编号 $0$，而该轮提交图排序后编号 $0$ 是 Nolan Reed 的出生事实；false 分支的编号 $0$ 与实体一致，`out_of_range_ids` 为空，抽取本身可解码。失败前旧快照、Mira 出生事实的永久拒绝与过滤集合均保持，未产生答案、候选或记忆发布。按停止规则，Bronze 未通过业务验收，未执行 Silver，未重采样、未改提示、未修补回复、未放宽解码，也未修改生产实现。
+
+本轮与上一轮的关键对照：probe 的提交图都是 `[Nolan Reed born_in Cedar City, The Glass Orchard published_by Bronze Press]`，两次失败抽取的排序序列化逐字节相同，SHA-256 均为 `fe7d0645b4122f37fdcc62e854d6365ff8ee99c5e6e871e28f61109dd65175b2`，尽管两次运行分别使用澄清前 `9c2772285f3f91da38849c5b1efd2633838c419a7946a261a21e7403842ae0d9` 与澄清后 `d4b6cdadf23025db849643a0aea93d279799c01e3088ca320e9a4dac5c8cadc8` 的提示。本轮 resolved 的抽取图含 Mira 的出生事实（历史记忆中的两条出生事实都会提交），两分支编号都与实体一致，因此在当前样本中该错误只在组实体的出生事实缺席时出现。该样本不能证明澄清措辞无效，也不能排除模型仍把唯一出生事实当作“出生关系”的通用编号；发生率与内部原因仍未知。
+
+用量：新增 $5$ 次逻辑／$5$ 次 HTTP 成功调用，无重试，输入 $8759$、输出 $530$ tokens，实际模型均为 `gpt-4o-mini-2024-07-18`；账本由 $577$ 增至 $582$ 条数据行，旧 $577$ 行字节前缀 SHA-256 `df9425fb83fa3e238570b8cf90db1624f6b93e584530dedc7084c52e7c7030c9` 不变，前四行与报告保留的四个阶段 usage 逐项一致，第五行为失败 probe 的抽取调用（$2263$／$140$）。HEAD、$20$ 个受保护源码／运行器／测试／文档文件及 $96$ 份历史私有报告在运行前后一致；报告自身源码指纹等于基线。私有报告为 `tmp/tmp_part_d_validation_20261109T201326106562Z.json`，基线为 `tmp_dsh/tmp_final_gate_baseline_20261109T201301997060Z.json`，对账脚本为 `tmp_dsh/tmp_final_gate_accounting.py`，两次失败对照脚本为 `tmp_dsh/tmp_compare_probe_failures.py`。
+
+付费命令第一次写仓库 `tmp/` 时被沙箱拒绝，未产生任何 API 调用或账本行；随后按既有做法用一次执行边界批准运行，未修改 ACL、所有权或认证。`tmp/` 对沙箱子进程只读仍是已知环境限制。
+
+边界与后续：Bronze 未通过，Silver 仍未执行，ranking 保留独立通过记录且未重跑。本轮只确认“澄清后的提示在该夹具上再次出现同一 observed 入射错误”，不构成业务验收。若下一步修改证据编号呈现、按实体分组或增加其它生产修复，须先免费设计方案并取得新的明确授权；任何再次付费复验同样须新授权。TODO 2.3.5、2.3.6 与 2.4 保持开放。

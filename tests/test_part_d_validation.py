@@ -175,6 +175,40 @@ class PartDValidationTests(unittest.TestCase):
                 self.assertEqual(validation.snapshot(state), before)
                 self.assertEqual(set(report["results"][0]["submitted"]), {validation.AUTHOR, birth})
 
+    def test_missing_direction_counterfactual(self):
+        """Distinguish missing-edge semantics at the controlled acceptance gate.
+
+        Both directions are structurally valid without a birth fact. Synthetic
+        final replies follow each derived query; only outgoing satisfies the
+        question fixture. No failed candidate is inherited by another round.
+        """
+        for direction in ("incoming", "outgoing"):
+            with self.subTest(direction=direction):
+                extraction, final = self.path_envelopes()[6:8]
+                payload = json.loads(extraction["choices"][0]["message"]["content"])
+                payload["description"]["steps"][1]["binding"]["direction"] = direction
+                extraction["choices"][0]["message"]["content"] = json.dumps(payload)
+                query = (f'Which entity connects to "{validation.BIRTH[0]}" through relation "born_in"?'
+                         if direction == "incoming" else
+                         f'Which entity does "{validation.BIRTH[0]}" connect to through relation "born_in"?')
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = [extraction, completion([validation.AUTHOR], [], [query])]
+                state = validation.QuestionMemory(validation.QUESTION)
+                before = validation.snapshot(state)
+                report = {"plan": validation.case_plan("multihop"), "results": []}
+                args = (client, report, "multi.partial", state,
+                        [validation.AUTHOR, validation.BIRTH, validation.DISTRACTOR],
+                        [0.95, 0.7, 0.95], ())
+                if direction == "incoming":
+                    with self.assertRaises(RuntimeError):
+                        validation.memory_round(*args)
+                    self.assertFalse(report["results"][0]["controlled_checks"]["reachable_query"])
+                else:
+                    validation.memory_round(*args)
+                self.assertEqual(client.complete.call_count, 2)
+                self.assertEqual(validation.snapshot(state), before)
+                self.assertNotIn(validation.BIRTH, report["results"][0]["submitted"])
+
     def path_envelopes(self, keep_distractor: bool = False) -> list:
         """Build six valid path transactions for real public-parser replay.
 

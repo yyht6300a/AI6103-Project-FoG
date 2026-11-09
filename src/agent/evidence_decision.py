@@ -88,7 +88,18 @@ entities or predicted answers. For each observed step use binding
 Reference exact-relation edges connected to the current reachable frontier.
 Code derives direction from endpoint roles and follows ALL matching edges.
 Only when no frontier entity has that relation in either direction use
-{kind: missing, direction: outgoing or incoming}. If an earlier step is missing,
+{kind: missing, direction: outgoing or incoming}. Choose a missing step's direction
+by placing the roles required by the original question into hypothetical relation
+slots: (CURRENT, relation, NEXT) means outgoing; (NEXT, relation, CURRENT) means
+incoming. CURRENT is this step's frontier role and NEXT is the unknown target role.
+These slots describe a retrieval requirement, not an observed fact or invented
+entity. For the same absent predicate located_in: given a laboratory, finding its
+country uses (CURRENT laboratory, located_in, NEXT country), outgoing; given a
+country, finding laboratories there uses (NEXT laboratory, located_in, CURRENT
+country), incoming. Passive question wording, the answer's position in the question,
+and the previous step's direction do not determine this step's direction.
+Observed edges still use evidence_ids only; do not guess their direction.
+If an earlier step is missing,
 keep subsequent steps as missing requirements without inventing an entity or
 referencing disconnected facts. Code follows all actual connections
 from the root. Do not flatten a dependent path into independent entity groups.

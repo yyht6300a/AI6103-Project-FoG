@@ -1,7 +1,7 @@
-"""Request a separate evidence decision for the opt-in MSM candidate.
+"""Extract conditional descriptions, then evaluate them against the full graph.
 
-The original question and full submitted graph remain visible to both stages.
-This module never publishes memory, rejects evidence, or repairs model output.
+Only the explicit candidate uses this protocol. Intermediate evidence never
+publishes memory; final selection remains subject to the original strict parser.
 """
 
 import json
@@ -11,153 +11,182 @@ from src.agent.memory_state import _freeze_triplets
 from src.agent.validation_error import MemoryValidationError
 
 
-DECISION_INSTRUCTIONS = """Decide evidence requirements before memory selection.
-Return only a JSON object with exactly these fields:
-condition_status: one of "true", "false", "unknown", "not_conditional";
-condition_triplets: exact input triples establishing the condition decision;
-targets_by_case: object with exactly true, false, not_conditional keys, each a
-string array of entity names whose facts are queried in that branch, not question
-sentences, relation names, or predicted answers (for birthplace queries, name the
-person whose birthplace is requested, not the city);
-required_triplets: exact input triples that must survive memory selection;
-missing_relations: string array describing factual relations still needed.
-Use only the original question and supplied facts. Distinguish evidence that a
-condition is false from absence of evidence that it is true. An explicit unique
-value premise in the question may be combined with an actual value in the graph;
-do not assume a closed world or restrict alternative values to a known example.
-Identify each branch from the original question regardless of condition_status.
-The true array contains only the if-branch targets; false contains only the
-otherwise-branch targets. Each branch may have multiple targets. For conditional
-questions not_conditional must be empty. For nonconditional questions true and
-false must be empty and not_conditional contains the requested targets.
-Targets must occur verbatim in the question or be exact graph components;
-they need not yet have factual evidence and are not final answers.
-If the condition is unknown, retain all still possible targets'
-available relevant evidence in required_triplets. Always include ALL
-condition_triplets in required_triplets, together with
-the applicable answer path in required_triplets when the condition is resolved.
-Report missing relations rather than guessing facts. Do not rewrite the question,
-trim the graph, invent triples, or answer using outside knowledge.
+CASES = ("true", "false", "not_conditional")
+DECISION_INSTRUCTIONS = """Extract the original question's condition and branch requirements.
+Return only the specified JSON. Do not evaluate the condition yourself.
+condition.kind is equals for a single relation equality, none for a nonconditional
+question, unsupported for any other condition. subject and value must occur
+verbatim in the original question or graph; relation is the exact graph relation
+name (if absent, describe the required relation). operator is eq. uniqueness_quote
+is the exact original-question passage explicitly establishing a single value,
+or empty if absent. For none, all other condition strings must be empty.
+The comparison value is a query constraint, NEVER an observed fact.
+For each branch supply targets (entity names whose facts are queried, not question
+sentences or predicted answers), evidence_ids (integer IDs from this request's
+numbered full graph), and missing_relations (relation names of missing answer-path
+facts). Identify both conditional branches regardless of observed values. For a
+conditional question not_conditional must have three empty arrays; for none the
+true and false branches must have three empty arrays. Targets may lack facts.
+Reference only available answer paths with evidence_ids. Do not invent facts.
+Code will query the COMPLETE graph for condition facts and select the branch.
 """
 
 
-DECISION_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "evidence_decision", "strict": True,
-        "schema": {
-            "type": "object", "additionalProperties": False,
-            "required": ["condition_status", "condition_triplets", "targets_by_case",
-                         "required_triplets", "missing_relations"],
-            "properties": {
-                "condition_status": {"type": "string", "enum": [
-                    "true", "false", "unknown", "not_conditional"]},
-                "condition_triplets": {"type": "array", "items": {
-                    "type": "array", "items": {"type": "string"}}},
-                "targets_by_case": {
-                    "type": "object", "additionalProperties": False,
-                    "required": ["true", "false", "not_conditional"],
-                    "properties": {case: {
-                        "type": "array", "items": {"type": "string"},
-                        "description": "Entity names whose facts this branch queries; "
-                        "not question sentences, relations, or predicted answers. "
-                        "For birthplace queries name the person, not the city."
-                    } for case in ("true", "false", "not_conditional")},
-                },
-                "required_triplets": {
-                    "type": "array", "items": {
-                        "type": "array", "items": {"type": "string"}},
-                    "description": "All condition_triplets plus the applicable answer "
-                    "path; when unknown retain all possible targets' available evidence.",
-                },
-                "missing_relations": {"type": "array", "items": {"type": "string"}},
-            },
-        },
-    },
+STRING = {"type": "string"}
+STRINGS = {"type": "array", "items": STRING}
+CONDITION_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["kind", "subject", "relation", "operator", "value", "uniqueness_quote"],
+    "properties": {"kind": {"type": "string", "enum": ["equals", "none", "unsupported"]},
+                   **{key: STRING for key in ("subject", "relation", "operator", "value", "uniqueness_quote")}},
 }
+BRANCH_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["targets", "evidence_ids", "missing_relations"],
+    "properties": {"targets": STRINGS, "missing_relations": STRINGS,
+                   "evidence_ids": {"type": "array", "items": {"type": "integer"}}},
+}
+DECISION_RESPONSE_FORMAT = {"type": "json_schema", "json_schema": {
+    "name": "evidence_description", "strict": True,
+    "schema": {"type": "object", "additionalProperties": False,
+               "required": ["condition", "branches"],
+               "properties": {"condition": CONDITION_SCHEMA, "branches": {
+                   "type": "object", "additionalProperties": False,
+                   "required": list(CASES),
+                   "properties": {case: BRANCH_SCHEMA for case in CASES}}}},
+}}
+
+
+def derive_decision(description, question, submitted):
+    """Validate extraction and derive requirements from actual graph values.
+
+    Args:
+        description: Untrusted structured extraction, without evaluated status.
+        question: Unmodified original question, used for literal provenance.
+        submitted: Full eligible graph, sorted internally for stable integer IDs.
+
+    Returns:
+        Internal decision consumed by the unchanged final selection contract.
+
+    Raises:
+        MemoryValidationError: Malformed extraction, unsupported condition,
+            invalid evidence reference or conflicting single-value facts.
+    """
+    graph = sorted(_freeze_triplets(submitted))
+    if not isinstance(description, dict) or set(description) != {"condition", "branches"}:
+        raise MemoryValidationError("decision_fields")
+    condition = description["condition"]
+    if not isinstance(condition, dict) or set(condition) != set(CONDITION_SCHEMA["required"]):
+        raise MemoryValidationError("decision_condition")
+    if any(not isinstance(value, str) for value in condition.values()):
+        raise MemoryValidationError("decision_condition")
+    kind = condition["kind"]
+    actual = []
+    if kind == "none":
+        if any(value for key, value in condition.items() if key != "kind"):
+            raise MemoryValidationError("decision_condition")
+        status = "not_conditional"
+    elif kind == "equals" and condition["operator"] == "eq":
+        if any(not condition[key].strip() for key in ("subject", "relation", "value")):
+            raise MemoryValidationError("decision_condition")
+        components = {value for triple in graph for value in triple}
+        if any(condition[key] not in question and condition[key] not in components
+               for key in ("subject", "value")):
+            raise MemoryValidationError("decision_condition")
+        quote = condition["uniqueness_quote"]
+        if quote and (not quote.strip() or quote not in question):
+            raise MemoryValidationError("decision_condition")
+        actual = [triple for triple in graph if triple[:2] ==
+                  (condition["subject"], condition["relation"])]
+        values = {triple[2] for triple in actual}
+        if quote and len(values) > 1:
+            raise MemoryValidationError("decision_conflict")
+        status = ("true" if condition["value"] in values else
+                  "false" if values and quote else "unknown")
+    else:
+        raise MemoryValidationError("decision_unsupported")
+
+    branches = description["branches"]
+    if not isinstance(branches, dict) or set(branches) != set(CASES):
+        raise MemoryValidationError("decision_targets")
+    components = {value for triple in graph for value in triple}
+    for case, branch in branches.items():
+        if not isinstance(branch, dict) or set(branch) != set(BRANCH_SCHEMA["required"]):
+            raise MemoryValidationError("decision_fields")
+        for field in ("targets", "missing_relations"):
+            _string_array(branch[field], "decision_strings")
+        if any(value not in question and value not in components for value in branch["targets"]):
+            raise MemoryValidationError("decision_target_membership")
+        ids = branch["evidence_ids"]
+        if not isinstance(ids, list) or any(type(i) is not int or not 0 <= i < len(graph) for i in ids):
+            raise MemoryValidationError("decision_evidence_id")
+        inactive = case != "not_conditional" if kind == "none" else case == "not_conditional"
+        if inactive and any(branch.values()):
+            raise MemoryValidationError("decision_targets")
+    active = ("true", "false") if status == "unknown" else (status,)
+    required = set(actual)
+    targets, missing = [], []
+    for case in active:
+        branch = branches[case]
+        required.update(graph[i] for i in branch["evidence_ids"])
+        targets.extend(branch["targets"])
+        missing.extend(branch["missing_relations"])
+    # Only a missing condition relation is synthesized; known condition facts
+    # remove that gap without altering unrelated answer-path requirements.
+    if kind == "equals":
+        missing = [value for value in missing if value != condition["relation"]]
+        if status == "unknown":
+            missing.append(condition["relation"])
+    return {"condition_status": status, "condition_triplets": actual,
+            "answer_targets": list(dict.fromkeys(targets)),
+            "required_triplets": sorted(required),
+            "missing_relations": list(dict.fromkeys(missing)),
+            "targets_by_case": {case: branches[case]["targets"] for case in CASES}}
 
 
 def request_evidence_decision(question, submitted, client):
-    """Obtain a structurally checked decision without changing the snapshot.
+    """Request one extraction and derive a decision without publishing state.
 
     Args:
-        question: Original question, copied without rewriting.
-        submitted: Complete union of historical and eligible new triples.
-        client: Caller-owned client, retaining its normal accounting policy.
+        question: Original question, preserved verbatim.
+        submitted: Complete union of memory and eligible new evidence.
+        client: Caller-owned client retaining transport retries and accounting.
 
     Returns:
-        JSON-compatible decision with literal graph members and string arrays.
+        Validated decision containing only actual graph evidence.
 
     Raises:
-        ValueError: Completion or decision is malformed; no repair is attempted.
+        MemoryValidationError: Invalid envelope, extraction or graph evaluation.
     """
-    graph = _freeze_triplets(submitted)
+    graph = sorted(_freeze_triplets(submitted))
     prompt = DECISION_INSTRUCTIONS + "\nOriginal question: " + question
-    prompt += "\nKnowledge: " + json.dumps(sorted(graph), ensure_ascii=False)
+    prompt += "\nNumbered knowledge: " + json.dumps(list(enumerate(graph)), ensure_ascii=False)
     completion = client.complete([{"role": "user", "content": prompt}],
                                  response_format=DECISION_RESPONSE_FORMAT)
     try:
         choice = completion["choices"][0]
         message = choice["message"]
         if choice["finish_reason"] != "stop" or message.get("refusal"):
-            raise MemoryValidationError("decision_completion")
-        decision = json.loads(message["content"], object_pairs_hook=_unique_object,
-                              parse_constant=_reject_constant)
+            raise ValueError
+        description = json.loads(message["content"], object_pairs_hook=_unique_object,
+                                 parse_constant=_reject_constant)
     except (KeyError, IndexError, TypeError, AttributeError, ValueError, RecursionError):
         raise MemoryValidationError("decision_completion") from None
-    fields = {"condition_status", "condition_triplets", "targets_by_case",
-              "required_triplets", "missing_relations"}
-    if not isinstance(decision, dict) or set(decision) != fields:
-        raise MemoryValidationError("decision_fields")
-    if decision["condition_status"] not in ("true", "false", "unknown", "not_conditional"):
-        raise MemoryValidationError("decision_status")
-    for field in ("condition_triplets", "required_triplets"):
-        if not isinstance(decision[field], list):
-            raise MemoryValidationError("decision_triplets")
-        try:
-            evidence = _freeze_triplets(decision[field])
-        except ValueError:
-            raise MemoryValidationError("decision_triplets") from None
-        if not evidence <= graph:
-            raise MemoryValidationError("decision_membership")
-    _string_array(decision["missing_relations"], "decision_strings")
-    targets = decision["targets_by_case"]
-    if not isinstance(targets, dict) or set(targets) != {"true", "false", "not_conditional"}:
-        raise MemoryValidationError("decision_targets")
-    components = {value for triple in graph for value in triple}
-    for values in targets.values():
-        _string_array(values, "decision_strings")
-        if any(value not in question and value not in components for value in values):
-            raise MemoryValidationError("decision_target_membership")
-    status = decision["condition_status"]
-    if (status == "not_conditional" and (targets["true"] or targets["false"])) or (
-        status != "not_conditional" and targets["not_conditional"]
-    ):
-        raise MemoryValidationError("decision_targets")
-    # Resolve branch membership in code, including stable unknown-case deduplication.
-    applicable = targets["true"] + targets["false"] if status == "unknown" else targets[status]
-    decision["answer_targets"] = list(dict.fromkeys(applicable))
-    if not _freeze_triplets(decision["condition_triplets"]) <= _freeze_triplets(
-        decision["required_triplets"]
-    ):
-        raise MemoryValidationError("decision_condition_retention")
-    return decision
+    return derive_decision(description, question, graph)
 
 
 def validate_decision_response(decision, response):
-    """Reject contradictions before any memory or rejection is constructed.
+    """Reject stage contradictions before constructing any replacement snapshot.
 
     Args:
-        decision: Validated first-stage record over the full submitted graph.
-        response: Final output already checked by parse_memory_response.
+        decision: Derived requirements over the full submitted graph.
+        response: Final output already checked by the strict memory parser.
 
     Raises:
-        MemoryValidationError: Required evidence is omitted, an unknown condition
-            is answered, or a resolved gap-free decision remains unanswered or
-            asks further questions. No semantic entailment is established here.
+        MemoryValidationError: Missing evidence, premature answer or unresolved
+            final output despite a gap-free applicable decision.
     """
-    required = _freeze_triplets(decision["required_triplets"])
-    if not required <= frozenset(response.selected_triplets):
+    if not _freeze_triplets(decision["required_triplets"]) <= frozenset(response.selected_triplets):
         raise MemoryValidationError("decision_required_omitted")
     if decision["condition_status"] == "unknown":
         if response.predict_answer:

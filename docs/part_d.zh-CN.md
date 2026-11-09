@@ -44,6 +44,8 @@
 | `potential_threshold` | `Real` | 潜力子图的严格阈值，默认 `0.7`；从 YAML 读取时须显式传入。 |
 | `prompt_variant` | `str` | 仅关键字参数，默认 `"evidence_decision"`；可选值及含义见下方列表。 |
 
+问题快照（`QuestionMemory`）包含逐字保存的原问题 `original_question`、当前记忆图 `memory_triplets` 和永久拒绝图 `rejected_triplets`；`excluded_triplets` 是按需派生的两者并集。完整字段约束见[问题级持久记忆](#问题级持久记忆)。
+
 `prompt_variant` 的可选值：
 
 - `"evidence_decision"`（默认）：先执行一次结构化需求抽取，由代码校验题型、条件与事实端点，派生必留证据、答案候选和固定查询。最终选择须通过决策一致性校验，否则不发布快照。

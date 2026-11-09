@@ -44,6 +44,8 @@ Inputs:
 | `potential_threshold` | `Real` | Strict cutoff for the potential subgraph, default `0.7`; a YAML-loaded value must be passed explicitly. |
 | `prompt_variant` | `str` | Keyword-only; defaults to `"evidence_decision"`; see the value list below. |
 
+A question snapshot (`QuestionMemory`) contains the verbatim original question `original_question`, the current memory graph `memory_triplets` and the permanent rejection graph `rejected_triplets`; `excluded_triplets` is their union, derived on demand. Full field constraints are in [Question-local persistent memory](#question-local-persistent-memory).
+
 `prompt_variant` values:
 
 - `"evidence_decision"` (default): runs a structured requirement extraction first, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks, or no snapshot is published.

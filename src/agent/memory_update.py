@@ -6,12 +6,14 @@ the caller retains its old snapshot if any step raises.
 """
 
 from collections.abc import Iterable, Sequence
+import json
 
 from src.agent.validation_error import MemoryValidationError
 from src.agent.llm_client import LLMClient
 from src.agent.memory_prompt import build_memory_prompt
 from src.agent.memory_prompt import build_decision_memory_prompt
-from src.agent.evidence_decision import request_evidence_decision, validate_decision_response
+from src.agent.evidence_decision import (request_evidence_decision, validate_decision_response,
+                                       missing_relation_queries, decision_response_format)
 from src.agent.memory_response import MEMORY_RESPONSE_FORMAT, MemoryResponse, parse_memory_response
 from src.agent.memory_state import QuestionMemory, _freeze_triplets
 
@@ -71,11 +73,16 @@ def update_memory(
         prompt = build_decision_memory_prompt(
             state.original_question, state.memory_triplets, potential, decision,
         )
+        if decision["missing_relations"]:
+            prompt += "\nAllowed retrieval questions: " + json.dumps(
+                missing_relation_queries(decision["missing_relations"]), ensure_ascii=False)
+            prompt += ("\nChoose subsequent_question verbatim from this list, without duplicates. "
+                       "Ask every condition_unknown query. Ask at most three questions.")
     else:
         prompt = build_memory_prompt(
             state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
         )
-    options = ({"response_format": MEMORY_RESPONSE_FORMAT}
+    options = ({"response_format": decision_response_format(decision, MEMORY_RESPONSE_FORMAT)}
                if prompt_variant == "evidence_decision" else {})
     completion = client.complete([{"role": "user", "content": prompt}], **options)
     try:

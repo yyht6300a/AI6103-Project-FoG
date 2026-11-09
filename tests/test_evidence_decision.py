@@ -408,14 +408,15 @@ class EvidenceDecisionTests(unittest.TestCase):
             (GRAPH, "false", [FACT, RIGHT], [RIGHT[2]], []),
             ([LEFT, RIGHT, ("Book", "publisher", "Expected")], "true",
              [LEFT, ("Book", "publisher", "Expected")], [LEFT[2]], []),
-            ([LEFT, RIGHT], "unknown", [LEFT, RIGHT], [], ["Who publishes Book?"]),
+            ([LEFT, RIGHT], "unknown", [LEFT, RIGHT], [],
+             ['Which entity does "Book" connect to through relation "publisher"?']),
         ):
             client = Mock()
             client.complete.side_effect = [envelope(record, graph), completion(selected, answers, questions)]
             result = manage_memory(QuestionMemory(QUESTION), graph, [0.95] * len(graph),
                                    client, prompt_variant="evidence_decision")
             prompt = client.complete.call_args_list[1].args[0][0]["content"]
-            active = json.loads(prompt.split("Return only the existing three output fields.\n")[-1])
+            active = json.loads(prompt.split("Return only the existing three output fields.\n")[-1].split("\nAllowed retrieval questions:")[0])
             self.assertEqual(active["condition_status"], status)
             self.assertEqual(set(map(tuple, active["required_triplets"])), set(selected))
             self.assertEqual(result.state.memory_triplets, set(selected))

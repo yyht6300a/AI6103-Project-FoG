@@ -5,6 +5,7 @@ publishes memory; final selection remains subject to the original strict parser.
 """
 
 import json
+from copy import deepcopy
 
 from src.agent.memory_response import _unique_object, _reject_constant, _string_array
 from src.agent.memory_state import _freeze_triplets
@@ -365,6 +366,46 @@ def request_evidence_decision(question, submitted, client):
     return derive_decision(description, question, graph)
 
 
+def missing_relation_queries(missing):
+    """Render stable open-value retrieval questions from derived gaps.
+
+    Args:
+        missing: Validated target, relation and direction records from evaluation.
+
+    Returns:
+        Ordered unique question strings, safely quoting literal graph names.
+    """
+    queries = []
+    for gap in missing:
+        target = json.dumps(gap["target"], ensure_ascii=False)
+        relation = json.dumps(gap["relation"], ensure_ascii=False)
+        query = (f"Which entity does {target} connect to through relation {relation}?"
+                 if gap["direction"] == "outgoing" else
+                 f"Which entity connects to {target} through relation {relation}?")
+        if query not in queries:
+            queries.append(query)
+    return queries
+
+
+def decision_response_format(decision, base):
+    """Constrain only gap-bearing candidate requests without mutating defaults.
+
+    Args:
+        decision: Derived decision containing validated missing relations.
+        base: Shared final response format, preserved for gap-free requests.
+
+    Returns:
+        Request-local schema with query enum, or the unchanged base when gap-free.
+    """
+    queries = missing_relation_queries(decision["missing_relations"])
+    if not queries:
+        return base
+    result = deepcopy(base)
+    result["json_schema"]["schema"]["properties"]["subsequent_question"]["items"] = {
+        "type": "string", "enum": queries}
+    return result
+
+
 def validate_decision_response(decision, response):
     """Reject stage contradictions before constructing any replacement snapshot.
 
@@ -378,10 +419,18 @@ def validate_decision_response(decision, response):
     """
     if not _freeze_triplets(decision["required_triplets"]) <= frozenset(response.selected_triplets):
         raise MemoryValidationError("decision_required_omitted")
-    if decision["condition_status"] == "unknown":
-        if response.predict_answer:
-            raise MemoryValidationError("decision_unknown_answer")
-    elif not decision["missing_relations"]:
+    if decision["condition_status"] == "unknown" and response.predict_answer:
+        raise MemoryValidationError("decision_unknown_answer")
+    if decision["missing_relations"]:
+        allowed = missing_relation_queries(decision["missing_relations"])
+        questions = response.subsequent_question
+        required = missing_relation_queries([gap for gap in decision["missing_relations"]
+                                            if gap.get("reason") == "condition_unknown"])
+        if (not questions or len(set(questions)) != len(questions)
+                or any(q not in allowed for q in questions)
+                or not set(required) <= set(questions)):
+            raise MemoryValidationError("decision_questions")
+    if decision["condition_status"] != "unknown" and not decision["missing_relations"]:
         if not response.predict_answer:
             raise MemoryValidationError("decision_answer_required")
         if response.subsequent_question:

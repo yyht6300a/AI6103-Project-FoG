@@ -125,6 +125,52 @@ class PartDValidationTests(unittest.TestCase):
                     self.assertTrue(any(hit["graph_ids"] == [0]
                                         for hit in record["failed_extraction"]["hits"]))
 
+    def test_probe_direction_conflict_and_supported_reverse_fact(self):
+        """Replay the failed probe and two direction counterfactuals.
+
+        The seeded recovery snapshot retains two facts and one rejection.
+        A reversed birth fact requires incoming; no automatic flip is allowed.
+        """
+        for reverse, direction in ((False, "incoming"), (False, "outgoing"),
+                                   (True, "incoming")):
+            with self.subTest(reverse=reverse, direction=direction):
+                birth = (validation.BIRTH[2], validation.BIRTH[1], validation.BIRTH[0]) if reverse else validation.BIRTH
+                state = validation.QuestionMemory(validation.QUESTION,
+                    [validation.AUTHOR, birth], [validation.DISTRACTOR])
+                before = validation.snapshot(state)
+                extraction = self.path_envelopes()[0]
+                description = json.loads(extraction["choices"][0]["message"]["content"])
+                description["description"]["steps"][1]["direction"] = direction
+                extraction["choices"][0]["message"]["content"] = json.dumps(description)
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = [extraction, completion(
+                    [validation.AUTHOR, birth], [validation.BIRTH[2]], [])]
+                report = {"plan": validation.case_plan("multihop"), "results": []}
+                args = (client, report, "multi.exclusion_probe", state,
+                        [validation.AUTHOR, birth, validation.DISTRACTOR], [0.95] * 3, ())
+                if not reverse and direction == "incoming":
+                    with self.assertRaises(ValueError):
+                        validation.memory_round(*args)
+                    record = report["results"][0]
+                    self.assertEqual(client.complete.call_count, 1)
+                    self.assertEqual(record["error_code"], "decision_path_conflict")
+                    self.assertEqual(record["failure_stage"], "evidence_decision")
+                    self.assertEqual(record["failed_extraction"]["description"], description["description"])
+                else:
+                    # The fixed acceptance fixture expects the original birth edge;
+                    # reverse only that fixture gate, keeping production validation.
+                    with patch.object(validation, "check_two_hop") if reverse else patch.object(
+                        validation, "check_two_hop", wraps=validation.check_two_hop
+                    ):
+                        validation.memory_round(*args)
+                    self.assertEqual(client.complete.call_count, 2)
+                    self.assertEqual(report["results"][0]["predict_answer"], (validation.BIRTH[2],))
+                    final = client.complete.call_args_list[1].args[0][0]["content"]
+                    self.assertIn('"missing_relations": []', final)
+                    self.assertIn('"answer_candidates": ["Linden City"]', final)
+                self.assertEqual(validation.snapshot(state), before)
+                self.assertEqual(set(report["results"][0]["submitted"]), {validation.AUTHOR, birth})
+
     def path_envelopes(self, keep_distractor: bool = False) -> list:
         """Build six valid path transactions for real public-parser replay.
 

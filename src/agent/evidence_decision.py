@@ -70,6 +70,18 @@ For a nonconditional two-hop linear question use nonconditional_path instead:
 {kind: nonconditional_path, root_entity: exact entity from the original question,
  steps: [{relation: exact relation, direction: outgoing or incoming},
          {relation: exact relation, direction: outgoing or incoming}]}.
+Start with root_entity as the current node. At EACH step, direction is relative
+to that step's currently reachable node: outgoing means it is the triple's head;
+incoming means it is the triple's tail. Move to the other endpoint, then determine
+the next step's direction relative to that new node. With evidence present, use
+the exact relation and current endpoint, not passive wording, question word order
+or the final answer's position. With evidence absent, describe the relation and
+direction required by the original question; never invent intermediate entities.
+For example, given Helios Ltd -> owns -> Aurora Tower and
+Helios Ltd -> headquarters -> Northport, asking for the headquarters of the
+company owning Aurora Tower uses root Aurora Tower and steps
+owns/incoming then headquarters/outgoing. If the first fact instead is
+Aurora Tower -> owned_by -> Helios Ltd, its first step is owned_by/outgoing.
 Extract both ordered steps even if the graph is empty. Never fill intermediate
 entities, predicted answers or evidence IDs. Code follows all actual connections
 from the root. Do not flatten a dependent path into independent entity groups.

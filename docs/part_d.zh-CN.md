@@ -384,6 +384,14 @@ DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
 
    **最短修复与复验方案（待实施）**
 
+   > 2026/11/09 执行结果：已在 `DECISION_INSTRUCTIONS` 路径段补充逐跳当前节点、头尾端方向、移到另一端再判下一跳的操作定义，以及 `owns/incoming → headquarters/outgoing` 和 `owned_by/outgoing` 对照例；明确已有图按精确关系和端点判方向，缺图不编造中间实体。条件准入、schema、求值、最终提示、拒绝及发布规则未改。新增恢复快照回归验证原第二跳反向声明在首阶段以 `decision_path_conflict` 失败、仅一次调用、投影保留错误方向、两条记忆及一条拒绝不变；仅修正第二跳及实际反转出生边的对照均经公开事务成功，防止将方向一律固定为出向。完整离线 $133$ 项通过，语法检查通过。
+   >
+   > 免费预览确认真实依赖链仅含 `multi.partial → multi.recovery → multi.exclusion_probe`，上限 $9$ 次逻辑调用／$27$ 次 HTTP 尝试。从空快照执行一次，首轮 `multi.partial` 即失败并停止，报告为 `tmp/tmp_part_d_validation_20261109T142220796878Z.json`。实际模型 `gpt-4o-mini-2024-07-18`／OpenAI；受限投影是 `nonconditional_path`，根 `The Glass Orchard`，步骤 `written_by/incoming → born_in/outgoing`。本轮提交图只有两条作者边，出生边分数等于阈值，未提交且未拒绝；从书出发应沿 `written_by/outgoing` 到作者，模型第一跳抽反，代码触发 `evidence_decision / decision_path_conflict`。未进入最终选择、恢复轮或排除探测轮，空旧快照保持不变。
+   >
+   > 新旧提示差异仅为上述路径方向操作定义和混合方向例；旧失败错第二跳，新失败错第一跳，题型、根和关系名称正确。本次说明补充后仍未解决逐跳方向抽取可靠性，不能归因为求值、阈值或拒绝过滤失效，也不能推断模型内部原因。未重复发送相同提示、叠加提醒或追加预算；后续须先针对第一跳未解决字段决定具体变更，再另列复验预算并从链首重建。
+   >
+   > 账本新增 $1$ 行成功 HTTP，对应 $1$ 次逻辑调用，无重试，输入 $1768$、输出 $40$ tokens；HTTP 成功不代表业务通过。私有 `.env` SHA-256 前后相同。三个独立场景与条件冒烟均未执行，**不能推进第 $5$ 步**；TODO 2.3.5 仍待办。上方“待实施”为原计划状态，本引用块记录此次实际执行及停止位置。
+
    1. **只补路径方向的操作定义**：直接修改 `src/agent/evidence_decision.py` 的 `DECISION_INSTRUCTIONS` 路径段。初始当前节点是 `root_entity`；每跳方向相对于该跳当前可达节点，当前节点是三元组头端则 `outgoing`，是尾端则 `incoming`，下一节点取另一端，再判断下一跳。已有图时依据精确关系及当前端点判断，不按题目被动语态、问句词序或最终答案的位置猜方向；证据缺失时描述原题所需的关系和方向，不编造中间实体。用其他实体补一个混合方向例：图为 `Helios Ltd → owns → Aurora Tower`、`Helios Ltd → headquarters → Northport`，从塔询问所属公司总部时应为 `owns/incoming → headquarters/outgoing`；若第一条表示为 `Aurora Tower → owned_by → Helios Ltd`，则第一跳为 `owned_by/outgoing`。保留已有效的条件准入、四类路由和两跳约束；不改 schema、解码、求值器、最终提示、拒绝或发布规则，不新增分类调用、自动纠错或业务重试。实现时同步中英文模块说明。
 
    2. **补一个实际失败回归，再跑现有离线检查**：在现有 `tests/test_part_d_validation.py`／`tests/test_evidence_decision.py` 用例中复用最新投影和恢复轮快照，核对 `outgoing → incoming` 触发 `evidence_decision / decision_path_conflict`、一次调用、不执行最终阶段、两条记忆及一条拒绝保持，并确认受限投影保留错误方向。同组对照只改第二跳为 `outgoing`，应派生完整路径、无缺口、唯一城市，并通过公开事务；补一组图确实支持 `incoming` 的路径，防止修成全出向。复用既有六场景、条件保护及发布门槛，不重建诊断或复制整套路径测试。运行受影响测试和一次完整 `python -m unittest discover -s tests -v`。这些合成检查验证错误边界及防护，提示是否有效必须由下一项真实链确认。

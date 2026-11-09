@@ -4,7 +4,7 @@ The opt-in `evidence_decision` candidate converts derived gaps into deterministi
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots, LLM-guided memory replacement, permanent rejection tracking and expansion exclusions are implemented. Wiring the retriever and inference loop remains integration work.
+This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots, LLM-guided memory replacement, permanent rejection tracking and expansion exclusions are implemented. Member D acceptance demonstrates correct module behavior and reasonable outputs using controlled retrieval/scoring inputs and real LLM calls. Member E owns C/E pipeline integration; it is outside Member D's delivery scope and is not a prerequisite for accepting these modules. Historical references below to unverified integration describe coverage limits, not additional Member D tasks.
 
 ## LLM configuration and requests
 

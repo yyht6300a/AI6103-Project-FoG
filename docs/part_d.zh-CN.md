@@ -2,7 +2,7 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-本文介绍成员 D 已实现的模块及其接口。配置和测试命令见 [README](../README.zn-CN.md#llm-配置)。潜力子图过滤、问题级记忆快照、LLM 引导的记忆替换、永久拒绝记录及展开排除已实现；检索器和推理循环接线留待集成。
+本文介绍成员 D 已实现的模块及其接口。配置和测试命令见 [README](../README.zn-CN.md#llm-配置)。潜力子图过滤、问题级记忆快照、LLM 引导的记忆替换、永久拒绝记录及展开排除已实现。成员 D 使用受控检索打分输入和真实 LLM 调用，证明模块正常运行且输出合理。C/E 系统集成由成员 E 负责，不属于成员 D 的交付范围，也不是模块验收的前置条件。下文历史记录中的“集成未验证”仅说明覆盖范围，不新增成员 D 待办。
 
 ## LLM 配置与请求
 
@@ -985,7 +985,7 @@ All existing evidence, entity, and output constraints still apply.
 >
 > 本批共 $6$ 次 MSM 事务、$12$ 次逻辑调用及 HTTP 尝试，无失败、重试或排序调用，实际模型均为 `gpt-4o-2024-08-06`；真实账本新增输入 $11850$、输出 $1100$ tokens，未知用量请求为 $0$。逐阶段用量核对及全部新增事务精确免费重放通过，私有配置每轮均在 `finally` 中逐字节恢复。私有报告为 `tmp/tmp_gap_queries_screen_20261109T102804686389Z.json`、`tmp/tmp_gap_queries_silver_2_20261109T102817270854Z.json`、`tmp/tmp_gap_queries_silver_3_20261109T102826548850Z.json`、`tmp/tmp_gap_queries_bronze_1_20261109T102836389484Z.json`、`tmp/tmp_gap_queries_bronze_2_20261109T102846241440Z.json`、`tmp/tmp_gap_queries_bronze_3_20261109T102856251258Z.json`，均已从磁盘复核。没有新增独立取证、连通性或双版本请求；基础 schema 已被本批接受，不能据此证明历史动态枚举的具体拒绝原因。
 >
-> **可以推进第 5 步**：未受影响的两张完整图及两条新跨轮链均通过。本轮完成本修订的实现与验收，候选仍通过 `prompt_variant="evidence_decision"` 显式选择；第 $5$ 步的默认流程采用、维护入口及整体交付另行推进。本结论仅覆盖上述受控用例，不能推断开放问题集稳定性。TODO 2.3.5 的独立 GPT-4o-mini 交付验证及 C/E 集成仍待办，不能宣布整体交付完成。
+> **可以推进第 5 步**：未受影响的两张完整图及两条新跨轮链均通过。本轮完成本修订的实现与验收，候选仍通过 `prompt_variant="evidence_decision"` 显式选择；第 $5$ 步的默认流程采用、维护入口及成员 D 模块交付另行推进。本结论仅覆盖上述受控用例，不能推断开放问题集稳定性。TODO 2.3.5 的独立 GPT-4o-mini 交付验证仍待办。C/E 集成按本文开头的职责边界由成员 E 完成，不阻塞成员 D 交付。
 
    本补充依据上述执行记录、原失败报告 `tmp/tmp_gap_queries_screen_20261109T093208283245Z.json`、取证报告 `tmp/tmp_http_probe_20261109T101814224662Z.json`、此前 HTTP 成功的 `tmp/tmp_grouped_requirements_screen_20261109T091157703849Z.json`，以及当前请求、诊断和发布代码制定。本次只补充分析与方案，不修改实现或私有配置，不发起 API 请求。本补充接替“继续定位具体 schema 规则后才能修订”的后续安排；旧记录和失败结论保留。
 

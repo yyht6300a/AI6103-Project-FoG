@@ -528,6 +528,8 @@ TODO 2.4 被 2.3.5 的真实作答失败和 2.3.6 的未完核对阻塞，没有
 
 ##### 下一轮真实验收与最短路径
 
+以下付费方案已按新授权执行，结果见本节末“本轮有界真实验收结果”；本轮已因人工语义失败结束，不再使用剩余预算。此前离线修复及历史验收记录保留。
+
 2026/11/10 已实施上述最小修复：抽取先确定题意属性和限定，再映射图关系；同 branch 精确重复 entity 以 `decision_queries` 拒绝，不合组修补。诊断层显式允许重复组的结构检查，保留有界字段，但生产求值仍严格拒绝。生产成功后的状态／两跳／ranking 受控失败也移除该记录的原始 `stages`，保留此前独立成功记录、原异常、逻辑进度和有界投影；`production_validated` 与 `controlled_validated` 分开表达。helper 捕获 `RecursionError`，外层投影兜底保留。
 
 `check_ranking` 复用生产 `derive_decision` 重算候选／必留集合，并用生产 prompt builder 比较实际选择和排序请求；独立核对选择→排序→最终答案多重集。完整性与 confirmed／possible 相对顺序分开，第三答案不会被误报为二者倒序。门槛位于生产事务之后；只有重复组解码约束在首阶段阻止该形状的后续调用。同组无关关系仍可被生产接受，受控 fixture 门槛才会拒绝，未增加通用相关性判断。
@@ -548,6 +550,30 @@ Bronze 命令为 `python scripts/validate_part_d.py --suite conditional --case c
 历史 Bronze／Silver 通过及早期排序稳定性结论保留，但本次推荐修改共享提示和 grouped decoder，因此修订后的两条条件链须新验收；仅报告／断言变更才可沿用原链而不付费复跑。两跳未改求值或专用语义时只需最小免费兼容对照，不重跑六例真实历史。全历史核账与 C/E 集成不作为本次修补的前置工作，TODO 2.3.5、2.3.6、2.4 仍开放。
 
 绕路审核：真实精确重放、重复／相关性分离、两组选择交叉对照和失败哨兵直接减少未知；一次最小两跳及保留条件链检查用于限制兼容风险。原 equal 缺失回复无法恢复，无需重复其旧枚举；也无证据支持全历史付费重跑、换模型、新增语义审查调用或先改排序。最短路径是上述定点修补→免费门槛→新授权后的 ranking→受影响条件链，不能省略已经复现的受控失败留证缺口。
+
+##### 本轮有界真实验收结果
+
+2026/11/10，执行私有任务文件授权的一次 ranking→Bronze→Silver 验收。运行修订为 `2cfb421b5a24a8920799a9817a084d15b72a6f10`，初始工作区干净；生产、运行器及测试均未修改。全部运行报告的源码指纹与新基线及实际文件一致；运行器 SHA-256 为 `3e951eabb4c551ede9981f159a6a653e2dfd4ec98c0567d38e4add853fe9b8bf`，需求协议为 `25d40d6436c88d809e7ba912126814ca8144e869ac1b6bc03afcbffcbd17d95b`。生产配置加载器确认有效模型 `gpt-4o-mini`、端点 `https://api.openai.com/v1`、私有 key 非空、timeout 为 $60$ 秒、最多额外重试 $2$ 次；首次授权请求成功确认凭据实际可用，未执行 smoke 或修改配置。一次 Windows 内联命令因引号解析失败，未加载配置或发送请求，随后改用私有脚本完成免费检查。
+
+使用项目解释器 `D:/Apps/Programming/Anaconda/virtue_envs/ai6103_project/python.exe`，先运行 `scripts/validate_part_d.py --suite ranking --list-cases`，再依次执行下表命令。每批均等待命令返回、报告写入、自动结果和人工审阅完成，才决定后续批次；ranking 的 equal 自动通过后 CLI 立即执行 unequal，人工审阅在整个命令返回后进行。
+
+| 命令参数（入口均为 `scripts/validate_part_d.py`） | 自动／人工结果 | 逻辑／HTTP | 输入／输出 tokens |
+| --- | --- | --- | --- |
+| `--suite ranking` | equal、unequal 均通过自动及人工审阅 | $6/6$ | $6422/270$ |
+| `--suite conditional --case conditional.bronze_unknown --case conditional.bronze_resolved --case conditional.bronze_probe` | 三轮自动通过；unknown、resolved 人工通过，probe 抽取人工失败 | $6/6$ | $9128/580$ |
+| Silver 对应三轮命令 | 按首个人工语义失败停止，未执行 | $0/0$ | 无新增用量 |
+
+ranking equal 抽取两个独立人物的 `born_in`，编号 $0/1$ 及方向正确；完整选择两边、双城市各一次，无追问／拒绝，等支持顺序合法。unequal 仅一个 Mira Vale 组，包含 confirmed／possible 出生关系及编号 $0/2$，排除 `lived_in` 编号 $1$；派生候选和必留集合为双城市／双边，实际选择请求正确，residence 永久拒绝。两例实际排序请求、选择及排序答案多重集、旧快照不变均通过独立门槛；unequal 的 confirmed 在 possible 前。生产校验通过与受控题意通过分别记录，没有将 HTTP success 当成业务通过。
+
+Bronze unknown 正确抽取条件及两分支，保留两条出生事实，无答案且只询问出版社；缺失关系为 `publisher`，事实到达后使用精确的 `published_by`。resolved 选择 false 分支，只答 `Cedar City`，保留 Nolan 出生事实及 Bronze 出版社，移除并永久拒绝 Mira 出生事实。probe 高分重输后确实过滤该事实，仍只答 `Cedar City`、无追问，跨轮保留和旧状态不变均通过。
+
+首个人工语义失败位于 `conditional.bronze_probe` 的抽取阶段：true 分支仍以 Mira Vale 为实体、`born_in` 为关系，却返回 `binding={kind: missing, direction: incoming}`。题目与此前图事实要求 Mira 为 head，即 outgoing；incoming 表示 Mira 是该关系的 tail，方向与所问出生属性不符。编号图中该事实已因永久拒绝被过滤，因此不存在可据以自动驳回此方向的 observed 边。该结构可被生产解码／求值接受，但不忠于原题。当前出版社已确定为 Bronze，求值只使用 false 分支，错误未传播到当前 `required_triplets`、候选、最终城市或记忆；自动门槛只检查当前输出及状态，故仍通过。不能据此宣称错误影响了当前答案，也不能因未激活而将全部抽取宣称语义正确。
+
+本轮判定为 ranking 业务真实验收通过，Bronze 自动通过但人工语义失败，Silver 未执行。未将此人工失败伪造为生产异常或固定错误码，未改写原报告的 `semantic_review=pending`；人工结论单独保存在新私有审阅记录。原生产阶段 started／received 均完整：ranking 每例 $3/3$，Bronze 每轮 $2/2$；生产及受控自动标记为通过，所有旧快照不变。报告层没有触发失败投影路径；仅保留安全字段解释失败位置，不复制任意元数据或敏感异常。此证据指向缺失单跳绑定方向的语义问题，不支持修改排序。下一轮先免费评估缺失绑定协议及对未激活分支的语义约束，再另行授权必要修复／复验；本轮不新增生产修复、诊断请求或采样。
+
+共新增 $12$ 次逻辑调用、$12$ 次 HTTP，全部 `success`，返回模型均为 `gpt-4o-mini-2024-07-18`，无重试、未知 token 或未计划调用；输入 $15550$、输出 $850$ tokens。逐阶段 usage 与新增账本行逐项核对，旧 $560$ 行／原字节前缀 SHA-256 `4a6ef7fa9c5f1d69783c62a07d415aa903fc02a61ec4aa001e6513bc7234544f` 不变，现共 $572$ 行。未手改历史账本、补造记录或推算费用；未进行全历史核账。
+
+新私有基线为 `tmp/tmp_bounded_acceptance_baseline_20261109T174838393707Z.json`；ranking 报告为 `tmp/tmp_part_d_validation_20261109T174845118055Z.json`，Bronze 报告为 `tmp/tmp_part_d_validation_20261109T175040950698Z.json`；核账及人工结论为 `tmp/tmp_bounded_acceptance_review_20261109T175040950698Z.json`。机器 UTC 文件名按原样保留，与本地 2026/11/10 记录日期区分。历史独立成功记录及原失败材料均保留。本次无共享代码变化，复用已通过的 $149$ 项离线基线，只检查本轮文档、真实用量、字符和 diff。TODO 2.3.5 因本修订人工验收失败保持开放；2.3.6 全历史核账及 2.4 最终交付未完成，不因 ranking 通过而关闭。
 
 #### 2026/11/10 最小修复执行与有界验收
 

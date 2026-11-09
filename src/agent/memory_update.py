@@ -23,7 +23,7 @@ def update_memory(
     potential_triplets: Iterable[Sequence[str]],
     client: LLMClient,
     *,
-    prompt_variant: str = "retrieval_questions",
+    prompt_variant: str = "evidence_decision",
 ) -> tuple[QuestionMemory, MemoryResponse]:
     """Request a high-recall selection and strictly replace historical memory.
 
@@ -34,10 +34,10 @@ def update_memory(
             previously rejected triples must already be excluded by the caller.
         client: Caller-owned configured client, including transport retries and
             per-attempt usage accounting. This function does not close it.
-        prompt_variant: Default ``retrieval_questions``, unchanged ``paper``,
-            or opt-in ``answer_ranking``. ``evidence_decision`` adds a separate
-            decision request before final selection; other variants use one.
-            The candidate rejects stage contradictions before building a snapshot.
+        prompt_variant: Default ``evidence_decision`` adds a separate decision
+            request before final selection; explicit ``retrieval_questions``,
+            unchanged ``paper`` and ``answer_ranking`` use one selection request.
+            The default rejects stage contradictions before building a snapshot.
             Its final selection also requests strict structured JSON output.
 
     Returns:

@@ -77,7 +77,7 @@ class MemoryFailureTests(unittest.TestCase):
             Validated MSMResult, or propagates the production failure unchanged.
             B is eligible and C is threshold-hidden; old evidence stays separate.
         """
-        return manage_memory(self.state, [B, C, REJECTED], [0.9, 0.7, 1.0], self.client)
+        return manage_memory(self.state, [B, C, REJECTED], [0.9, 0.7, 1.0], self.client, prompt_variant="retrieval_questions")
 
     def assert_original_state(self) -> None:
         """Check all persistent fields after a failure or independent success.
@@ -113,7 +113,7 @@ class MemoryFailureTests(unittest.TestCase):
                         "src.agent.llm_client.time.sleep",
                     ) as sleep:
                         with self.assertRaises(error_type) as caught:
-                            manage_memory(self.state, [B, C], [0.9, 0.7], client)
+                            manage_memory(self.state, [B, C], [0.9, 0.7], client, prompt_variant="retrieval_questions")
                         self.assertEqual(send.call_count, retries + 1)
                         self.assertEqual(sleep.call_args_list, [call(2 ** i) for i in range(retries)])
                     if rate_limited:
@@ -238,7 +238,7 @@ class MemoryFailureTests(unittest.TestCase):
                     "src.agent.llm_client.time.sleep",
                 ) as sleep:
                     state = manage_memory(
-                        state, [A, REJECTED, C], [0.9, 0.9, 0.7], self.client,
+                        state, [A, REJECTED, C], [0.9, 0.9, 0.7], self.client, prompt_variant="retrieval_questions"
                     ).state
                     established = state
                     self.assertEqual(state.memory_triplets, {A})
@@ -248,7 +248,7 @@ class MemoryFailureTests(unittest.TestCase):
                     # holding the snapshot from the last successful round.
                     with self.assertRaises(exception):
                         state = manage_memory(
-                            state, [B, C, REJECTED], [0.9, 0.7, 1.0], self.client,
+                            state, [B, C, REJECTED], [0.9, 0.7, 1.0], self.client, prompt_variant="retrieval_questions"
                         ).state
                     self.assertIs(state, established)
                     self.assertEqual(state.original_question, initial.original_question)
@@ -261,7 +261,7 @@ class MemoryFailureTests(unittest.TestCase):
                                      [call(1), call(2)] if len(failures) == 3 else [])
 
                     recovered = manage_memory(
-                        state, [B, C, REJECTED], [0.9, 0.9, 1.0], self.client,
+                        state, [B, C, REJECTED], [0.9, 0.9, 1.0], self.client, prompt_variant="retrieval_questions"
                     )
                     state = recovered.state
                     self.assertEqual(send.call_count, len(attempts))

@@ -59,10 +59,10 @@ class MemoryUpdateTests(unittest.TestCase):
                                        completion([B], [B[2]]),
                                        completion(questions=["Which country has Song C?"])]
         state = QuestionMemory("Who leads the country with Song C?")
-        first, _ = update_memory(state, [A], client)
-        second, _ = update_memory(first, [B], client)
-        third, _ = update_memory(second, [], client)
-        fourth, _ = update_memory(third, [], client)
+        first, _ = update_memory(state, [A], client, prompt_variant="retrieval_questions")
+        second, _ = update_memory(first, [B], client, prompt_variant="retrieval_questions")
+        third, _ = update_memory(second, [], client, prompt_variant="retrieval_questions")
+        fourth, _ = update_memory(third, [], client, prompt_variant="retrieval_questions")
         self.assertEqual(first.memory_triplets, {A})
         self.assertEqual(second.memory_triplets, {A, B})
         self.assertEqual(third.memory_triplets, {B})
@@ -88,7 +88,7 @@ class MemoryUpdateTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         client.complete.return_value = completion([literal, B, literal], [B[2], literal[0]])
         state = QuestionMemory("Original?", rejected_triplets=[REJECTED])
-        updated, result = update_memory(state, (row for row in [literal, B]), client)
+        updated, result = update_memory(state, (row for row in [literal, B]), client, prompt_variant="retrieval_questions")
         self.assertEqual(updated.memory_triplets, {literal, B})
         self.assertEqual(result.selected_triplets, (literal, B, literal))
         self.assertEqual(result.predict_answer, (B[2], literal[0]))
@@ -107,12 +107,12 @@ class MemoryUpdateTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         client.complete.side_effect = [completion([A], questions=questions),
                                        completion([A, B], [B[2]])]
-        first, response = update_memory(QuestionMemory(query), [A], client)
+        first, response = update_memory(QuestionMemory(query), [A], client, prompt_variant="retrieval_questions")
         self.assertEqual(response.predict_answer, ())
         self.assertEqual(response.subsequent_question, questions)
         retrieve = Mock(return_value=[B])
         potential = retrieve(response.subsequent_question)
-        second, final = update_memory(first, potential, client)
+        second, final = update_memory(first, potential, client, prompt_variant="retrieval_questions")
         retrieve.assert_called_once_with(questions)
         self.assertEqual(first.memory_triplets, {A})
         self.assertEqual(second.memory_triplets, {A, B})
@@ -136,7 +136,7 @@ class MemoryUpdateTests(unittest.TestCase):
                 client.reset_mock()
                 client.complete.return_value = completion(selected, questions=questions)
                 with self.subTest(selected=selected, questions=questions), self.assertRaises(ValueError):
-                    update_memory(state, [B], client)
+                    update_memory(state, [B], client, prompt_variant="retrieval_questions")
                 client.complete.assert_called_once()
                 self.assertEqual(state.memory_triplets, {A})
                 self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -160,7 +160,7 @@ class MemoryUpdateTests(unittest.TestCase):
             client.reset_mock()
             client.complete.return_value = output
             with self.subTest(output=output), self.assertRaises(ValueError):
-                update_memory(state, [B], client)
+                update_memory(state, [B], client, prompt_variant="retrieval_questions")
             client.complete.assert_called_once()
             prompt = client.complete.call_args.args[0][0]["content"]
             self.assertIn("No external knowledge; no fabrication;", prompt)
@@ -178,9 +178,9 @@ class MemoryUpdateTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         for potential in (None, "bad", [["short"]], [REJECTED]):
             with self.subTest(potential=potential), self.assertRaises(ValueError):
-                update_memory(state, potential, client)
+                update_memory(state, potential, client, prompt_variant="retrieval_questions")
         with self.assertRaises(ValueError):
-            update_memory(None, [], client)
+            update_memory(None, [], client, prompt_variant="retrieval_questions")
         client.complete.assert_not_called()
         self.assertEqual(state.memory_triplets, {A})
 
@@ -199,7 +199,7 @@ class MemoryUpdateTests(unittest.TestCase):
             client.reset_mock()
             client.complete.return_value = response
             with self.subTest(response=response), self.assertRaises(ValueError):
-                update_memory(state, [B], client)
+                update_memory(state, [B], client, prompt_variant="retrieval_questions")
             client.complete.assert_called_once()
             self.assertEqual(state.memory_triplets, {A})
             self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -223,7 +223,7 @@ class MemoryUpdateTests(unittest.TestCase):
             client.reset_mock()
             client.complete.return_value = response
             with self.subTest(response=response), self.assertRaises(ValueError):
-                update_memory(state, [], client)
+                update_memory(state, [], client, prompt_variant="retrieval_questions")
             client.complete.assert_called_once()
             self.assertEqual(state.memory_triplets, {A})
 
@@ -240,7 +240,7 @@ class MemoryUpdateTests(unittest.TestCase):
             client.reset_mock()
             client.complete.return_value = response
             with self.subTest(response=response), self.assertRaises(ValueError):
-                update_memory(state, [B], client)
+                update_memory(state, [B], client, prompt_variant="retrieval_questions")
             client.complete.assert_called_once()
             self.assertEqual(state.memory_triplets, {A})
             self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -254,7 +254,7 @@ class MemoryUpdateTests(unittest.TestCase):
         state = QuestionMemory("Where was the leader born?", [A, B])
         client = Mock(spec=LLMClient)
         client.complete.return_value = completion([B, C], [C[2], B[2]])
-        updated, result = update_memory(state, [C], client)
+        updated, result = update_memory(state, [C], client, prompt_variant="retrieval_questions")
         self.assertEqual(updated.memory_triplets, {B, C})
         self.assertEqual(result.predict_answer, (C[2], B[2]))
         self.assertEqual(state.memory_triplets, {A, B})
@@ -273,7 +273,7 @@ class MemoryUpdateTests(unittest.TestCase):
             client.reset_mock()
             client.complete.side_effect = failure
             with self.subTest(failure=type(failure)), self.assertRaises(type(failure)):
-                update_memory(state, [B], client)
+                update_memory(state, [B], client, prompt_variant="retrieval_questions")
             client.complete.assert_called_once()
             self.assertEqual(state.memory_triplets, {A})
             self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -287,7 +287,7 @@ class MemoryUpdateTests(unittest.TestCase):
         second = QuestionMemory("Same question?")
         client = Mock(spec=LLMClient)
         client.complete.return_value = completion([A], questions=["What evidence is missing?"])
-        updated, _ = update_memory(first, [A, B], client)
+        updated, _ = update_memory(first, [A, B], client, prompt_variant="retrieval_questions")
         self.assertEqual(updated.memory_triplets, {A})
         self.assertEqual(updated.rejected_triplets, {B})
         self.assertEqual(second.memory_triplets, set())
@@ -314,7 +314,7 @@ class MemoryUpdateTests(unittest.TestCase):
                 "src.agent.llm_client.time.sleep",
             ):
                 send.side_effect = [requests.Timeout(), response]
-                updated, result = update_memory(state, [B], client)
+                updated, result = update_memory(state, [B], client, prompt_variant="retrieval_questions")
                 self.assertEqual(send.call_count, 2)
                 payload = json.loads(send.call_args.args[0].body)
                 self.assertEqual(payload["model"], "gpt-4o-mini")

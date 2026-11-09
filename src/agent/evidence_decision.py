@@ -1,6 +1,6 @@
 """Extract conditional descriptions, then evaluate them against the full graph.
 
-Only the explicit candidate uses this protocol. Intermediate evidence never
+The default memory pipeline uses this protocol. Intermediate evidence never
 publishes memory; final selection remains subject to the original strict parser.
 """
 

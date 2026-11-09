@@ -68,7 +68,7 @@ class MemoryManagementTests(unittest.TestCase):
         ranked = completion()
         ranked["choices"][0]["message"]["content"] = json.dumps({"predict_answer": [B[2], A[0], B[2]]})
         client.complete.side_effect = [completion([B, A, B], [B[2], A[0], B[2]], ["Next?"]), ranked]
-        result = manage_memory(state, triples, scores, client)
+        result = manage_memory(state, triples, scores, client, prompt_variant="retrieval_questions")
         self.assertIsInstance(result, MSMResult)
         self.assertEqual(result.state.memory_triplets, {A, B})
         self.assertEqual(result.state.rejected_triplets, {REJECTED})
@@ -96,13 +96,13 @@ class MemoryManagementTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         client.complete.side_effect = [completion([A, B], questions=["Where was Person B born?"]),
                                        completion([B, C], [C[2]])]
-        first = manage_memory(state, [B, C], [0.9, 0.5], client)
+        first = manage_memory(state, [B, C], [0.9, 0.5], client, prompt_variant="retrieval_questions")
         self.assertNotIn(C, first.state.excluded_triplets)
         retrieve = Mock(return_value=[A, B, C])
         rescore = Mock(return_value=[0.95])
         candidates = first.state.filter_expansion_triplets(
             retrieve(first.response.subsequent_question))
-        second = manage_memory(first.state, candidates, rescore(candidates), client)
+        second = manage_memory(first.state, candidates, rescore(candidates), client, prompt_variant="retrieval_questions")
         retrieve.assert_called_once_with(("Where was Person B born?",))
         rescore.assert_called_once_with([C])
         self.assertEqual(second.state.memory_triplets, {B, C})
@@ -123,7 +123,7 @@ class MemoryManagementTests(unittest.TestCase):
                 state = QuestionMemory("Where?", rejected_triplets=[REJECTED])
                 client = Mock(spec=LLMClient)
                 client.complete.return_value = completion(questions=["Which place?"])
-                result = manage_memory(state, triples, scores, client, threshold)
+                result = manage_memory(state, triples, scores, client, threshold, prompt_variant="retrieval_questions")
                 self.assertEqual(result.state.memory_triplets, set())
                 self.assertEqual(result.state.rejected_triplets, {REJECTED})
                 self.assertEqual(result.response.predict_answer, ())
@@ -131,7 +131,7 @@ class MemoryManagementTests(unittest.TestCase):
                 client.complete.assert_called_once_with([{"role": "user", "content":
                     build_memory_prompt("Where?", [], [])}])
         client.complete.return_value = completion([C], [C[2]])
-        result = manage_memory(state, [C], [0.6], client, 0.5)
+        result = manage_memory(state, [C], [0.6], client, 0.5, prompt_variant="retrieval_questions")
         self.assertEqual(result.state.memory_triplets, {C})
 
     def test_invalid_inputs_fail_before_request_including_excluded_rows(self) -> None:
@@ -149,7 +149,7 @@ class MemoryManagementTests(unittest.TestCase):
             with self.subTest(triples=triples, scores=scores):
                 client = Mock(spec=LLMClient)
                 with self.assertRaises(ValueError):
-                    manage_memory(snapshot, triples, scores, client, threshold)
+                    manage_memory(snapshot, triples, scores, client, threshold, prompt_variant="retrieval_questions")
                 client.complete.assert_not_called()
                 self.assertEqual(state.memory_triplets, {A})
                 self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -172,7 +172,7 @@ class MemoryManagementTests(unittest.TestCase):
                     client.complete.return_value = failure
                     error = ValueError
                 with self.assertRaises(error):
-                    manage_memory(state, [B], [0.9], client)
+                    manage_memory(state, [B], [0.9], client, prompt_variant="retrieval_questions")
                 client.complete.assert_called_once()
                 self.assertEqual(state.memory_triplets, {A})
                 self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -188,8 +188,8 @@ class MemoryManagementTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         client.complete.side_effect = [completion(questions=["Who else?"]),
                                        completion([B], [B[2]])]
-        rejected = manage_memory(first, [B], [0.9], client)
-        accepted = manage_memory(second, [B], [0.9], client)
+        rejected = manage_memory(first, [B], [0.9], client, prompt_variant="retrieval_questions")
+        accepted = manage_memory(second, [B], [0.9], client, prompt_variant="retrieval_questions")
         self.assertEqual(rejected.state.rejected_triplets, {B})
         self.assertEqual(accepted.state.memory_triplets, {B})
         self.assertEqual(accepted.state.rejected_triplets, set())

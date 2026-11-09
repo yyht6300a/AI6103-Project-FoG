@@ -97,6 +97,40 @@ class EvidenceDecisionTests(unittest.TestCase):
     Caller snapshots must remain unchanged after every failed stage.
     """
 
+    def test_default_matches_explicit_decision_and_update_entry(self):
+        """Exercise both public defaults through the real decision parser.
+
+        Exact request equality with the explicit variant protects the adopted
+        pipeline; an invalid extraction must stop before selection or publication.
+        """
+        from src.agent.memory_update import update_memory
+
+        extraction = completion()
+        extraction["choices"][0]["message"]["content"] = json.dumps(wire(description()))
+        selection = completion([FACT, RIGHT], [RIGHT[2]], [])
+        state = QuestionMemory(QUESTION)
+        calls = []
+        for entry, options in ((manage_memory, {}),
+                               (manage_memory, {"prompt_variant": "evidence_decision"}),
+                               (update_memory, {})):
+            client = Mock()
+            client.complete.side_effect = [extraction, selection]
+            args = (state, GRAPH, client) if entry is update_memory else (state, GRAPH, [0.95] * 3, client)
+            result = entry(*args, **options)
+            next_state = result[0] if entry is update_memory else result.state
+            self.assertEqual(next_state.memory_triplets, frozenset({FACT, RIGHT}))
+            self.assertEqual(next_state.rejected_triplets, frozenset({LEFT}))
+            self.assertEqual(client.complete.call_count, 2)
+            calls.append(client.complete.call_args_list)
+        self.assertEqual(calls[0], calls[1])
+        self.assertEqual(calls[0], calls[2])
+        client = Mock()
+        client.complete.return_value = completion()
+        with self.assertRaises(MemoryValidationError):
+            manage_memory(state, GRAPH, [0.95] * 3, client)
+        self.assertEqual(client.complete.call_count, 1)
+        self.assertEqual(state, QuestionMemory(QUESTION))
+
     def test_group_expansion_and_wire_rejection(self):
         """Inherit group entities without accepting duplicated wire targets.
 

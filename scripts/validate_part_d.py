@@ -44,6 +44,16 @@ CONFIRMED_BIRTH = ("Mira Vale", "confirmed_birthplace", "Linden City")
 POSSIBLE_BIRTH = ("Mira Vale", "reported_possible_birthplace", "Cedar City")
 RESIDENCE = ("Mira Vale", "lived_in", "Harbor City")
 CASES = {
+    "conditional": [
+        (f"{branch}_{stage}", expected)
+        for branch in ("silver", "bronze")
+        for stage, expected in (
+            ("full", "Independent full graph: resolve branch, retain its path and answer."),
+            ("unknown", "Fresh state: retain both births; ask only for the publisher."),
+            ("resolved", "Inherit state, add publisher: answer and reject only the other birth."),
+            ("probe", "Re-submit all at 0.95: rejected birth stays filtered; answer remains."),
+        )
+    ],
     "reference_diagnostic": [
         ("paper", "Review each baseline sub-question in isolation for entity references."),
         ("explicit_references", "Full entity descriptions without invented author names."),
@@ -85,21 +95,25 @@ CASES = {
 }
 
 
-def case_plan(suite: str) -> list[dict]:
+def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dict]:
     """List the fixed calls and expectations without loading private settings.
 
     Args:
-        suite: CLI-validated single, multi, removal, ranking or all selection.
+        suite: CLI-validated acceptance or diagnostic selection. Conditional
+            full graphs/chains are separate from the original thirteen-case all.
+        prompt_variant: Default decision pipeline or explicit comparison variant.
 
     Returns:
         Ordered cases with per-case logical request limits. Every memory round
-        permits selection plus mandatory ranking if it returns multiple answers;
+        permits decision, selection and ranking if it returns multiple answers;
         decomposition permits one request. Each has YAML transport retries.
     """
-    groups = tuple(group for group in CASES if not group.endswith("_diagnostic")) if suite == "all" else (suite,)
+    groups = ("single", "multi", "removal", "ranking") if suite == "all" else (suite,)
+    memory_limit = 3 if prompt_variant == "evidence_decision" else 2
     return [{"case": f"{group}.{name}", "expected": expected,
              "logical_call_limit": 1 if (group == "single" and name == "decomposition")
-                 or (group == "reference_diagnostic" and name != "named_author") else 2}
+                 or (group == "reference_diagnostic" and name != "named_author")
+                 else 2 if group == "clarification_diagnostic" else memory_limit}
             for group in groups for name, expected in CASES[group]]
 
 
@@ -157,13 +171,15 @@ class CountingClient:
         """
         self.client = client
         self.record = record
+        self.calls = []
         record["logical_calls_started"] = 0
 
-    def complete(self, messages: list[dict]) -> dict:
+    def complete(self, messages: list[dict], **options) -> dict:
         """Count one request before forwarding, including terminal failures.
 
         Args:
             messages: Unchanged selection or ranking messages.
+            **options: Explicit structured-output settings forwarded unchanged.
 
         Returns:
             Raw completion from the underlying client without output repair.
@@ -175,13 +191,15 @@ class CountingClient:
         if self.record["logical_calls_started"] >= self.record["logical_call_limit"]:
             raise RuntimeError("Case logical request budget exhausted")
         self.record["logical_calls_started"] += 1
-        return self.client.complete(messages)
+        completion = self.client.complete(messages, **options)
+        self.calls.append({"messages": messages, "options": options, "completion": completion})
+        return completion
 
 
 def memory_round(
     client: LLMClient, report: dict, name: str, state: QuestionMemory,
     triples: list, scores: list, queries: tuple | list,
-    *, prompt_variant: str = "retrieval_questions",
+    *, prompt_variant: str | None = None,
 ):
     """Run public MSM with mandatory ranking of multiple candidate answers.
 
@@ -193,7 +211,8 @@ def memory_round(
         triples: Controlled retrieval rows, including exclusion probes.
         scores: Positionally aligned controlled scores; cutoff stays 0.7.
         queries: Actual initial or preceding model questions driving this fixture.
-        prompt_variant: Memory prompt variant recorded and passed to public MSM.
+        prompt_variant: Explicit comparison override, otherwise the report's
+            selected variant (default evidence_decision).
 
     Returns:
         Validated MSM result with a new state and ordered response.
@@ -202,6 +221,7 @@ def memory_round(
         Exception: Public API failure, recorded and propagated without retries
             beyond LLMClient's configured transport policy.
     """
+    prompt_variant = prompt_variant or report.get("prompt_variant", "evidence_decision")
     record = begin_case(report, name)
     before = snapshot(state)
     eligible = state.filter_expansion_triplets(triples)
@@ -213,8 +233,9 @@ def memory_round(
                   prompt_variant=prompt_variant,
                   ranking_stage_enabled=True,
                   state_before=before, submitted=sorted(submitted))
+    counted = CountingClient(client, record)
     try:
-        result = manage_memory(state, triples, scores, CountingClient(client, record), potential_threshold=0.7,
+        result = manage_memory(state, triples, scores, counted, potential_threshold=0.7,
                                prompt_variant=prompt_variant)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,
@@ -224,6 +245,7 @@ def memory_round(
 
     selected = result.state.memory_triplets
     record.update(
+        stages=counted.calls,
         status="validated", state_after=snapshot(result.state),
         selected_triplets=result.response.selected_triplets,
         predict_answer=result.response.predict_answer,
@@ -250,14 +272,56 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     Args:
         client: Real LLMClient, shared across independent question states.
         report: Mutable report storing validated output for later semantic review.
-        suite: Standard acceptance group, an explicit diagnostic group, or all.
-            Diagnostics are excluded from all, which permits thirteen calls.
+        suite: Standard acceptance group, conditional full graphs/chains, an
+            explicit diagnostic group, or all. Conditional and diagnostics are
+            excluded from all, which retains thirteen cases.
 
     Multi-round retrieval consumes the preceding response's questions but returns
     controlled rows rather than implementing C/E. Empty questions are recorded
     honestly; the last round is a forced exclusion probe, not a stopping policy.
     Model choices are never replaced to manufacture a desired state transition.
     """
+    if suite == "conditional":
+        for branch, value, birth, other in (
+            ("silver", "Silver Press", BIRTH, OTHER_BIRTH),
+            ("bronze", "Bronze Press", OTHER_BIRTH, BIRTH),
+        ):
+            publisher = (PUBLISHER[0], PUBLISHER[1], value)
+            prior = None
+            for stage in ("full", "unknown", "resolved", "probe"):
+                state = (QuestionMemory(BRANCH_QUESTION) if stage in ("full", "unknown")
+                         else prior.state)
+                triples = ([BIRTH, OTHER_BIRTH] if stage == "unknown" else [publisher]
+                           if stage == "resolved" else [BIRTH, OTHER_BIRTH, publisher])
+                result = memory_round(
+                    client, report, f"conditional.{branch}_{stage}", state,
+                    triples, [0.95] * len(triples),
+                    (BRANCH_QUESTION,) if stage in ("full", "unknown")
+                    else prior.response.subsequent_question,
+                )
+                record = report["results"][-1]
+                expected_memory = {BIRTH, OTHER_BIRTH} if stage == "unknown" else {publisher, birth}
+                questions = result.response.subsequent_question
+                # Match the entire open-value query, not a publisher keyword.
+                allowed_queries = {
+                    f'Which entity does "The Glass Orchard" connect to through relation "{relation}"?'
+                    for relation in ("published_by", "publisher")
+                }
+                checks = {
+                    "memory": result.state.memory_triplets == expected_memory,
+                    "answers": result.response.predict_answer == (() if stage == "unknown" else (birth[2],)),
+                    "questions": len(questions) == 1 and questions[0] in allowed_queries
+                        if stage == "unknown" else not questions,
+                    "rejection": result.state.rejected_triplets == (
+                        frozenset() if stage == "unknown" else frozenset({other})),
+                    "filtered": stage != "probe" or other not in map(tuple, record["submitted"]),
+                }
+                record["controlled_checks"] = checks
+                if not all(checks.values()):
+                    record["status"] = "controlled_check_failure"
+                    raise RuntimeError("Conditional acceptance expectation failed")
+                prior = result
+
     if suite == "clarification_diagnostic":
         for variant in ("paper", "retrieval_questions"):
             for stage, triples in (("empty", []), ("author", [AUTHOR]),
@@ -387,11 +451,16 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=(*CASES, "all"), default="all")
+    parser.add_argument(
+        "--prompt-variant", default="evidence_decision",
+        choices=("evidence_decision", "retrieval_questions", "paper", "answer_ranking"),
+    )
     parser.add_argument("--list-cases", action="store_true",
                         help="Print expectations and call counts without loading .env or using API.")
     args = parser.parse_args(argv)
     report = {
-        "suite": args.suite, "plan": case_plan(args.suite), "results": [],
+        "suite": args.suite, "prompt_variant": args.prompt_variant,
+        "plan": case_plan(args.suite, args.prompt_variant), "results": [],
         "semantic_review": "pending", "status": "not_started",
         "usage_csv": "logs/llm_usage.csv",
     }

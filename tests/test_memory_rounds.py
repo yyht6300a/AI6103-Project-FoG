@@ -64,7 +64,7 @@ class ControlledMemoryRoundsTests(unittest.TestCase):
                 for index, (candidates, selected, answers, questions, submitted) in enumerate(rounds):
                     with self.subTest(round=index + 1):
                         prior = snapshots[-1]
-                        result = manage_memory(prior, candidates, [0.9] * len(candidates), client)
+                        result = manage_memory(prior, candidates, [0.9] * len(candidates), client, prompt_variant="retrieval_questions")
                         self.assertEqual(send.call_count, index + 1)
                         payload = json.loads(send.call_args.args[0].body)
                         prompt = payload["messages"][0]["content"]

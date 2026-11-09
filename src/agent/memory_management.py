@@ -42,9 +42,9 @@ def _manage_memory_once(
     client: LLMClient,
     potential_threshold: Real = 0.7,
     *,
-    prompt_variant: str = "retrieval_questions",
+    prompt_variant: str = "evidence_decision",
 ) -> MSMResult:
-    """Build the internal single-call selection result before answer ranking.
+    """Build the internal decision/selection result before answer ranking.
 
     Args:
         state: Current question-local immutable snapshot. Create a fresh
@@ -56,8 +56,10 @@ def _manage_memory_once(
         client: Caller-owned LLMClient; configuration and closing stay external.
         potential_threshold: Finite real strict cutoff, default 0.7. Callers
             loading YAML must pass its potential_threshold explicitly.
-        prompt_variant: Default ``retrieval_questions``, ``paper`` baseline,
-            opt-in ``answer_ranking``, or two-stage ``evidence_decision``.
+        prompt_variant: Default two-stage ``evidence_decision``, ``paper``
+            baseline, or single-selection ``retrieval_questions``/``answer_ranking``.
+            The default supports one-hop requirements and single-relation equality
+            conditions; an unsupported extraction fails without fallback.
 
     Returns:
         New state and structured output after complete validation. All input
@@ -92,7 +94,7 @@ def manage_memory(
     client: LLMClient,
     potential_threshold: Real = 0.7,
     *,
-    prompt_variant: str = "retrieval_questions",
+    prompt_variant: str = "evidence_decision",
 ) -> MSMResult:
     """Complete an atomic memory round with a separate answer-ranking request.
 
@@ -107,12 +109,12 @@ def manage_memory(
         scores: Positionally aligned finite refined scores passed to MSM.
         client: Caller-owned client shared by both stages; never closed here.
         potential_threshold: Strict cutoff forwarded unchanged to MSM.
-        prompt_variant: Selection variant, including opt-in ``evidence_decision``
-            with a preliminary decision request. Every variant retains the
+        prompt_variant: Default ``evidence_decision`` adds a preliminary decision
+            request. Explicit ``paper`` retains the baseline. Every variant retains the
             mandatory separate ranking stage for multiple candidate answers.
 
     Returns:
-        MSMResult with stage-one state, selected evidence and questions unchanged.
+        MSMResult with validated pre-ranking state, evidence and questions unchanged.
         Only answer order may change; literal strings and multiplicity survive.
         No answer, path or rejection is repaired by the ranking stage.
 

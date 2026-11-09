@@ -45,7 +45,8 @@ class ValidationDiagnosticsTests(unittest.TestCase):
                 client = Mock()
                 client.complete.return_value = {'choices': [{'finish_reason': 'stop', 'message': {'content': content}}]}
                 state = QuestionMemory(validation.BRANCH_QUESTION)
-                report = {'plan': validation.case_plan('empty_diagnostic'), 'results': []}
+                report = {'plan': validation.case_plan('empty_diagnostic', 'retrieval_questions'),
+                          'results': [], 'prompt_variant': 'retrieval_questions'}
                 with self.assertRaises(ValueError):
                     validation.memory_round(client, report, 'empty_diagnostic.probe', state, [], [], ())
                 failed = report['results'][0]
@@ -64,7 +65,8 @@ class ValidationDiagnosticsTests(unittest.TestCase):
                            ({'choices': [{'finish_reason': 'stop', 'message': {'refusal': 'private'}}]}, 'completion_refused')]:
             client = Mock()
             client.complete.return_value = body
-            report = {'plan': validation.case_plan('empty_diagnostic'), 'results': []}
+            report = {'plan': validation.case_plan('empty_diagnostic', 'retrieval_questions'),
+                      'results': [], 'prompt_variant': 'retrieval_questions'}
             with self.assertRaises(ValueError):
                 validation.memory_round(client, report, 'empty_diagnostic.probe',
                                         QuestionMemory(validation.BRANCH_QUESTION), [], [], ())

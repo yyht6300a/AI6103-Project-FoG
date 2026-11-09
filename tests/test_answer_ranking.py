@@ -122,7 +122,7 @@ class AnswerRankingTests(unittest.TestCase):
                 client.complete.side_effect = [upstream(['Beta', 'Alpha']), failure]
                 error_type = type(failure) if isinstance(failure, Exception) else ValueError
                 with self.assertRaises(error_type):
-                    published = manage_memory(state, [B], [0.95], client).state
+                    published = manage_memory(state, [B], [0.95], client, prompt_variant="retrieval_questions").state
                 self.assertIs(published, state)
                 self.assertEqual(state.memory_triplets, {A})
                 self.assertEqual(state.rejected_triplets, {REJECTED})
@@ -138,7 +138,7 @@ class AnswerRankingTests(unittest.TestCase):
         client = Mock(spec=LLMClient)
         client.complete.return_value = completion({})
         with self.assertRaises(ValueError):
-            manage_memory(QuestionMemory('Where?'), [B], [0.95], client)
+            manage_memory(QuestionMemory('Where?'), [B], [0.95], client, prompt_variant="retrieval_questions")
         client.complete.assert_called_once()
         candidates = [' Alpha ', '城市', ' Alpha ']
         self.assertEqual(parse_ranking(completion(dict(predict_answer=candidates[::-1])),
@@ -170,7 +170,7 @@ class AnswerRankingTests(unittest.TestCase):
                 with patch('requests.adapters.HTTPAdapter.send', side_effect=responses) as send, patch(
                     'src.agent.llm_client.time.sleep',
                 ):
-                    result = manage_memory(QuestionMemory('Where?', [A]), [B], [0.95], client)
+                    result = manage_memory(QuestionMemory('Where?', [A]), [B], [0.95], client, prompt_variant="retrieval_questions")
                     self.assertEqual(result.response.predict_answer, ('Alpha', 'Beta'))
                     self.assertEqual(send.call_count, 3)
                     self.assertEqual(send.call_args_list[1].args[0].body,

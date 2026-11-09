@@ -75,7 +75,7 @@ class ControlledRejectionRoundsTests(unittest.TestCase):
                                 with self.subTest(round=index + 1):
                                     prior = snapshots[-1]
                                     result = manage_memory(prior, candidates, scores, client,
-                                                           potential_threshold=threshold)
+                                                           potential_threshold=threshold, prompt_variant="retrieval_questions")
                                     self.assertEqual(send.call_count, index + 1)
                                     payload = json.loads(send.call_args.args[0].body)
                                     prompt = payload["messages"][0]["content"]

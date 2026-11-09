@@ -28,6 +28,74 @@ class PartDValidationTests(unittest.TestCase):
     loads the user's dotenv or writes to the shared usage CSV.
     """
 
+    def test_conditional_suite_uses_default_protocol_and_inherits_real_snapshots(self):
+        """Replay complete graphs and two independent chains without a provider.
+
+        Synthetic extractions pass the public parser; real filtering must remove
+        the rejected birth before either stage sees the final high-score probe.
+        Structured-output options and both stages must survive the counting facade.
+        """
+        envelopes = []
+        for value, active in (("Silver Press", validation.BIRTH), ("Bronze Press", validation.OTHER_BIRTH)):
+            publisher = (*validation.PUBLISHER[:2], value)
+            for stage in ("full", "unknown", "resolved", "probe"):
+                graph = sorted([validation.BIRTH, validation.OTHER_BIRTH] if stage == "unknown"
+                               else [publisher, active] if stage == "probe"
+                               else [publisher, validation.BIRTH, validation.OTHER_BIRTH])
+                branches = {}
+                for name, birth in (("true", validation.BIRTH), ("false", validation.OTHER_BIRTH)):
+                    binding = ({"kind": "observed", "evidence_ids": [graph.index(birth)]}
+                               if birth in graph else {"kind": "missing", "direction": "outgoing"})
+                    branches[name] = {"requirements": [{"entity": birth[0], "fact_queries": [
+                        {"relation": "born_in", "binding": binding}]}]}
+                description = {"description": {
+                    "kind": "conditional_equals",
+                    "condition": {"subject": "The Glass Orchard", "relation": "published_by",
+                                  "operator": "eq", "value": "Silver Press",
+                                  "uniqueness_quote": "The Glass Orchard has exactly one publisher.",
+                                  "condition_quote": "If it was published by Silver Press"},
+                    "branches": branches,
+                }}
+                extraction = completion()
+                extraction["choices"][0]["message"]["content"] = json.dumps(description)
+                selection = completion(
+                    [validation.BIRTH, validation.OTHER_BIRTH] if stage == "unknown" else [publisher, active],
+                    [] if stage == "unknown" else [active[2]],
+                    ['Which entity does "The Glass Orchard" connect to through relation "published_by"?']
+                    if stage == "unknown" else [],
+                )
+                envelopes.extend([extraction, selection])
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = envelopes
+        report = {"plan": validation.case_plan("conditional"), "results": []}
+        validation.run_cases(client, report, "conditional")
+        self.assertEqual(client.complete.call_count, 16)
+        self.assertTrue(all(all(r["controlled_checks"].values()) for r in report["results"]))
+        for record in report["results"]:
+            self.assertEqual(record["prompt_variant"], "evidence_decision")
+            self.assertEqual(record["logical_calls_started"], 2)
+            self.assertEqual(len(record["stages"]), 2)
+            self.assertTrue(all(call["options"]["response_format"]["json_schema"]["strict"]
+                                for call in record["stages"]))
+        for index in (3, 7):
+            self.assertEqual(len(report["results"][index]["submitted"]), 2)
+        self.assertEqual(report["results"][4]["state_before"]["memory"], [])
+        self.assertEqual(report["results"][5]["state_before"]["rejected"], [])
+
+        # A structurally valid full-graph answer retaining the irrelevant branch
+        # must fail the controlled gate before an unknown-condition chain starts.
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = [envelopes[0], completion(
+            [validation.BIRTH, validation.OTHER_BIRTH, (*validation.PUBLISHER[:2], "Silver Press")],
+            [validation.BIRTH[2]], [],
+        )]
+        report = {"plan": validation.case_plan("conditional"), "results": []}
+        with self.assertRaises(RuntimeError):
+            validation.run_cases(client, report, "conditional")
+        self.assertEqual(client.complete.call_count, 2)
+        self.assertEqual(len(report["results"]), 1)
+        self.assertEqual(report["results"][0]["status"], "controlled_check_failure")
+
     def test_unknown_memory_variant_fails_before_a_paid_request(self) -> None:
         """Reject configuration mistakes without publishing or sending anything.
 
@@ -82,7 +150,7 @@ class PartDValidationTests(unittest.TestCase):
             envelopes.append(envelope)
         envelopes.append(completion([validation.AUTHOR], [], ["Where was Mira Vale born?"]))
         client.complete.side_effect = envelopes
-        report = {"plan": validation.case_plan("reference_diagnostic"), "results": []}
+        report = {"plan": validation.case_plan("reference_diagnostic", "retrieval_questions"), "results": [], "prompt_variant": "retrieval_questions"}
         validation.run_cases(client, report, "reference_diagnostic")
         self.assertEqual(client.complete.call_count, 3)
         records = report["results"]
@@ -114,10 +182,10 @@ class PartDValidationTests(unittest.TestCase):
         Each suite is previewed independently so operators can select a smaller
         run before supplying private configuration.
         """
-        for suite, count, limit in (("single", 4, 7), ("multi", 4, 8), ("removal", 3, 6),
-                                   ("ranking", 2, 4), ("empty_diagnostic", 1, 2),
-                                   ("reference_diagnostic", 3, 4), ("clarification_diagnostic", 6, 12),
-                                   ("all", 13, 25)):
+        for suite, count, limit in (("single", 4, 10), ("multi", 4, 12), ("removal", 3, 9),
+                                   ("ranking", 2, 6), ("empty_diagnostic", 1, 3),
+                                   ("reference_diagnostic", 3, 5), ("clarification_diagnostic", 6, 12),
+                                   ("all", 13, 37), ("conditional", 8, 24)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:
@@ -169,7 +237,7 @@ class PartDValidationTests(unittest.TestCase):
                 "requests.adapters.HTTPAdapter.send",
                 side_effect=[self.response(body) for body in envelopes],
             ) as send, patch.object(client, "close", wraps=client.close) as close, redirect_stdout(io.StringIO()):
-                self.assertEqual(validation.main([]), 0)
+                self.assertEqual(validation.main(["--prompt-variant", "retrieval_questions"]), 0)
                 self.assertEqual(send.call_count, 15)
                 close.assert_called_once()
             report = json.loads(next((root / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8"))
@@ -222,7 +290,7 @@ class PartDValidationTests(unittest.TestCase):
                     ) as send, patch("src.agent.llm_client.time.sleep"), patch.object(
                         client, "close", wraps=client.close,
                     ) as close, redirect_stdout(io.StringIO()) as output:
-                        self.assertEqual(validation.main(["--suite", "multi"]), 1)
+                        self.assertEqual(validation.main(["--suite", "multi", "--prompt-variant", "retrieval_questions"]), 1)
                         self.assertEqual(send.call_count, 4 if timeout else 2)
                         close.assert_called_once()
                     report_text = next((root / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8")

@@ -62,23 +62,23 @@ class ExplorationEfficiencyTests(unittest.TestCase):
         client.complete.side_effect = [completion([A], questions=["Who leads Country A?"]),
                                        completion([C], [C[2]]),
                                        completion(questions=["What evidence is missing?"])]
-        first, _ = update_memory(state, [A, B, B], client)
+        first, _ = update_memory(state, [A, B, B], client, prompt_variant="retrieval_questions")
         self.assertEqual(first.rejected_triplets, {B, REJECTED})
         retrieve = Mock(return_value=[B, A, REJECTED, C])
         eligible = first.filter_expansion_triplets(retrieve("Who leads Country A?"))
         self.assertEqual(eligible, [C])
-        second, _ = update_memory(first, eligible, client)
+        second, _ = update_memory(first, eligible, client, prompt_variant="retrieval_questions")
         prompt = client.complete.call_args.args[0][0]["content"]
         self.assertIn('"Song C"', prompt)
         self.assertNotIn('"led_by"', prompt)
         self.assertEqual(second.memory_triplets, {C})
         self.assertEqual(second.rejected_triplets, {A, B, REJECTED})
-        third, _ = update_memory(second, [], client)
+        third, _ = update_memory(second, [], client, prompt_variant="retrieval_questions")
         self.assertEqual(third.memory_triplets, set())
         self.assertEqual(third.rejected_triplets, {A, B, C, REJECTED})
         self.assertEqual(third.filter_expansion_triplets([A, B, C, REJECTED]), [])
         with self.assertRaises(ValueError):
-            update_memory(third, [A], client)
+            update_memory(third, [A], client, prompt_variant="retrieval_questions")
         self.assertEqual(client.complete.call_count, 3)
         self.assertEqual(state.rejected_triplets, {REJECTED})
 
@@ -93,11 +93,11 @@ class ExplorationEfficiencyTests(unittest.TestCase):
         client.complete.side_effect = [completion(questions=["Where was Person B born?"]),
                                        completion([C], [C[2]])]
         potential = build_potential_subgraph(state.filter_expansion_triplets([A, C]), [0.9, 0.7])
-        first, _ = update_memory(state, potential, client)
+        first, _ = update_memory(state, potential, client, prompt_variant="retrieval_questions")
         self.assertEqual(first.rejected_triplets, {A})
         eligible = first.filter_expansion_triplets([A, C])
         self.assertEqual(eligible, [C])
-        second, _ = update_memory(first, build_potential_subgraph(eligible, [0.9]), client)
+        second, _ = update_memory(first, build_potential_subgraph(eligible, [0.9]), client, prompt_variant="retrieval_questions")
         self.assertEqual(second.memory_triplets, {C})
         self.assertEqual(second.rejected_triplets, {A})
 
@@ -114,7 +114,7 @@ class ExplorationEfficiencyTests(unittest.TestCase):
         for output in (completion([B], ["Invented"]), completion([B]), refused):
             client.complete.return_value = output
             with self.subTest(output=output), self.assertRaises(ValueError):
-                update_memory(state, [B, C], client)
+                update_memory(state, [B, C], client, prompt_variant="retrieval_questions")
             self.assertEqual(state.memory_triplets, {A})
             self.assertEqual(state.rejected_triplets, {REJECTED})
             self.assertEqual(state.filter_expansion_triplets([A, B, C]), [B, C])
@@ -127,7 +127,7 @@ class ExplorationEfficiencyTests(unittest.TestCase):
         """
         client = Mock(spec=LLMClient)
         client.complete.return_value = completion([A], questions=["Who leads Country A?"])
-        updated, _ = update_memory(QuestionMemory("Who?"), [A, B], client)
+        updated, _ = update_memory(QuestionMemory("Who?"), [A, B], client, prompt_variant="retrieval_questions")
         self.assertEqual(updated.filter_expansion_triplets([A, B, C]), [C])
         for state in (QuestionMemory("Who?"), QuestionMemory("Where?")):
             self.assertEqual(state.excluded_triplets, set())

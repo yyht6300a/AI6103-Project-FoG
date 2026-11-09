@@ -86,7 +86,7 @@ class QuestionIsolationTests(unittest.TestCase):
                                                          [A, B, C])
                                         history.append((states[run], questions[run], frozenset(), frozenset()))
                                     prior = states[run]
-                                    result = manage_memory(prior, candidates, [0.9] * len(candidates), client)
+                                    result = manage_memory(prior, candidates, [0.9] * len(candidates), client, prompt_variant="retrieval_questions")
                                     self.assertEqual(send.call_count, index + 1)
                                     payload = json.loads(send.call_args.args[0].body)
                                     self.assertEqual(len(payload["messages"]), 1)

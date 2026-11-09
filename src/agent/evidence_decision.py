@@ -22,15 +22,18 @@ A false or unknown condition is still conditional_equals. Quote the original
 branch-determining condition in condition_quote. An instruction to ask first
 when evidence is missing is an answering prerequisite, not the branch condition.
 conditional_equals contains condition and branches true/false only.
-nonconditional contains only branch (targets and fact_queries), without condition.
+nonconditional contains only branch (requirements), without condition.
 The condition describes a single relation equality. subject and value must occur
 verbatim in the original question or graph; relation is the exact graph relation
 name (if absent, describe the required relation). operator is eq. uniqueness_quote
 is the exact original-question passage explicitly establishing a single value,
 or empty if absent.
 The comparison value is a query constraint, NEVER an observed fact.
-For each branch supply targets (entity names, not questions or predicted answers)
-and fact_queries. Each query has target, relation and binding. For observed facts,
+For each branch supply requirements: groups with entity and fact_queries.
+entity is the known entity whose attribute or relation the question asks about,
+not the retrieved answer endpoint. Generate that entity only once per group.
+Each query belongs to its group's entity and has only relation and binding.
+For observed facts,
 binding is {kind: observed, evidence_ids: [integer IDs from Numbered knowledge]}.
 Reference facts with the exact relation and target endpoint; code derives direction.
 For absent facts binding is {kind: missing, direction: outgoing or incoming}.
@@ -39,9 +42,9 @@ is invalid if either direction has the exact target/relation in the graph.
 Describe every target's required
 one-hop fact even when absent from the graph. Use exact graph relation names
 when present. Never supply predicted values or select evidence. Both conditional
-branches must have nonempty targets and queries. The nonconditional branch also
-requires nonempty targets and queries. Every target needs a query, and every
-query target must belong to its branch. Multi-hop, aggregation and complex
+branches must have nonempty requirements, each with nonempty fact_queries.
+Multiple entities and multiple relations per entity are allowed, including
+incoming relations and entities with no observed facts. Multi-hop, aggregation and complex
 requirements are unsupported: use the unsupported description variant.
 Code will query the COMPLETE graph for condition facts and select the branch.
 """
@@ -60,11 +63,15 @@ CONDITION_SCHEMA = {
 }
 BRANCH_SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["targets", "fact_queries"],
-    "properties": {"targets": STRINGS, "fact_queries": {
+    "required": ["requirements"],
+    "properties": {"requirements": {"type": "array", "items": {
+        "type": "object", "additionalProperties": False,
+        "required": ["entity", "fact_queries"], "properties": {
+        "entity": {"type": "string", "description": "Known entity whose facts are requested; not the answer value."},
+        "fact_queries": {
         "type": "array", "items": {"type": "object", "additionalProperties": False,
-        "required": ["target", "relation", "binding"],
-        "properties": {"target": STRING, "relation": STRING, "binding": {"anyOf": [
+        "required": ["relation", "binding"],
+        "properties": {"relation": STRING, "binding": {"anyOf": [
             {"type": "object", "additionalProperties": False,
              "required": ["kind", "evidence_ids"], "properties": {
                  "kind": {"type": "string", "enum": ["observed"]},
@@ -73,7 +80,7 @@ BRANCH_SCHEMA = {
              "required": ["kind", "direction"], "properties": {
                  "kind": {"type": "string", "enum": ["missing"]},
                  "direction": {"type": "string", "enum": ["incoming", "outgoing"]}}}
-        ]}}}}},
+        ]}}}}}}}},
 }
 CONDITION_SCHEMA = {**CONDITION_SCHEMA,
     "required": [key for key in CONDITION_SCHEMA["required"] if key != "kind"] + ["condition_quote"],
@@ -134,14 +141,45 @@ def decode_description(record, question):
             raise MemoryValidationError("decision_targets")
         return {"condition": {"kind": "equals", **{k: v for k, v in condition.items()
                                                   if k != "condition_quote"}},
-                "branches": {**branches, "not_conditional": empty}}
+                "branches": {**{case: decode_branch(branches[case]) for case in ("true", "false")}, "not_conditional": empty}}
     if kind == "nonconditional" and set(item) == {"kind", "branch"}:
         return {"condition": {"kind": "none", **dict.fromkeys(
                     ("subject", "relation", "operator", "value", "uniqueness_quote"), "")},
-                "branches": {"true": empty, "false": empty, "not_conditional": item["branch"]}}
+                "branches": {"true": empty, "false": empty, "not_conditional": decode_branch(item["branch"])}}
     if kind == "unsupported" and set(item) == {"kind", "quote"}:
         raise MemoryValidationError("decision_unsupported")
     raise MemoryValidationError("decision_fields")
+
+
+def decode_branch(branch):
+    """Expand grouped wire requirements into the internal query contract.
+
+    Args:
+        branch: Untrusted branch with entity groups and bound fact requests.
+
+    Returns:
+        Internal targets and queries inheriting their group's entity exactly.
+
+    Raises:
+        MemoryValidationError: Empty groups, old fields or malformed requests.
+    """
+    if not isinstance(branch, dict) or set(branch) != {"requirements"}:
+        raise MemoryValidationError("decision_fields")
+    groups = branch["requirements"]
+    if not isinstance(groups, list) or not groups:
+        raise MemoryValidationError("decision_queries")
+    targets, queries = [], []
+    for group in groups:
+        if (not isinstance(group, dict) or set(group) != {"entity", "fact_queries"}
+                or not isinstance(group["entity"], str) or not group["entity"].strip()
+                or not isinstance(group["fact_queries"], list) or not group["fact_queries"]):
+            raise MemoryValidationError("decision_queries")
+        targets.append(group["entity"])
+        for query in group["fact_queries"]:
+            if not isinstance(query, dict) or set(query) != {"relation", "binding"}:
+                raise MemoryValidationError("decision_queries")
+            queries.append({"target": group["entity"], **query})
+    return {"targets": list(dict.fromkeys(targets)), "fact_queries": queries}
 
 
 def resolve_query(query, graph):
@@ -249,7 +287,7 @@ def derive_decision(description, question, submitted):
         raise MemoryValidationError("decision_targets")
     components = {value for triple in graph for value in triple}
     for case, branch in branches.items():
-        if not isinstance(branch, dict) or set(branch) != set(BRANCH_SCHEMA["required"]):
+        if not isinstance(branch, dict) or set(branch) != {"targets", "fact_queries"}:
             raise MemoryValidationError("decision_fields")
         _string_array(branch["targets"], "decision_strings")
         if any(value not in question and value not in components for value in branch["targets"]):

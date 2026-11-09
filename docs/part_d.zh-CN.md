@@ -865,7 +865,17 @@ All existing evidence, entity, and output constraints still apply.
 >
 > **不能继续剩余跨轮验收或推进采用／交付**：Bronze 原损失路径在本批通过，但 Silver 查询对象语义失败。下一项须针对首阶段将答案端点当作分支查询对象的实际反例提出修改；本批停止，不重复付费。候选仍需显式选择，本问题及 TODO 2.3.5 保持开放，GPT-4o-mini 交付验收未完成。
 
-   **端点绑定复验失败后的补充：按查询实体组织需求，消除对象重复生成**（2026/11/09 制定，尚未实施）。
+   **端点绑定复验失败后的补充：按查询实体组织需求，消除对象重复生成**（2026/11/09 制定并执行；完整图通过，跨轮首轮最终追问语义失败）。
+
+> 2026/11/09 已执行本补充。修改前精确重放旧 Silver 请求及回复，仍为 `evidence_decision / decision_queries`，仅首阶段调用，空旧状态不变。线上分支改为 `requirements: [{entity, fact_queries: [{relation, binding}]}]`，移除重复生成的 `targets`／`target`；解码严格校验分组并按所属实体展开内部对象与查询，线上与内部结构分别检查，不修补旧回复。条件求值、端点绑定、完整图匹配及发布规则保持原约定。全部 $113$ 项离线测试通过，覆盖多实体／多关系传递、旧字段与空组拒绝、未知与非条件题、合法入向、错绑及伪缺口的原子失败；字符、语法及差异检查通过。模拟通过不证明实体角色语义正确。
+>
+> 冻结候选后，依次执行 Silver、Bronze 独立完整图及 Silver 跨轮首轮，共 $3$ 次事务。两张完整图的原始分组均正确填写 `Mira Vale`／`Nolan Reed`、`born_in` 及编号 $0$／$1$；派生状态分别为 `true`／`false`，适用人物的出向出生地与实际出版社均必留、无缺口，最终分别回答 `Linden City`／`Cedar City` 且无追问，必要证据未被拒绝。逐项人工复核通过后才启动下一事务；两图通过，因此已推进第 $4$ 步，未转用完整图快照作为跨轮输入。
+>
+> Silver 跨轮首轮从独立空状态仅提交两条出生地。首阶段原始分组、编号及派生 `unknown` 正确，必留两条出生地，唯一缺口为书籍的 `published_by`；最终保留两条事实、无答案且拒绝集合为空。但最终追问原文为 `["What is the city where The Glass Orchard was published by Silver Press?", "Was The Glass Orchard published by Silver Press? If so, in which city did Mira Vale's birth occur?"]`。第一问错把出版城市作为需求，第二问混入已知出生地；未满足只追问缺失关系的语义门槛。自动 `publisher_question` 检查仅匹配 `publish`，给出通过，人工已明确记录 `clarification_semantics=false`、不批准后续继承；不能把自动通过写成整轮通过。生产入口返回了保留两条必要事实的快照，但验收未通过，没有错误拒绝必要证据，也没有继承该快照或启动后续轮次。
+>
+> 私有入口 `tmp/tmp_grouped_requirements_validation.py`；报告依次为 `tmp/tmp_grouped_requirements_silver_full_20261109T091132655445Z.json`、`tmp/tmp_grouped_requirements_bronze_full_20261109T091143875522Z.json`、`tmp/tmp_grouped_requirements_screen_20261109T091157703849Z.json`。报告保存原始分组、规范化需求、端点匹配、派生结果、请求选项及前后状态；全部新增事务精确免费重放、用量逐次核对通过。实际 $6$ 次 HTTP 请求均为 `gpt-4o-2024-08-06`，无重试或排序，合计输入 $5911$、输出 $569$ tokens；实际用量已记入 `logs/llm_usage.csv`。每次事务后私有 `.env` 均逐字节恢复为原 mini 配置。
+>
+> **已推进第 4 步，但不能推进第 5 步或交付**：本批在 Silver 首轮最终追问语义失败后停止，未继续 Silver 后两轮或 Bronze 三轮链，候选仍需显式选择，TODO 2.3.5 保持开放。下一项应针对最终阶段在已校验唯一缺口下仍生成错误关系和重复已知事实的追问提出修复，同时强化验收器的追问语义复核；原始分组与内部求值正确，不继续重写首阶段、不重复付费运行同一候选。本批没有证明新版真实旧记忆移除及高分重输过滤，GPT-4o-mini 交付验收仍待完成。
 
    已逐项复核上述四份 `tmp/tmp_endpoint_binding_*.json` 报告、`tmp/tmp_endpoint_binding_validation.py`、当前 `evidence_decision.py`、记忆发布代码及相关测试。本补充接替上一方案的后续执行顺序：先修最新 Silver 首阶段反例，再用修订候选重做完整题与跨轮验收；不直接续跑旧候选的 Bronze 第 $3$ 轮。本次仅制定方案，不修改生产代码、测试、私有配置或用量，不发起 API 请求。
 

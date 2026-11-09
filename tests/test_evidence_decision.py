@@ -8,7 +8,7 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from src.agent.evidence_decision import derive_decision, resolve_query
+from src.agent.evidence_decision import derive_decision, resolve_query, decode_branch
 from src.agent.memory_management import manage_memory
 from src.agent.memory_state import QuestionMemory
 from src.agent.memory_response import MEMORY_RESPONSE_FORMAT
@@ -61,6 +61,11 @@ def wire(record, graph=GRAPH):
                        if t[index] == query["target"] and t[1] == query["relation"]]
                 query["binding"] = ({"kind": "observed", "evidence_ids": ids}
                                     if ids else {"kind": "missing", "direction": direction})
+        branch["requirements"] = [{"entity": target, "fact_queries": [
+            {k: v for k, v in q.items() if k != "target"}
+            for q in branch["fact_queries"] if q["target"] == target]}
+            for target in branch.pop("targets")]
+        branch.pop("fact_queries")
     if "condition" not in record:
         return record
     if record["condition"]["kind"] == "none":
@@ -92,6 +97,44 @@ class EvidenceDecisionTests(unittest.TestCase):
     Caller snapshots must remain unchanged after every failed stage.
     """
 
+    def test_group_expansion_and_wire_rejection(self):
+        """Inherit group entities without accepting duplicated wire targets.
+
+        Multiple relations retain original bindings and never cross entity groups.
+        Empty groups and legacy fields fail before the final request.
+        """
+        binding = {"kind": "missing", "direction": "incoming"}
+        query = {"relation": "parent", "binding": binding}
+        branch = {"requirements": [
+            {"entity": "Person A", "fact_queries": [query, {**query, "relation": "friend"}]},
+            {"entity": "Person B", "fact_queries": [query]}]}
+        result = decode_branch(branch)
+        self.assertEqual(result["targets"], ["Person A", "Person B"])
+        self.assertEqual([q["target"] for q in result["fact_queries"]],
+                         ["Person A", "Person A", "Person B"])
+        self.assertEqual([q["relation"] for q in result["fact_queries"]],
+                         ["parent", "friend", "parent"])
+        self.assertTrue(all(q["binding"] == binding for q in result["fact_queries"]))
+        for bad in ({"targets": [LEFT[0]], "fact_queries": []},
+                    {"requirements": []},
+                    {"requirements": [{"entity": " ", "fact_queries": [query]}]},
+                    {"requirements": [{"entity": LEFT[0], "fact_queries": []}]},
+                    {"requirements": [{"entity": LEFT[0], "fact_queries": [
+                        {**query, "target": LEFT[2]}]}]}):
+            record = wire(description())
+            record["description"]["branches"]["true"] = bad
+            reply = completion()
+            reply["choices"][0]["message"]["content"] = json.dumps(record)
+            client = Mock()
+            client.complete.return_value = reply
+            state = QuestionMemory(QUESTION, [LEFT], [RIGHT])
+            before = copy.deepcopy(state)
+            with self.assertRaises(MemoryValidationError):
+                manage_memory(state, GRAPH, [0.95] * 3, client,
+                              prompt_variant="evidence_decision")
+            self.assertEqual(client.complete.call_count, 1)
+            self.assertEqual(state, before)
+
     def test_endpoint_bindings_and_false_missing_are_atomic(self):
         """Resolve endpoints while rejecting false gaps before final generation.
 
@@ -120,7 +163,7 @@ class EvidenceDecisionTests(unittest.TestCase):
         for binding in ({"kind": "missing", "direction": "incoming"},
                         {"kind": "observed", "evidence_ids": [99]}):
             record = wire(description())
-            record["description"]["branches"]["false"]["fact_queries"][0]["binding"] = binding
+            record["description"]["branches"]["false"]["requirements"][0]["fact_queries"][0]["binding"] = binding
             state = QuestionMemory(QUESTION, [LEFT], [("Old", "edge", "Rejected")])
             client = Mock()
             client.complete.return_value = envelope(record)

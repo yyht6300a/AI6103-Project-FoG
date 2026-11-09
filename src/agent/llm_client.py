@@ -35,11 +35,12 @@ class LLMClient:
         self.session = requests.Session()
         self.session.trust_env = False
 
-    def complete(self, messages: Sequence[Mapping[str, str]]) -> dict:
+    def complete(self, messages: Sequence[Mapping[str, str]], *, response_format=None) -> dict:
         """Submit messages and return the service's decoded response.
 
         Args:
             messages: Chat messages containing role and content fields.
+            response_format: Optional API output contract, preserved on retries.
 
         Returns:
             Unmodified response object, including any returned usage metadata.
@@ -50,7 +51,7 @@ class LLMClient:
         """
         for attempt in range(self.config.max_retries + 1):
             try:
-                return self._attempt(messages)
+                return self._attempt(messages, response_format=response_format)
             except (requests.Timeout, requests.ConnectionError):
                 if attempt == self.config.max_retries:
                     raise
@@ -61,11 +62,12 @@ class LLMClient:
             time.sleep(min(2 ** attempt, 8))
         raise RuntimeError("LLM retry loop exhausted unexpectedly")
 
-    def _attempt(self, messages: Sequence[Mapping[str, str]]) -> dict:
+    def _attempt(self, messages: Sequence[Mapping[str, str]], *, response_format=None) -> dict:
         """Send one HTTP request and account for its outcome before returning.
 
         Args:
             messages: Explicit chat payload supplied by the caller.
+            response_format: Optional structured output contract for this attempt.
 
         Returns:
             Decoded JSON object on HTTP success.
@@ -76,6 +78,8 @@ class LLMClient:
             OSError: Accounting cannot be persisted; no automatic retry follows.
         """
         payload = {"model": self.config.model_name, "messages": list(messages)}
+        if response_format is not None:
+            payload["response_format"] = response_format
         timestamp = datetime.now(timezone.utc).isoformat()
         result = None
         request_id = ""

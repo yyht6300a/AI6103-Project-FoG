@@ -16,7 +16,9 @@ Return only a JSON object with exactly these fields:
 condition_status: one of "true", "false", "unknown", "not_conditional";
 condition_triplets: exact input triples establishing the condition decision;
 targets_by_case: object with exactly true, false, not_conditional keys, each a
-string array of the objects whose requested facts matter in that branch;
+string array of entity names whose facts are queried in that branch, not question
+sentences, relation names, or predicted answers (for birthplace queries, name the
+person whose birthplace is requested, not the city);
 required_triplets: exact input triples that must survive memory selection;
 missing_relations: string array describing factual relations still needed.
 Use only the original question and supplied facts. Distinguish evidence that a
@@ -31,11 +33,48 @@ false must be empty and not_conditional contains the requested targets.
 Targets must occur verbatim in the question or be exact graph components;
 they need not yet have factual evidence and are not final answers.
 If the condition is unknown, retain all still possible targets'
-available relevant evidence in required_triplets. Include condition evidence and
+available relevant evidence in required_triplets. Always include ALL
+condition_triplets in required_triplets, together with
 the applicable answer path in required_triplets when the condition is resolved.
 Report missing relations rather than guessing facts. Do not rewrite the question,
 trim the graph, invent triples, or answer using outside knowledge.
 """
+
+
+DECISION_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "evidence_decision", "strict": True,
+        "schema": {
+            "type": "object", "additionalProperties": False,
+            "required": ["condition_status", "condition_triplets", "targets_by_case",
+                         "required_triplets", "missing_relations"],
+            "properties": {
+                "condition_status": {"type": "string", "enum": [
+                    "true", "false", "unknown", "not_conditional"]},
+                "condition_triplets": {"type": "array", "items": {
+                    "type": "array", "items": {"type": "string"}}},
+                "targets_by_case": {
+                    "type": "object", "additionalProperties": False,
+                    "required": ["true", "false", "not_conditional"],
+                    "properties": {case: {
+                        "type": "array", "items": {"type": "string"},
+                        "description": "Entity names whose facts this branch queries; "
+                        "not question sentences, relations, or predicted answers. "
+                        "For birthplace queries name the person, not the city."
+                    } for case in ("true", "false", "not_conditional")},
+                },
+                "required_triplets": {
+                    "type": "array", "items": {
+                        "type": "array", "items": {"type": "string"}},
+                    "description": "All condition_triplets plus the applicable answer "
+                    "path; when unknown retain all possible targets' available evidence.",
+                },
+                "missing_relations": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+}
 
 
 def request_evidence_decision(question, submitted, client):
@@ -55,7 +94,8 @@ def request_evidence_decision(question, submitted, client):
     graph = _freeze_triplets(submitted)
     prompt = DECISION_INSTRUCTIONS + "\nOriginal question: " + question
     prompt += "\nKnowledge: " + json.dumps(sorted(graph), ensure_ascii=False)
-    completion = client.complete([{"role": "user", "content": prompt}])
+    completion = client.complete([{"role": "user", "content": prompt}],
+                                 response_format=DECISION_RESPONSE_FORMAT)
     try:
         choice = completion["choices"][0]
         message = choice["message"]

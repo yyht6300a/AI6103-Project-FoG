@@ -96,6 +96,11 @@ class EvidenceDecisionTests(unittest.TestCase):
         result = manage_memory(state, [B], [0.95], client,
                                prompt_variant="evidence_decision")
         self.assertEqual(client.complete.call_count, 3)
+        from src.agent.evidence_decision import DECISION_RESPONSE_FORMAT
+        self.assertEqual(client.complete.call_args_list[0].kwargs,
+                         {"response_format": DECISION_RESPONSE_FORMAT})
+        for call in client.complete.call_args_list[1:]:
+            self.assertEqual(call.kwargs, {})
         for call in client.complete.call_args_list[:2]:
             prompt = call.args[0][0]["content"]
             self.assertIn(state.original_question, prompt)
@@ -183,7 +188,8 @@ class EvidenceDecisionTests(unittest.TestCase):
         unfinished = decision_completion()
         unfinished["choices"][0]["finish_reason"] = "length"
         cases = [{}, {"choices": []}, refused, unfinished]
-        for content in (None, "{", "[]", '{"x":1,"x":2}', '{"x":NaN}'):
+        for content in (None, "{", "[]", '```json\n{}\n```',
+                        '{"x":1,"x":2}', '{"x":NaN}'):
             envelope = decision_completion()
             envelope["choices"][0]["message"]["content"] = content
             cases.append(envelope)

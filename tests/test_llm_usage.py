@@ -69,6 +69,28 @@ class LLMUsageTests(unittest.TestCase):
             return list(csv.DictReader(stream))
 
     @patch("src.agent.llm_client.time.sleep")
+    def test_structured_contract_survives_transport_retry(self, sleep):
+        """Inspect actual prepared JSON on failed and successful attempts.
+
+        Args:
+            sleep: Patched backoff so the timeout retry is immediate.
+
+        Both attempts retain the schema and receive independent usage rows.
+        """
+        from src.agent.evidence_decision import DECISION_RESPONSE_FORMAT
+        success = self.response(body={"choices": []})
+        with patch("requests.adapters.HTTPAdapter.send") as send:
+            send.side_effect = [requests.Timeout(), success]
+            self.client.complete([], response_format=DECISION_RESPONSE_FORMAT)
+        self.assertEqual(send.call_count, 2)
+        for call in send.call_args_list:
+            body = json.loads(call.args[0].body)
+            self.assertEqual(body["response_format"], DECISION_RESPONSE_FORMAT)
+            self.assertEqual(set(body), {"model", "messages", "response_format"})
+        self.assertEqual([row["status"] for row in self.rows()], ["error", "success"])
+        self.assertEqual(sleep.call_count, 1)
+
+    @patch("src.agent.llm_client.time.sleep")
     def test_retries_and_success_are_separate_rows(self, sleep) -> None:
         """Keep timeout, rate limit and successful usage as independent attempts.
 

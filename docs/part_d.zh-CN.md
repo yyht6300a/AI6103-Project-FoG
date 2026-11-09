@@ -844,3 +844,72 @@ probe 轮在第 $1$ 次逻辑调用后失败。安全投影显示抽取仍为 `c
 私有报告为 `tmp/tmp_part_d_validation_20261109T185956130602Z.json`（机器 UTC 文件名，对应本地 2026/11/10），运行前基线为 `tmp_dsh/tmp_bounded_recheck_baseline_20261109T185920245056Z.json`，核账脚本为 `tmp_dsh/tmp_bounded_recheck_accounting.py`，配置探针为 `tmp_dsh/tmp_delivery_gate_check.py`。`tmp/` 对命令进程只读，写入报告需要一次执行边界批准；未修改 ACL、所有权或认证。
 
 **判定**：Bronze 未通过业务验收，失败点是 probe 首阶段抽取绑定；ranking 不重跑、保留其独立通过记录，Silver 未执行。TODO 2.3.5、2.3.6 与 2.4 保持开放。下一步先免费归因 probe 为何以 `observed` 复用 Nolan 的编号而不声明 `missing/outgoing`，再评估提示或契约的最小修改；任何生产修复或再次付费复验都需要新的有界授权，不得消耗本轮预算、循环改提示、修补该回复或放宽解码。
+
+#### 2026/11/10 probe observed 绑定免费归因与最小决策
+
+本节完成上一节要求的免费归因：probe 首阶段为何以 `observed` 编号 $0$ 绑定 Mira Vale 的 `born_in`，而不是声明 `missing/outgoing`；并据此在提示与契约之间给出最小决策。本轮真实 API 调用为 $0$，未读取 `.env` 或加载生产配置，未创建真实客户端，未执行 smoke 或付费 suite，未改账本、历史报告、私有配置、ACL、所有权或认证。生产 `src/agent/*.py`、运行器、两份定向测试、两份模块文档、最新真实报告与 $577$ 条数据行的账本摘要在实验前后一致；本轮无生产或测试改动。
+
+##### 请求重建与保存回复
+
+保存报告只为 probe 保留了 `failed_extraction` 安全投影，没有首阶段 `messages`。用生产 `request_evidence_decision` 配合只捕获请求的本地客户端重建三轮抽取请求：unknown 与 resolved 的 `messages` 及 `response_format` 与报告 `stages[0]` 逐字相等，说明当前代码与运行修订生成同一提示；probe 请求因此可由同一入口确定性重建，不需要模拟或猜测。
+
+| 轮次 | 编号图 | true 分支绑定 | false 分支绑定 | 与实体一致 |
+| --- | --- | --- | --- | --- |
+| unknown | $0$ Mira 出生、$1$ Nolan 出生 | Mira `observed [0]` | Nolan `observed [1]` | 两分支一致 |
+| resolved | $0$ Mira 出生、$1$ Nolan 出生、$2$ 出版社 | Mira `observed [0]` | Nolan `observed [1]` | 两分支一致，未激活 true 分支也正确 |
+| probe | $0$ Nolan 出生、$1$ 出版社 | Mira `observed [0]` | Nolan `observed [0]` | true 分支没有入射边 |
+
+probe 当轮编号图没有 Mira 的出生边，唯一 `born_in` 事实是 Nolan 的编号 $0$。保存回复把同一编号同时用于两个分支：false 分支的实体 Nolan 与编号 $0$ 一致，true 分支的实体 Mira 与编号 $0$ 没有任何端点关系。前两轮两条出生边都可见时，两个分支使用不同且与实体一致的编号；resolved 轮 true 分支虽然未激活，仍以 `observed [0]` 正确绑定 Mira。因此“未激活分支可以随意填写”不能解释本次失败，失败只出现在事实缺失的分支。
+
+为估计该形状是否常见，脚本扫描了 `tmp/` 下 $7$ 份保留运行器报告中带 `submitted` 且有 `stages` 或 `failed_extraction`、并使用分组 `requirements` 协议的 $21$ 个事务，其中 $3$ 个属于当前源码修订。结果只有 probe 一处 `observed` 编号与实体不一致；另有 $1$ 处更早修订的 `false_missing`，当时已按 `decision_conflict` 拒绝，不是本次回归。历史提示版本并不相同，样本数量也有限，不能据此给出发生率；该扫描只说明保存材料中没有更多同类正例。
+
+##### 契约核对
+
+[`resolve_query`](../src/agent/evidence_decision.py) 对 `observed` 绑定要求每个编号“关系相同且恰有一个端点为组实体”，端点数为 $0$ 时在第 $325$ 行报 `decision_queries`；[`derive_decision`](../src/agent/evidence_decision.py) 在第 $480$ 行先解析全部分支，再按条件状态只求值适用分支，因此未激活 true 分支的非法编号在派生候选前就被拒绝。该要求不是本轮新增：[`tests/test_evidence_decision.py`](../tests/test_evidence_decision.py) 第 $257$–$293$ 行的端点绑定测试，其中第 $270$–$281$ 行已把 `Person A`／`born_in` 查询引用编号 $0$（出版社边）和编号 $2$（另一人物出生边）固定为失败。
+
+| 输入（保存回复或合成变体） | 生产结果 |
+| --- | --- |
+| probe 保存回复 | `decision_queries`，`resolve_query:325`，`derive_decision:480` |
+| true 分支改为 `missing/outgoing` | 接受；条件 `false`，必留 Nolan 出生与出版社，候选 `Cedar City`，无缺口 |
+| true 分支改为 `missing/incoming` | 接受；派生决策与 outgoing 变体逐字段相同 |
+| true 分支改为 `observed [1]`（出版社边） | `decision_queries`，`resolve_query:325` |
+| true 分支合法、false 分支声明缺失（Nolan 边存在） | `decision_conflict`，`resolve_query:335` |
+| 同一非法编号放入合成 `nonconditional` 分支 | `decision_queries`，`resolve_query:325` |
+| resolved 保存回复在 resolved 图上重放 | 接受；条件 `false`，候选 `Cedar City` |
+
+运行器新增的 `check_conditional_extraction` 也被直接复核：把 probe 保存描述包成带 `stages[0]` 的最小记录后，`conditional_kind`、`conditional_condition`、`conditional_false_branch` 为真，`conditional_true_branch` 为假；改为 `missing/outgoing` 或使用 resolved 对照后四项全真。真实运行在条件门槛之前已被生产解码拒绝，所以门槛未执行；这是期望的先后顺序，不构成门槛缺口。
+
+##### 提示与契约的差异
+
+当前 `DECISION_INSTRUCTIONS` 第 $70$–$88$ 行是单跳绑定说明。`observed` 段只说明编号来自 `Numbered knowledge`，并有一句 `Reference facts with the exact relation and target endpoint; code derives direction.`；缺失段说明 `absent` 时使用 `missing` 并给出方向规则与两个通用示例。确定性检查显示，提示没有一句同时把组实体与端点／入射规则写在一起，也没有说明“某关系只出现在另一实体上时，本实体的事实仍是缺失”。也就是说，契约要求的实体入射规则至多隐含在 `target endpoint` 这一短语中，而该处用的是 `target` 而不是 schema 字段 `entity`，也没有反例。模型同时把编号 $0$ 用于两个分支，与该读法一致；单样本不能证明模型确实这样理解。
+
+##### 竞争解释与取舍
+
+| 解释 | 支持 | 反证或限制 |
+| --- | --- | --- |
+| `observed`／`missing` 边界说明不足（推荐） | 提示无显式入射规则或“仅他实体有关系”的反例；契约按入射严格拒绝；保存回复把唯一同关系编号用于两个分支 | 单样本，不能证明因果；历史扫描无更多正例，无法给出率 |
+| 直接复制同分支兄弟绑定 | 两分支编号完全相同，仅实体不同；唯一 `born_in` 边属于另一实体 | 无法区分“复制”与“按关系匹配”；两者都属提示层，修复相同 |
+| 未激活分支被当作低风险 | resolved 轮未激活 true 分支正确绑定已有边 | 该轮事实存在；本轮事实缺失，差异在事实而非激活状态 |
+| schema 强制 `observed` | 无 | `missing` 绑定可用，先前 probe 就使用过 `incoming`；schema 只约束形状 |
+| 契约过严，应按关系放行 | 无 | 放行会让 Nolan 的边满足 Mira 的需求，把无关证据送入必留项与候选，违背题意与既有测试 |
+| 永久拒绝或过滤导致 | 过滤是正确的：Mira 边在 resolved 轮未选中后按规则永久拒绝 | 该轮输入确实缺少 Mira 边；这是预期输入状态，不是缺陷 |
+
+##### 最小决策
+
+决策为只澄清提示，不改契约：在 `observed` 段补一句“编号必须是组实体作为一端且关系精确相同的编号事实；关系只出现在其他实体上不是本实体的证据；组实体没有该事实时，即使图中别处存在该关系，也必须声明 `missing`”，并给一个不含夹具人物、关系或答案的通用示例（只给出 `Helios Ltd → headquarters → Northport` 时，询问 `Selene Ltd` 的 `headquarters` 是缺失而不是 `observed`）。保留四类描述、schema、`observed` 方向由代码派生、两跳 `{kind: missing}` 无方向与 incident 契约、`once per branch` 分组；不改 decoder、求值、发布校验、公开接口与错误码，不新增运行器门槛（既有门槛已验证覆盖该形状）。不采用按可见关系角色猜方向的代码规则、把单跳改为 incident 延迟、或放宽验收范围为 active 分支。
+
+该修改是共享生产提示变更，理论上影响所有抽取请求，必须与离线门槛同批完成并重新验证；真实效果仍未知。提示措辞是否足以消除该形状、模型内部原因与发生率都不能由本轮推断。
+
+##### 下一轮有界复验（须另行授权）
+
+离线门槛：定向运行 `tests/test_evidence_decision.py` 与 `tests/test_part_d_validation.py`；用保存的 Bronze 三轮与 ranking 两例重放确认 unknown／resolved／ranking 仍通过、probe 仍被拒绝；在最终修改树跑一次全套回归；字符、AST、diff 与文档引用检查同批完成。
+
+有界真实复验：先 Bronze 三轮，通过后 Silver 三轮；每链正常 $6$ 次逻辑调用，上限每链 $9$ 逻辑／$27$ HTTP，两链合计 $18$／$54$；首个自动或人工语义失败即停，不重采样、不循环改提示、不修补回复、不放宽解码。ranking 保留独立通过记录、默认不重跑；若本次共享提示在真实运行中显示出缺失事实以外的抽取变化，先记录并按新的有界授权单独复核，不把本轮预算用于额外调用。任何付费步骤都须先确认有效模型为 `gpt-4o-mini`、端点为 `https://api.openai.com/v1`、密钥匹配，且不打印或上传私有配置。
+
+##### 本轮边界与留证
+
+真实 API 调用为 $0$，socket、配置、dotenv 与真实客户端守卫计数均为 $0$；未读取 `.env`，未执行 smoke、付费 suite 或额外采样，未切换模型或服务，未改 `.env`、私有配置、账本、历史报告或旧审阅记录。本轮只计划修改两份模块文档；生产、运行器、测试与报告摘要保持基线。
+
+私有脚本为 `tmp_dsh/tmp_probe_observed_attribution.py`，结果为 `tmp_dsh/tmp_probe_observed_attribution_20261109T191614843468Z.json`（机器 UTC 文件名，对应本地 2026/11/10）；账本为 $577$ 条数据行（文件 $578$ 行含表头），前后摘要一致。脚本在网络、配置、dotenv 与客户端入口设阻断计数器，未复制图算法或生产求值逻辑。
+
+尚未知：新提示的真实效果、模型内部原因、该形状的发生率、Silver 链结果，以及关系别名的误拒概率。以上不影响“契约正确、提示需澄清、下一轮须新授权”的结论，也不构成业务验收通过；TODO 2.3.5、2.3.6 与 2.4 保持开放。

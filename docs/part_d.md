@@ -1,429 +1,244 @@
 # Member D modules
 
-2026/11/10 offline implementation of the Bronze missing-direction plan completed. The shared `DECISION_INSTRUCTIONS` now states that a missing `target` is the group entity rather than the answer value, that the direction is that entity's role in the fact the original question asks for, and gives two generic examples with no fixture names, relations or answers; schema, decoding, evaluation, publication and the two-hop incident contract are unchanged. The conditional runner gate `check_conditional_extraction` independently checks the condition, both branch entities, birth-relation aliases and binding roles, including the inactive branch, and retains successful `stages` when it fails. Four new tests cover the clean three-round path (two logical calls per round), rejection of the saved probe's inactive `incoming` direction, the `birthplace` alias, and both `publisher` relation names. Saved-reply replay keeps unknown, resolved and both ranking cases passing and rejects the saved probe as expected (`conditional_true_branch=false`). Focused tests pass $27$ plus $29$; the final tree passes all $153$ tests; character, AST and diff checks pass. Real API calls: $0$, no configuration or dotenv read, and the real reports, manual review record, $572$-row ledger and unrelated modules remain unchanged. Prompt effectiveness, the model's internal cause, the Silver chain and alias false-rejection rates remain unknown. Business acceptance and TODO 2.3.5, 2.3.6 and 2.4 stay open; a later bounded Bronze-then-Silver acceptance (six normal logical calls per chain, at most nine logical or 27 HTTP each) needs new authorization. The [execution record](part_d.zh-CN.md#方案执行结果与离线门槛) owns commands, fingerprints and private artifacts.
-
-2026/11/10 free attribution of the Bronze probe `observed` binding is complete with real API calls $0$. Rebuilding the saved unknown and resolved extraction requests through `request_evidence_decision` reproduces their `messages` and `response_format` byte-for-byte, so the probe request is deterministic: its numbered graph holds only Nolan Reed's birth edge (id 0) and the publisher edge (id 1). The saved probe reply binds both branches to id 0; the false branch (Nolan) is correct and the true branch (Mira) has no incident edge, whereas the two earlier rounds, with both birth edges visible, used distinct entity-consistent ids and even bound the resolved round's inactive true branch correctly. Production evaluation rejects the saved reply with `decision_queries` at `resolve_query:325`; `missing/outgoing` is accepted with the same active decision, `missing/incoming` produces an identical decision, a false-branch missing declaration raises `decision_conflict`, and the conditional gate independently returns `conditional_true_branch=false` for the saved shape. The prompt's only incidence language is `Reference facts with the exact relation and target endpoint`; it never states that the group entity must be an endpoint or what to declare when only another entity has the relation, although the contract and an existing test enforce incidence. A scan of 21 preserved grouped-protocol transactions found this as the only non-incident observed binding, so no rate is claimed. Decision: clarify the prompt only, with one incidence rule and one generic example using no fixture names or values; schema, decoder, evaluator, publication, error codes and the existing gate stay unchanged. Prompt implementation needs new authorization, then a separately authorized bounded Bronze-then-Silver acceptance (six normal logical calls per chain; at most nine logical / 27 HTTP each, 18/54 total) under the usual stop rule. TODO 2.3.5, 2.3.6 and 2.4 stay open. The [authoritative record](part_d.zh-CN.md#20261110-probe-observed-绑定免费归因与最小决策) owns the tables and private artifact paths.
-
-2026/11/10 bounded live acceptance on `2cfb421`: ranking equal and unequal passed automatic and manual review. All Bronze automatic checks passed, but manual review found an incorrect `incoming` missing `born_in` binding for Mira Vale in the probe's inactive true branch. The active false branch still correctly returned `Cedar City` and preserved permanent filtering; the malformed semantic direction did not affect that round's answer or state. Paid work stopped and Silver was not run. Twelve logical calls / twelve HTTP successes, no retries, used $15550$ input / $850$ output tokens; stage usage matches the appended ledger rows and the old $560$-row byte prefix is unchanged. Production code and private configuration were unchanged. TODO 2.3.5, historical accounting 2.3.6 and final delivery 2.4 remain open. The [authoritative bounded result](part_d.zh-CN.md#本轮有界真实验收结果) records commands, fingerprints, safe evidence and private report paths. Earlier zero-call repair and live results below are historical.
-
-2026/11/10 offline repair completed: question-grounded relation scope, strict once-per-branch entity groups, bounded diagnostics for duplicate groups and post-production controlled failures, and independent derived-decision / actual-request / ranking-multiset gates. Relative support order is checked separately from answer completeness. All $149$ tests pass; retained Bronze/Silver replies reproduce $6$ transactions in $12$ mocked calls with protected reports and ledger unchanged. Real API calls: $0$; dotenv was neither read nor changed. Mock compatibility does not establish new prompt effectiveness. Same-group irrelevant relations remain a semantic risk; business acceptance and TODO 2.3.5, 2.3.6 and 2.4 remain open. See the [authoritative repair record and next bounded acceptance](part_d.zh-CN.md#20261110-unequal-深入归因与修复方案).
-
-The bounded ranking repair adds strict safe failure projections, source fingerprints, stage progress and fixture-specific completeness/support gates, plus a minimal independent-versus-dependent extraction contrast. All $144$ offline tests passed before the paid run. Equal ranking passed automatic and original-completion manual review; unequal ranking extracted irrelevant residence evidence and returned a third city, correctly stopped by the controlled gate. Six HTTP successes without retries used $6327$ input / $323$ output tokens. No further paid requests or conditional-chain reruns followed. Business acceptance and TODO 2.3.5 remain incomplete; see the [execution evidence](part_d.zh-CN.md#20261110-最小修复执行与有界验收). Historical Bronze/Silver results remain valid for their earlier prompt, while validation of the revised shared prompt remains pending.
-
-`manage_memory` and `update_memory` now default to `evidence_decision`: extract requirements, evaluate them against the complete graph, then select evidence and answer. The `paper` baseline remains explicit. Step 5 adoption passed $117$ offline tests and exact replay of $8$ accepted transactions ($16$ stages), without new paid requests. Independent GPT-4o-mini acceptance under TODO 2.3.5 remains pending. See the [current architecture](part_d.zh-CN.md#当前默认架构) and [acceptance status](part_d.zh-CN.md#当前验收状态与剩余事项) for the controlled GPT-4o results and remaining gates. Superseded evidence-retention investigations are retained in Git history.
-
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-The current two-hop protocol derives observed directions from evidence IDs and uses direction-free incident-relation queries when a step is entirely missing. It protects all reachable prefixes and limits answers to terminal candidates. All $136$ offline tests, six controlled GPT-4o-mini/OpenAI path cases and two complete conditional smoke cases passed; independent delivery acceptance under TODO 2.3.5 remains pending. The [path evaluator](part_d.zh-CN.md#非条件两跳路径求值), [query contract](part_d.zh-CN.md#缺口查询与发布门槛) and [acceptance status](part_d.zh-CN.md#当前验收状态与剩余事项) describe the current implementation. Superseded multihop investigations remain in Git history.
+This document describes the implemented Member D modules. The default pipeline extracts requirements, evaluates them in code, selects evidence and answers, validates before publication, and ranks multiple answers independently. The public entry point is `manage_memory`, which defaults to `prompt_variant="evidence_decision"`. Setup and environment preparation are in the [README](../README.md#llm-configuration). Member D acceptance uses controlled retrieval and scoring inputs with real LLM calls; Member E owns C/E pipeline integration, actual retrieval and overall run behavior, and that integration is not a prerequisite for accepting these modules.
 
-The 2026/11/09 GPT-4o-mini conditional-chain supplement passed the three Silver rounds and the first two Bronze rounds. The final Bronze probe retained correct evidence and permanent filtering but answered `Nolan Reed` instead of `Cedar City`; the controlled answer check failed after the public API returned. TODO 2.3.5 remains unchecked. All $12$ HTTP attempts succeeded without retries or ranking ($16810$ input, $1174$ output tokens); private configuration was unchanged, and all $136$ offline tests passed. The linked acceptance status owns the command, raw-report reference and remaining failure.
+## Current default architecture
 
-This document summarizes implemented member D modules and their interfaces. Setup and test commands remain in the [README](../README.md#llm-configuration). Potential-subgraph filtering, question-local snapshots, LLM-guided memory replacement, permanent rejection tracking and expansion exclusions are implemented. Member D acceptance demonstrates correct module behavior and reasonable outputs using controlled retrieval/scoring inputs and real LLM calls. Member E owns C/E pipeline integration; it is outside Member D's delivery scope and is not a prerequisite for accepting these modules. Historical references below to unverified integration describe coverage limits, not additional Member D tasks.
+```mermaid
+flowchart TD
+    A[Original question, old snapshot, retrieved triples and aligned scores] --> B[Validate input, strict threshold filter, exclude memory and permanent rejections]
+    B --> C[Merge historical memory with eligible new evidence]
+    C --> D[LLM extracts conditions and fact requirements grouped by entity]
+    D --> E[Code checks fact endpoints, evaluates conditions or two-hop paths, matches the complete graph]
+    E --> F[Derive required evidence, answer candidates, gaps and fixed queries]
+    F --> G[LLM selects evidence, answers and chooses follow-up queries]
+    G --> H[Strict parsing and decision-consistency checks]
+    H --> I[Build the candidate snapshot and permanent rejection set]
+    I --> J{Multiple answers?}
+    J -->|Yes| K[LLM ranks independently and the candidate multiset is checked]
+    J -->|No| L[Return the complete MSMResult]
+    K --> L
+    L --> M[Caller publishes the new snapshot and drives the next retrieval round]
+```
+
+Intermediate decisions never publish memory. The final output must satisfy structure, input membership, required evidence, answer candidates, condition status and gap-query constraints at once; the public entry point returns a publishable result only after ranking also succeeds. Any stage failure propagates, and the caller keeps the old snapshot; there is no reselection, answer repair, question rewriting or business retry.
+
+When the condition is unknown, the module protects the matched evidence of both branches and forbids an answer; once resolved, it protects only the applicable branch and the actual condition facts. Missing required evidence or an answer outside the code-derived candidates fails before a candidate snapshot is built. Local checks prove the output is consistent with the extracted requirements and the submitted graph; they do not prove question understanding or extraction semantics.
 
 ## LLM configuration and requests
 
-For the unified C/E entry point, see [Scored-round MSM interface](#scored-round-msm-interface).
+[`llm_config.py`](../src/agent/llm_config.py) merges private `.env` overrides with shared YAML defaults and validates the effective configuration before a request. `LLM_MODEL_NAME` and `LLM_BASE_URL` may override the model and endpoint, while the key is read only from `LLM_API_KEY` in `.env`; timeout and maximum additional retries come only from the shared YAML. Shared defaults are `gpt-4o-mini` at `https://api.openai.com/v1`. Loading never reads process environment variables, and the key does not appear in the configuration object's representation.
 
-[`llm_config.py`](../src/agent/llm_config.py) merges literal private `.env` values with shared YAML defaults and validates the effective configuration. [`llm_client.py`](../src/agent/llm_client.py) exposes `LLMClient.complete(messages)` for OpenAI-compatible Chat Completions. Requests receive settings explicitly and do not inherit process configuration. The caller owns and closes the client; timeout, connection failures, HTTP $429$ and HTTP $5xx$ follow its bounded retry policy.
+[`llm_client.py`](../src/agent/llm_client.py) exposes `LLMClient.complete(messages, *, response_format=None)` for the OpenAI-compatible Chat Completions protocol, with environment-derived proxies disabled. Timeouts, connection failures, HTTP $429$ and HTTP $5xx$ allow at most `max_retries` additional attempts with delays of $1$, $2$, $4$, then at most $8$ seconds; other HTTP errors, non-object JSON responses and business validation failures are not retried. Model, endpoint and protocol never fall back automatically. The caller closes the client.
+
+## Per-attempt usage accounting
+
+[`llm_usage.py`](../src/agent/llm_usage.py) appends one UTF-8 CSV row per actual HTTP attempt, including failures and retries. The authoritative ledger is [`logs/llm_usage.csv`](../logs/llm_usage.csv), with columns `timestamp, model, input_tokens, output_tokens, status, error_type, request_id`.
+
+The timestamp records the attempt start in UTC with an offset. Model and token counts prefer service-returned values; unknown token counts and request IDs stay blank, while reported zeros are preserved. An HTTP success remains `success` even if business validation later fails, and the exception class name alone is recorded. The log contains no keys, prompts, triples, reply text or exception messages; unknown usage is not zero consumption. The client checks the header and writability before sending, and an append failure propagates. Concurrent processes must serialize CSV writes at the caller.
+
+## Initial question decomposition
+
+[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial sub-questions from FoG §3.1 and Figure 7. `decompose_question(question, client, *, prompt_variant="explicit_references")` requires each sub-question to be independently retrievable by default: repeat known entity names or relational descriptions of unresolved entities, do not assume earlier answers, and do not invent names. Explicit `prompt_variant="paper"` retains the paper wording with instruction numbering starting at $1$. The ordered question list is returned for the caller to retrieve separately.
+
+`build_decomposition_prompt` and `parse_sub_questions` work offline without API calls. The question must be a nonblank string and is inserted verbatim. A completed, nonrefused reply must be only a nonempty JSON array of nonblank strings; code fences, prose, malformed JSON and nonstring items fail, while strings, order and duplicates are preserved. Figure 7 sets no sub-question count limit. Invalid input or output raises `ValueError` without disclosing text and adds no extra request or substitute question.
+
+## Potential subgraph construction
+
+[`potential_subgraph.py`](../src/agent/potential_subgraph.py) implements FoG §3.3, Eq. 10: $G^{\mathrm{pot}} = \{t \in G^{\mathrm{xpd}} \mid s_t > \tau_p\}$. `build_potential_subgraph(triples, scores, potential_threshold=0.7)` accepts member C's refined scores after feedback propagation, aligned with the expanded triples.
+
+```python
+from src.agent.potential_subgraph import build_potential_subgraph
+
+triples = [
+    ("Country A", "anthem", "Song C"),
+    ("Country A", "led_by", "Person B"),
+]
+potential = build_potential_subgraph(triples, [0.95, 0.7])
+assert potential == [triples[0]]
+```
+
+The threshold is a finite real number, defaults to $0.7$ and is strict; equality is excluded. Scores must be a one-dimensional, positionally aligned sequence of finite real scalars, booleans are invalid, and tensors must be converted explicitly to one-dimensional Python lists. Each graph row must contain three nonblank strings. All rows are validated before filtering, including invalid low-scoring rows; strings, direction and first qualifying order are preserved. An exact duplicate row is admitted if any aligned occurrence exceeds the cutoff.
+
+Filtering makes no LLM call and creates no rejection state, and it compares scores directly without sigmoid, normalization or clipping; member C owns the score scale. Evidence that is neither submitted this round nor in historical memory is never permanently rejected and can return once retrieval and scoring qualify it.
+
+## Question-local persistent memory
+
+[`memory_state.py`](../src/agent/memory_state.py) provides `QuestionMemory(original_question, memory_triplets=(), rejected_triplets=())`. Create a new instance for every independent question run, even with identical question text, and keep the snapshot across that run's rounds. Persistence means retention within the run, with no disk storage or global question cache.
+
+The original question must be a nonblank string and is stored verbatim. Memory and permanent rejections are copied into `frozenset[tuple[str, str, str]]`; exact duplicates collapse, literal strings and edge direction remain unchanged, and the two sets must be disjoint. The snapshot and nested values are immutable, so later changes to supplied lists cannot affect it. The update flow builds new snapshots, and a failed call never changes the old one.
+
+`state.excluded_triplets` returns the union of current memory and permanent rejections. `state.filter_expansion_triplets(candidates)` validates every candidate, then removes those exact triples in first occurrence order and deduplicates exact repeats. Sharing an entity or reversing an edge does not exclude another triple by itself. Absorbed memory is not expanded again, but it is still submitted from `state.memory_triplets` to every memory-management round; historical memory is not limited by current retrieval scores.
+
+## Conditional evidence decision and memory publication
+
+[`evidence_decision.py`](../src/agent/evidence_decision.py) implements requirement extraction and deterministic evaluation for the default pipeline. The first stage always receives the original question and the full union of historical memory and eligible new evidence; the model never prunes the graph first.
+
+### Requirement extraction and endpoint binding
+
+The first stage uses strict structured output whose `description.kind` is `conditional_equals`, `nonconditional`, `nonconditional_path` or `unsupported`. The original question decides the type: only an explicit equality condition with true and false requirements uses `conditional_equals`; several named objects queried separately for attributes, or one object queried for several independent relations, use `nonconditional`; locating an entity and then asking for its attribute is a dependency and uses `nonconditional_path` even when the graph already names the intermediate entity. An equality condition describes the subject, relation, operator `eq`, comparison value, the condition quote from the original question and an optional single-value quote. The comparison value is only a constraint, never an observed fact; the model cannot invent a condition from the graph or infer single-valuedness from a definite article.
+
+Each one-hop branch is organized as `requirements: [{entity, fact_queries: [{relation, binding}]}]`. `entity` is the known object whose attribute the question asks about, not the retrieved answer endpoint; each query inherits its group's entity instead of repeating an object field. Duplicate entity groups within one branch are rejected, so related multiple relations belong in one group. A conditional question supplies nonempty `true` and `false` branches; a nonconditional one-hop question supplies a single `branch`.
+
+An `observed` binding references stable triple IDs in the current sorted graph, and each referenced triple's exact relation must have the group entity as one endpoint. Code checks IDs, relations and endpoint roles, derives outgoing or incoming from the endpoint position, and requires all references to support the same direction; a self-loop or ambiguous role fails the transaction. After direction is fixed, the complete graph is still scanned so every fact with that object, relation and direction is collected, not just the referenced one.
+
+A `missing` binding declares a direction to retrieve and carries no predicted answer. Code checks exact facts in both directions: a hit in either direction fails with `decision_conflict`, and rejecting a match only in the other direction is a conservative policy that may reject a legitimate query; a gap is allowed only when neither direction has facts. The policy is not general relation-direction reasoning. IDs are valid only within the current request and never cross rounds.
+
+### Nonconditional two-hop path evaluation
+
+`nonconditional_path` uses a `root_entity` copied verbatim from the original question and exactly two ordered `steps`, each with a `relation` and `binding`, under a separate binding schema. A relation already present in the graph must match exactly; a missing relation is described by the model without naming intermediate entities or predicting answers.
+
+An `observed` binding references only the current numbered graph's `evidence_ids`. Code derives the step direction from the endpoint roles of the current reachable frontier, scans every exact match in that direction and makes the far endpoint the next frontier. Out-of-range IDs, relation or connection mismatches, self-loops, ambiguous endpoint roles, and a declared direction with no fact while the reverse direction matches all fail the transaction. When only some frontier candidates have facts, the missing candidates keep the direction derived from the observed facts.
+
+A completely missing step binds only `{"kind": "missing"}`, with no direction or evidence IDs; a `scope="incident"` relation-adjacency gap is created only when none of the current frontier entities has that exact relation in either direction. Declaring a gap while facts exist fails. Once the frontier is empty, only downstream requirements remain: no intermediate entity is invented and no query is generated for an unreachable object; when facts arrive later, observed bindings again derive the direction.
+
+Code protects every reachable path prefix and forbids an answer while any candidate still has a gap; without gaps, answers must come from the terminal `answer_candidates`, never intermediate entities or disconnected endpoints. Path evaluation reuses the complete graph, required evidence, rejection and ranking publication rules, and persists neither cross-round evidence IDs nor a separate path state.
+
+### Condition evaluation and required evidence
+
+Code looks up actual condition values in the complete submitted graph by exact subject and relation, with the subject as head. A match with the comparison value is `true`; different values together with an explicit single-value statement in the original question are `false`; otherwise the status is `unknown`. Multiple actual values under a single-value premise fail, and a nonconditional question has status `not_conditional`. Missing facts are never treated automatically as a false condition.
+
+The required set consists of the actual condition facts and all matched facts of the applicable branch. Unknown conditions merge both branches to protect existing candidate paths; a resolved condition uses only its branch. Answer candidates are the far endpoints of the applicable branch's matched facts (tail for outgoing, head for incoming), deduplicated by literal string and sorted lexicographically; candidates are empty while the condition is unknown, and condition facts contribute only when they also match an answering requirement. Code derives the answer targets and missing relations for the final selection stage instead of relying on the model to re-list required evidence.
+
+### Gap queries and publication gates
+
+`build_decision_memory_prompt` in [`memory_prompt.py`](../src/agent/memory_prompt.py) supplies the original question, the complete evidence, the derived decision and the required constraints to the final stage. When gaps exist, `missing_relation_queries` renders one query per gap, deduplicates exact strings and keeps first-occurrence order:
+
+```text
+Which entity does "<target>" connect to through relation "<relation>"?
+Which entity connects to "<target>" through relation "<relation>"?
+Find triples involving "<target>" with relation "<relation>".
+```
+
+The first two templates serve gaps with a known direction; the third exists only for a two-hop `scope="incident"` gap when the edge is entirely missing, allowing facts where the target is either head or tail. The module does not guess a direction first, flip old queries automatically or send both directions at once; the round's allowed query list is then appended to the final request. The contract does not guarantee correct naming of the missing relation; actual recall and cost are validated by Member E during integration.
+
+The final request always uses the base strict `MEMORY_RESPONSE_FORMAT` schema and generates no dynamic query enumeration. The model selects queries verbatim through `subsequent_question`; local checks require a nonempty, duplicate-free subset of the allowed queries that includes every unknown-condition query. At most three questions are allowed, and remaining gaps can be retrieved in later rounds; an unasked gap does not become satisfied.
+
+The final output first passes `parse_memory_response`, then `validate_decision_response` checks that all required evidence is selected; no answer is given under an unknown condition; a resolved or nonconditional gap-free decision answers without further questions; and one-hop, conditional and two-hop answers belong to their respective `answer_candidates`. Any inconsistency fails before an inheritable snapshot is returned. Fixed queries guarantee consistency with the derived gaps, not complete extraction or real retrieval recall.
+
+### Explicit comparison interfaces
+
+`manage_memory` and `update_memory` both default to the two-stage decision pipeline above. Explicit `prompt_variant="paper"` retains the Figure 8 baseline, `retrieval_questions` retains the earlier retrieval-wording enhancement and `answer_ranking` retains the single-selection experiment; a default failure never switches to these variants automatically. Every public `manage_memory` variant keeps separate multiple-answer ranking.
+
+`build_memory_prompt` only builds a single-selection prompt and still defaults to `retrieval_questions`; it is not the complete transaction entry point. It retains the paper's high-recall, evidence-only answering and exact-copying requirements, and callers should use `manage_memory` for the default publication protection.
+
+## Structured memory output
+
+[`memory_response.py`](../src/agent/memory_response.py) provides `parse_memory_response(content, memory_triplets, potential_triplets)`. It is the base parsing boundary for final output and handles neither first-stage extraction nor complete transaction publication. The reply must be one complete standard JSON object with exactly these three array fields:
+
+```json
+{
+  "selected_triplets": [],
+  "predict_answer": [],
+  "subsequent_question": []
+}
+```
+
+The all-empty object is only a format example: without an answer, $1$ to $3$ nonblank questions are still required. Each `selected_triplets` row must contain three nonblank strings and match a complete triple actually submitted in this call's union verbatim; field positions, direction, case, whitespace and Unicode are not normalized. `predict_answer` must exactly equal a head or tail entity of the selected triples; answers found only in unselected evidence, only as a relation, or rewritten in any way are rejected. An empty selection can only return empty answers.
+
+The result is an immutable `MemoryResponse` whose three fields are tuples, with triple rows as tuples too. Base parsing preserves literal strings, row order and duplicates; the default pipeline additionally applies the allowed-set and duplicate checks described above to follow-up questions. Missing, extra or duplicate fields, code fences, extra prose, trailing values, nonstandard JSON numbers and out-of-range values all fail without repair.
+
+The parser can check entity membership along any selected path, but local membership does not prove answer semantics, completeness or support strength, and ranking never restores omitted answers. Constructing a `MemoryResponse` container directly performs none of these checks.
+
+## LLM-guided memory replacement
+
+[`memory_update.py`](../src/agent/memory_update.py) provides `update_memory(state, potential_triplets, client, *, prompt_variant="evidence_decision")`, which performs the pre-ranking decision, final selection, parsing and candidate-snapshot construction. New memory is exactly the set of selected triples; old evidence survives only when selected again and is not automatically unioned with old memory. The default required-evidence constraints protect evidence needed by the current requirements before allowing inapplicable old evidence to be removed.
+
+Potential input accepts empty graphs and generators and is materialized once so every stage sees the same evidence. An invalid state, a malformed graph or potential input overlapping the permanent rejection set fails before the request. A candidate snapshot is built only for a normally completed, nonrefused transaction that passes all output and decision checks; submitted but unselected triples then join permanent rejection. Transport and accounting errors propagate. This lower-level interface performs no separate ranking, so complete MSM calls should use the public entry point.
+
+## Exploration efficiency
+
+Let the actually submitted union be $U = G^{\mathrm{mem}} \cup G^{\mathrm{pot}}$, the selected set $S$ and the prior permanent rejections $R$. After every check passes, new memory is $S$ and permanent rejections become $R' = R \cup (U \setminus S)$. Submitted but unselected new evidence and old memory both become permanent rejections, and the rule lasts for the whole question run, including after memory is emptied.
+
+Reading every omitted submitted input as an explicit rejection is a user-approved reproduction assumption; the paper does not define this mapping explicitly. Published rejections are never lifted automatically, and the default pipeline protects necessary evidence through the pre-publication required-evidence and candidate checks. Format, decision, consistency, transport or ranking failures publish no new rejection.
+
+Callers apply `state.filter_expansion_triplets` at retrieval and expansion boundaries before scoring. Public `manage_memory` also filters eligible potential input so permanently rejected evidence is never submitted to the LLM again. Absorbed memory is added back to the submitted union independently from the old snapshot. This module implements no retriever and does not modify member C's scoring.
+
+## Fault tolerance for threshold-hidden evidence
+
+Evidence with score $s_t \leq \tau_p$ that is not in historical memory is outside the round's submitted union and acquires no permanent rejection. The caller passes the actual `response.subsequent_question` to retrieval, and after re-expansion, filtering and scoring, previously hidden evidence re-enters the potential graph as soon as its score strictly exceeds the cutoff. Recovery depends on renewed retrieval and scoring; the threshold is not lowered automatically and facts are not reinserted.
+
+An empty potential graph is valid: historical memory is still submitted, and when both are empty an empty graph is submitted so missing relations drive follow-up queries. Permanently rejected evidence stays filtered even when resubmitted at a high score. All state is isolated per independent question run and never shared because question text matches.
+
+## Separate answer ranking
+
+[`answer_ranking.py`](../src/agent/answer_ranking.py) makes a separate LLM call when the final answer has at least two candidates. Its input contains only the original question, the actual selected triples and the actual candidates, without retrieval scores, gold labels or unselected evidence. Zero or one answer skips it automatically, and there is no business switch to disable ranking.
+
+The ranking reply must complete normally, be nonrefused and return only `predict_answer`. Candidate strings and their multiset must remain identical: adding, omitting, renaming or deduplicating is forbidden, and only the order may change, without altering evidence, questions, memory or permanent rejections. Ranking cannot repair omitted answers or missing paths. If ranking fails, complete `manage_memory` returns no candidate snapshot. `manage_memory_ranked` is a compatibility alias for `manage_memory` with identical behavior.
+
+## Scored-round MSM interface
+
+[`memory_management.py`](../src/agent/memory_management.py) exposes `manage_memory(state, triples, scores, client, potential_threshold=0.7, *, prompt_variant="evidence_decision")`. Member C supplies aligned triples and refined scores; member E owns the question snapshot, retrieval loop, client lifetime and stopping policy. The function reads no configuration, performs no retrieval and does not mutate state in place. It applies the state exclusion after threshold filtering so absorbed or rejected evidence is not submitted to the prompt again.
+
+```python
+from src.agent.llm_client import LLMClient
+from src.agent.llm_config import load_llm_config
+from src.agent.memory_management import manage_memory
+from src.agent.memory_state import QuestionMemory
+
+state = QuestionMemory("Which city was Mira Vale born in?")
+client = LLMClient(load_llm_config())
+try:
+    result = manage_memory(
+        state,
+        [("Mira Vale", "born_in", "Linden City")],
+        [0.95],
+        client,
+        potential_threshold=0.7,
+    )
+    state = result.state  # Publish only after every stage succeeds.
+    next_queries = result.response.subsequent_question
+finally:
+    client.close()
+```
+
+This example makes real API requests. The return value is a frozen `MSMResult(state, response)`; publish `result.state` only after the whole call succeeds, then drive the next retrieval round with `response.subsequent_question`. A normal round uses $2$ logical requests, or $3$ with multiple answers, each following the client's transport retries and per-attempt accounting; an empty input still calls the LLM.
+
+## LLM failures and state preservation
+
+The first stage, final stage and optional ranking all belong to one public call in the default transaction. Any failure in HTTP, accounting, reply envelope, strict JSON, evidence or answer membership, decision consistency or ranking validation returns no partial `MSMResult`. The caller keeps the old snapshot and existing rejection set; output validation triggers no business retry or fallback provider. Stopping the whole question, recording failures or explicitly retrying later is left to Member E.
+
+[`validation_error.py`](../src/agent/validation_error.py) exposes a `ValueError` subclass with fixed `failure_stage` and `error_code` values for memory output failures, covering `evidence_decision`, `decision_consistency` and the base parsing stages. Unrecognized exceptions are reported as `unclassified` without copying arbitrary messages. HTTP success and business acceptance success are recorded separately.
+
+## Subsequent subquestions
+
+`response.subsequent_question` is an ordered tuple of strings for the next retrieval round, not user-facing dialogue. The caller passes these queries directly instead of rerunning initial decomposition; later transactions still use `state.original_question`.
+
+Default queries are generated from derived gaps and checked before publication according to [Gap queries and publication gates](#gap-queries-and-publication-gates). Without an answer, $1$ to $3$ questions are required; real gaps can be filled across rounds; a resolved, gap-free decision must answer and stop asking. Base parsing preserves strings without generating substitutes, while the complete default transaction additionally restricts the allowed set, duplicates and mandatory unknown-condition queries.
 
 ## Live acceptance runner
 
-TODO 2.3.1 provides [`scripts/validate_part_d.py`](../scripts/validate_part_d.py). It loads private `.env` and shared YAML through `load_llm_config`, creates a real `LLMClient`, calls public `decompose_question` and `manage_memory`, and closes the client in `finally`. Runtime HTTP and replies are real; only C/E retrieval and scores are controlled fixtures. It does not repair output or add application retries. The strict potential cutoff is fixed at $0.7$.
-
-Run from the repository root with the project Python environment:
+[`scripts/validate_part_d.py`](../scripts/validate_part_d.py) loads real configuration through the public interfaces and calls the LLM, replacing only C/E retrieval and scoring with controlled inputs at the strict $0.7$ cutoff. It repairs no output, adds no business retries and closes the client at the end.
 
 ```text
 python scripts/validate_part_d.py --list-cases
 python scripts/validate_part_d.py --suite multihop --list-cases
 python scripts/validate_part_d.py --suite multihop
+python scripts/validate_part_d.py --suite conditional --list-cases
 python scripts/validate_part_d.py --suite single
 python scripts/validate_part_d.py --suite multi
 python scripts/validate_part_d.py --suite removal
 python scripts/validate_part_d.py --suite ranking
-python scripts/validate_part_d.py --suite conditional --list-cases
 python scripts/validate_part_d.py --suite conditional
 python scripts/validate_part_d.py --suite all
 ```
 
-`--list-cases` is free and does not read private configuration; other commands incur API usage. Default memory rounds use decision extraction, final selection/answering and mandatory separate ranking for multiple answers: normally $2$, conservatively at most $3$ logical calls per transaction. `single` has $4$ cases including decomposition and permits $10$ logical calls; `multi` permits $12$, `removal` $9$ and `ranking` $6$. Default `all` retains $13$ cases and permits $37$ logical calls. With two additional transport retries, their HTTP ceilings are $30$, $36$, $27$, $18$ and $111$. Explicit `--prompt-variant paper` or `--prompt-variant retrieval_questions` retains the baseline or former enhancement; their `all` ceilings remain $25$ logical calls and $75$ HTTP attempts. There is no automatic fallback. Any terminal stage error stops execution.
-
-The separate `conditional` suite is excluded from `all`. It runs independent Silver/Bronze full graphs and two fresh three-round chains: $8$ transactions, normally $16$, conservatively $24$ logical calls or $72$ HTTP attempts. Each chain starts with both births, inherits its actual snapshot while adding only the publisher, then re-submits all facts at $0.95$. Exact evidence, answers, every clarification, rejection and pre-submission filtering are checked; a publisher keyword alone is insufficient. Successful transactions retain stage messages, schemas and original completions for extraction review. Automatic checks do not complete semantic review. The protocol's supported scope is documented [below](#memory-management-prompt); existing two-hop fixtures remain regressions, with no claim that live acceptance under the new default has passed them.
-
-Each paid run writes a unique private `tmp/tmp_part_d_validation_<UTC timestamp>.json` with expectations, controlled triples and aligned scores, actual queries and validated outputs, submitted graphs, before/after state, exception classes and state-rule checks. It excludes keys, failed raw replies and exception messages. Actual attempts still append to `logs/llm_usage.csv`; reconcile returned model and usage metadata during TODO 2.3.6. Reports are private review material and are not automatically committed.
-
-MSM output failures now expose `failure_stage` and `error_code` from the closed registry in [`validation_error.py`](../src/agent/validation_error.py), using a `ValueError` subclass. Codes distinguish envelope, content, JSON, field, selection, answer and clarification checks; other exceptions use `unclassified` without inspecting their messages. Run `python scripts/validate_part_d.py --suite empty_diagnostic` for one conditional-question call with empty knowledge; it is excluded from default `all` and supports free `--list-cases` preview. The new GPT-4o-mini call passed strict parsing and requested the publisher, so it does not establish the cause of the old failure. Strict parsing, atomic state updates and retry policy remain unchanged.
-
-The focused `multihop` suite requires the default `evidence_decision` protocol and reuses only `single.sufficient`, `single.insufficient`, `single.empty`, `multi.partial`, `multi.recovery` and `multi.exclusion_probe`. It omits decomposition and independent isolation: normally $12$, conservatively $18$ logical calls or $54$ HTTP attempts with two additional transport retries. Its shared `check_two_hop` also gates these six cases in default `single`, `multi` and `all`; explicit legacy prompt comparisons retain their original behavior. Checks require two ordered extracted steps, protected path edges, exact or empty answers, concrete reachable queries, threshold-hidden evidence remaining unsubmitted and unrejected, inherited recovery, and both actual stage graphs matching the submitted union. Absent relations allow only the script's finite semantic aliases; observed relations require exact names. Optional distractor selection is unrestricted. Reports distinguish natural rejection from subsequent filtering via `distractor_rejection` and `multihop_observations`; if no rejection occurs, coverage stays `not_observed`. Any required check failure exits with $1$ before another round inherits the failed candidate snapshot. The six focused cases passed controlled GPT-4o-mini/OpenAI acceptance; see the current acceptance status linked above.
-
-Exit code $0$ means parsing, state checks and the suite's controlled assertions passed; semantic review remains pending. Review query usefulness, evidence sufficiency, answer support and ranking, and clarification quality manually. Other multi-round observations record actual retention, removal, rejection, recovery and isolation; `false` means unobserved coverage. Do not force model choices. The [semantic review](#semantic-quality-review) records actual multiple-answer coverage and unresolved findings. Final acceptance requires GPT-4o-mini and matching OpenAI settings under TODO 2.3.5. Runner preparation does not complete TODO 2.3.2-2.3.6 or C/E integration.
-
-`tests/test_part_d_validation.py` checks free preview, bounded full execution through public parsing and isolated usage accounting, fail-fast behavior, old-state preservation, cleanup and sensitive-error suppression offline. Synthetic transport is confined to tests. No paid calls were made for TODO 2.3.1.
-
-### Single-round live result
-
-TODO 2.3.2 passed on 2026/11/09 using `python scripts/validate_part_d.py --suite single` with the unchanged private DeepSeek configuration. All $4$ logical calls returned `deepseek-flash`, one HTTP attempt each, without manual response edits, parser bypass, output repair or retries. Decomposition returned “Who is the author of The Glass Orchard?” and “In which city was the author of The Glass Orchard born?”. The second question retains an unresolved author reference; retrieval usefulness needs the broader TODO 2.3.4 review.
-
-| Case | Validated output and state |
-| --- | --- |
-| Sufficient evidence | Both author and birthplace triples selected; answer `Linden City`; no subsequent questions; both triples in expansion exclusions |
-| Insufficient evidence | Author triple retained; no answer; clarification `Which city was Mira Vale born in?`; author triple in expansion exclusions |
-| Empty potential graph and memory | Empty selection, answer, memory and exclusions; clarification `Who is the author of The Glass Orchard?` |
-
-All three MSM calls preserved original snapshots, produced no permanent rejections and satisfied memory/rejection/exclusion invariants. The four appended rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:31:25 (UTC+08:00), report $860$ input and $851$ output tokens, all successful; request IDs were not supplied and remain blank. Full outputs and states remain in private `tmp/tmp_part_d_validation_20261108T163125709480Z.json`; its automatic semantic-review flag remains pending. These fixtures do not exercise rejection transitions or multi-answer ranking. TODO 2.3.3-2.3.6, including broader semantic review and final GPT-4o-mini acceptance, remain pending; C/E integration is also unverified.
-
-### Multi-round live result
-
-TODO 2.3.3 passed on 2026/11/09 with the unchanged private DeepSeek configuration. Run `python scripts/validate_part_d.py --suite multi` for the original four calls and `python scripts/validate_part_d.py --suite removal` for the additional three calls. All seven returned `deepseek-flash` and passed strict parsing and state checks, one HTTP attempt each, with no output edits or parser bypass. Reports record actual previous questions and memory at each handoff; retrieval and scores remain controlled inputs.
-
-| Round | Actual selection and state transition |
-| --- | --- |
-| `multi.partial` | Retained `AUTHOR`; omitted submitted `DISTRACTOR`, making it permanently rejected; `BIRTH` at score $0.7$ was unsubmitted and remained eligible; asked `What city was Mira Vale born in?` |
-| `multi.recovery` | Used that query; retained `AUTHOR`, selected `BIRTH` at score $0.95$, and answered `Linden City`; rejected distractor absent from submission |
-| `multi.exclusion_probe` | Retained both path triples and `Linden City`; high-score distractor remained masked; no old memory removal observed |
-| `multi.independent` | Fresh empty memory and rejection state selected the same `DISTRACTOR` and answered `Nolan Reed`; earlier question's rejection did not transfer |
-| `removal.unresolved` | Retained Mira Vale's birthplace as potentially useful, gave no answer, and asked whether Silver Press published the book and where Nolan Reed was born |
-| `removal.resolved` | Used those queries with Bronze Press publisher and Nolan Reed birthplace evidence; selected both new triples, answered `Cedar City`, and removed and permanently rejected Mira Vale's old birthplace triple |
-| `removal.exclusion_probe` | Removed triple at score $0.95$ was absent from submission; rejection persisted, with the two selected branch triples and `Cedar City` retained |
-
-All seven old snapshots remained unchanged and all memory, rejection and exclusion invariants passed. `multi_observations.old_memory_removal` remains honestly `false` in the original report; all four additional `removal_observations` are `true`. Empty returned questions do not stop forced probes. The conditional fixture assumes one publisher and resolves the otherwise branch from a different publisher; this is controlled fixture semantics, not a general proof of negative facts in an open-world graph. Broader semantic quality, multiple-answer ranking and GPT-4o-mini acceptance remain TODO 2.3.4 and 2.3.5; C/E integration remains unverified.
-
-Seven new rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:35:53 and 00:37:47 (UTC+08:00), report $1866$ input and $3259$ output tokens, all successful. Request IDs were not supplied and remain blank. Private reports are `tmp/tmp_part_d_validation_20261108T163553245365Z.json` and `tmp/tmp_part_d_validation_20261108T163747907687Z.json`; automatic semantic-review flags remain pending. No production module or private configuration changed. Extended offline runner checks cover call bounds, parsing, query handoff, removal and repeated exclusion; all $89$ offline tests pass. TODO 2.3.6 will consolidate accounting and handoff.
-
-### Semantic quality review
-
-TODO 2.3.4 review completed on 2026/11/09 with findings; this is not an overall semantic acceptance pass. Reviewed all $11$ earlier real outputs in the three private reports above and $2$ additional real `deepseek-flash` calls from `python scripts/validate_part_d.py --suite ranking`, using unchanged private settings and strict production parsing. The new report is `tmp/tmp_part_d_validation_20261108T164441286155Z.json`. Original reports retain their automatic `semantic_review: pending` flags; this section is the authoritative manual assessment, without rewriting model output.
-
-| Aspect / cases | Assessment from actual output |
-| --- | --- |
-| Initial decomposition | Author lookup is useful; the birthplace query repeats the original dependency without resolving the author. It is understandable alone but not an explicit entity-level birthplace lookup. Recall with real retrieval remains unverified; later MSM correctly asks about `Mira Vale`. |
-| Sufficient evidence and multi-round recovery/probe | Both edges of the book-author-city path remain selected and support `Linden City`; no irrelevant author/book enters the answer. Necessary path retention and rejection of the unrelated book are reasonable for these fixtures. |
-| Insufficient, empty and partial evidence | No unsupported birthplace answer; author evidence is retained when available. Clarification targets the missing author or the named author's birthplace and can guide another retrieval round. |
-| Independent question | `Nolan Reed` is supported by the selected authorship edge; earlier question-local rejection does not suppress it. |
-| Conditional branch | Initially retains potentially relevant birthplace evidence, withholds an answer and asks about publisher and the other birthplace. Later `Cedar City` follows only under the fixture's single-publisher assumption. A different publisher alone does not exclude Silver Press in an open-world graph; the parser cannot detect this assumption. Removal is reasonable within the fixture, not a general negative-inference result. |
-| `ranking.equal_support` | Selects both direct birthplace edges and answers `["Linden City", "Cedar City"]`, with no clarification. Both answers are supported; equal evidence allows either order and does not establish a strict ranking. |
-| `ranking.unequal_support` | Selects `confirmed_birthplace -> Linden City` and `reported_possible_birthplace -> Cedar City`, excludes `lived_in -> Harbor City`, but answers only `["Cedar City"]` with no clarification. Entity membership passes, yet the stronger confirmed candidate is absent. Expected both candidates with confirmed first; unequal-support ranking remains unverified. |
-
-The unequal-support fixture treats confirmed and possible birthplaces as candidate answers, with stronger qualitative support for confirmed evidence. The word “candidate” may instead have been interpreted as excluding a confirmed fact; the reply provides no explanation. Record this as an unresolved completeness/wording finding, not proof of the model's internal reason or a definitive ranking inversion. Equal retrieval scores deliberately convey no confidence difference, and the prompt sorts graph rows, so this single run cannot establish order robustness or calibrated likelihoods. Final GPT acceptance must explicitly disambiguate inclusion of confirmed and possible candidates if this finding recurs, retain the original failure evidence, and rerun affected cases and offline checks before delivery. No production heuristic or paper-prompt change is justified by this observation alone.
-
-Both new calls preserved old snapshots and passed state invariants without retries, edited replies or parser bypass. No live transport or parsing failure occurred, so no paid fault was manufactured; failure localization and nonempty state preservation remain covered by TODO 2.2 and the runner's offline failure tests. Two new successful rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv), starting at 2026/11/09 00:44:41 (UTC+08:00), report $542$ input and $1813$ output tokens; request IDs remain blank. All $89$ offline tests pass, including expanded runner assertions for multiple-answer order, isolated states and irrelevant-residence rejection. TODO 2.3.5 must run GPT-4o-mini on the single, multi, removal and ranking cases and resolve semantic findings before TODO 2.4 delivery; TODO 2.3.6 accounting consolidation and real C/E integration remain pending.
-
-#### Follow-up diagnosis of candidate wording
-
-On 2026/11/09, three additional real `deepseek-flash` calls varied question wording with identical triples, scores, serialization and Figure 8 prompt, each from empty state. Private entry `python tmp/tmp_diagnose_ranking.py` captured actual synthetic prompts and allowlisted returned content before production parsing; evidence is `tmp/tmp_ranking_diagnosis.json`. Both temporary artifacts remain excluded from Git; the earlier report is preserved.
-
-| Question control | Actual model output |
-| --- | --- |
-| Original “candidate birthplaces” repeated | Selected only the possible-birthplace edge and answered only `Cedar City`; unlike the earlier run, confirmed evidence was also omitted from memory |
-| Explicitly include confirmed and possible birthplaces | Selected both birthplace edges, answered `["Linden City", "Cedar City"]`, excluded residence |
-| Same inclusion plus confirmed-first instruction | Same selection and answer order as the preceding control |
-
-All three raw answer arrays exactly equaled parsed answers, completions ended with `stop`, and old states stayed empty. Code inspection confirms all input edges pass the threshold and reach the request, `CASES` expectations are report-only, and no parser/report truncation occurs. The observed repeated single answer therefore originates in model output. Question-scope ambiguity is the leading explanation supported by this small comparison: “candidate” may exclude confirmed facts. Selection also varied, so this is not proof of internal reasoning or a statistical causal estimate. Membership validation cannot detect semantic incompleteness. The original repeat permanently rejects omitted confirmed evidence under the configured omission policy, illustrating a downstream risk from semantic selection despite valid state updates.
-
-Maintained `RANKING_QUESTION` now uses only the explicit-inclusion wording, without the confirmed-first instruction or changes to the paper prompt. The second control already exercised this exact question through public MSM. Preserve the original anomaly as a fixture-wording finding, not a demonstrated ranking defect. Confirmed-first order was observed once without the added instruction, but confirmed evidence is also first after graph sorting; order robustness and GPT quality remain unverified. Three successful calls without retries append $878$ input and $1423$ output tokens, starting at 2026/11/09 00:55:51 (UTC+08:00); request IDs remain blank. TODO 2.3.5 must still validate the clarified fixture on GPT-4o-mini before delivery.
-
-### GPT-4o-mini acceptance attempt
-
-TODO 2.3.5 was executed on 2026/11/09 with the user's private OpenAI configuration, verified before requests as `gpt-4o-mini` at `https://api.openai.com/v1`. The delivery gate **did not pass**. No production prompt, parser, rejection policy or private configuration was changed. The following reports preserve actual outputs; their automatic semantic-review flags remain pending, and this section supplies the manual assessment.
-
-| Run / private report | Result |
-| --- | --- |
-| `python scripts/validate_part_d.py --suite all`; `tmp/tmp_part_d_validation_20261108T170609405988Z.json` | Started $11$ calls, stopped on `ValueError` in `removal.exclusion_probe`; ranking had not run. The preceding ten replies passed strict parsing and state checks. |
-| `python scripts/validate_part_d.py --suite removal`; `tmp/tmp_part_d_validation_20261108T170726337215Z.json` | After clarifying the conditional question, all $3$ replies passed parsing and state checks, but semantic expectations and old-memory-removal coverage failed. |
-| `python scripts/validate_part_d.py --suite ranking`; `tmp/tmp_part_d_validation_20261108T170732865045Z.json` | Both replies passed parsing, state and fixture semantic review. |
-
-Single-round sufficient evidence retained both path edges and answered `Linden City`. Insufficient evidence retained authorship, withheld the answer and asked `Where was Mira Vale born?`. Empty input withheld the answer, but its three questions included the tangential `What is The Glass Orchard about?` and a generic request for birthplace information. Initial decomposition returned `Who is the author of The Glass Orchard?` and `In which city was this author born?`; the latter is context-dependent and falls short of the paper's standalone-question instruction. Real retrieval usefulness remains unverified.
-
-The four basic multi-round cases passed: threshold-hidden evidence remained eligible and recovered at $0.95$, useful memory persisted, the unrelated submitted triple was permanently rejected and stayed excluded, and an independent question selected that same triple. No old-memory removal occurred in this suite, as expected from its actual selections.
-
-The original conditional fixture answered `Linden City` before publisher evidence was available. After receiving Bronze Press and Nolan Reed's birthplace, it selected nothing, permanently rejected all three submitted edges, and asked whether Silver Press published the book. The forced next probe therefore submitted an empty graph and failed strict parsing with `ValueError`. Its prior empty-memory, three-rejection snapshot remained unchanged. The report intentionally stores neither failed raw output nor exception text, so the precise validation rule that failed cannot be reconstructed from this artifact; the HTTP accounting row remains successful.
-
-The maintained `BRANCH_QUESTION` now explicitly states that the book has exactly one publisher and requires publisher clarification before answering when unknown. This exposes the fixture assumption to the model and removes the earlier open-world ambiguity; it does not supply a desired answer or alter Figure 8. Retesting still answered `Linden City` prematurely. With publisher evidence present, it then retained all three edges, withheld an answer, and repeatedly asked who the publisher was. All snapshots and state rules passed, but no removal or permanent exclusion of removed history was observed. Wording clarification therefore **did not resolve** GPT's conditional reasoning failure. Original and clarified reports are retained; structural success must not be treated as semantic acceptance.
-
-Both ranking cases returned `["Linden City", "Cedar City"]`. Equal-support answers were supported by both selected birthplace edges. Unequal support retained confirmed and possible birthplace edges, omitted and permanently rejected residence, and placed confirmed first without an added ordering instruction. This resolves the earlier missing-confirmed-answer observation for this clarified fixture on this run, but graph sorting also places confirmed evidence first; order robustness and calibrated ranking remain unproven.
-
-All $16$ actual HTTP attempts returned `gpt-4o-mini-2024-07-18`, with no transport retries, manual response repair or parser bypass. The $16$ new rows in [`logs/llm_usage.csv`](../logs/llm_usage.csv) report $3523$ input and $772$ output tokens, HTTP success and nonempty request IDs; the final application-level failure in the original run does not change HTTP accounting. The paper prompt and strict validation remain intact. TODO 2.3.5 stays unchecked, and TODO 2.4 delivery remains gated. Next work must address conditional semantic behavior without hiding these failures, rerun the affected live cases and offline regression, and assess the decomposition and clarification limitations above. A production prompt extension would need to be identified as a departure from the paper template rather than silently presented as exact reproduction. TODO 2.3.6's full historical accounting consolidation and C/E integration remain separate pending work.
-
-## Per-attempt usage accounting
-
-[`llm_usage.py`](../src/agent/llm_usage.py) appends one UTF-8 CSV row per actual HTTP attempt, including retries and failures. Metadata records request start time, model, returned token counts, outcome, exception class and request ID. Unknown values remain blank. Credentials and request/response content are excluded. A later application validation failure does not change a successful HTTP accounting row. Configuration and accounting tests are in `tests/test_llm_configuration.py` and `tests/test_llm_usage.py`.
-
-On 2026/11/10 the full historical accounting check made no real API call and changed no ledger row. The ledger holds $582$ rows from 2026-11-08T12:05:26Z to 2026-11-09T20:13:39Z UTC (local 2026/11/08 to 2026/11/10): $580$ successes and two `HTTPError` rows, with $521$ `gpt-4o-mini-2024-07-18`, $42$ `gpt-4o-2024-08-06`, $17$ `deepseek-flash` and two `gpt-4o` rows, totalling $347409$ input and $40655$ output tokens. Header, timestamp order, status/error pairing, token types, empty tokens on failed rows and unique nonempty request IDs all validate. Because the ledger has no run column, rows were rebuilt into $50$ contiguous run blocks using a five-minute gap. The $22$ retained suite reports align to blocks by their UTC file-name time; their $97$ rows match each report's recorded logical calls and every retained stage usage in order, with no missing, duplicate or mismatched row. The remaining $485$ rows form $34$ manual or diagnostic blocks ($287$ rows with $101078$ input and $21022$ output on 2026-11-08; $198$ rows with $121798$ input and $12657$ output on 2026-11-09, including the two failures) and correspond to the per-section diagnostic and acceptance records; the early rows have no retained suite report and are attested only by their section usage summaries. Known limits: the $17$ DeepSeek rows have no request ID and the two failed `gpt-4o` rows have no token counts, all left blank as unknown rather than zero; per-command mapping relies on timestamps because the ledger has no run column; token values are provider-reported and no cost is inferred from them. The ledger contains no keys, prompts, triples or reply text. TODO 2.3.6 is complete on this basis; cost settlement still waits for provider bills after the project.
-
-## Initial question decomposition
-
-[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial $Q_{\mathrm{sub}}$ from FoG §3.1 and Appendix C, Figure 7 (paper page 21). Both `decompose_question` and `build_decomposition_prompt` now accept the keyword-only `prompt_variant`, defaulting to `"explicit_references"`. This implementation enhancement requires independently submitted questions to repeat known entity names and full descriptions of unresolved entities, without assuming earlier answers or inventing names. Use `prompt_variant="paper"` for the unchanged paper wording with instruction numbering corrected to begin at `1`. Both variants share existing parsing, retries and accounting; neither rewrites responses or uses a pronoun blacklist.
-
-On 2026/11/09, `python scripts/validate_part_d.py --suite reference_diagnostic` made three real calls using the unchanged GPT-4o-mini/OpenAI configuration. The paper baseline returned `In which city was this author born?`; the enhancement returned `In which city was the author of The Glass Orchard born?`. Both first asked `Who is the author of The Glass Orchard?`. Given controlled authorship evidence, unchanged MSM retained it, withheld an answer and asked `Where was Mira Vale born?`, preserving the prior state and passing state invariants. This addresses the observed reference failure; one fixture does not establish general semantic reliability. Real C/E retrieval is absent from this repository, so isolated-query recall remains an integration gate and the supplied authorship relation is not a retrieval result. Figure 8 and other semantic issues remain unchanged; TODO 2.3.5 remains pending.
-
-The diagnostic is excluded from `all`; preview with `--suite reference_diagnostic --list-cases`. Under the current default decision/selection/ranking pipeline, its ceiling is $5$ logical calls and $15$ HTTP attempts. The historical three actual calls returned `gpt-4o-mini-2024-07-18` without retries, recording $569$ input and $87$ output tokens in three successful usage rows. Private report: `tmp/tmp_part_d_validation_20261108T174923559860Z.json`; its automatic pending-review marker is preserved, with manual findings recorded here.
-
-```python
-from src.agent.llm_client import LLMClient
-from src.agent.llm_config import load_llm_config
-from src.agent.question_decomposition import decompose_question
-
-client = LLMClient(load_llm_config())
-try:
-    sub_questions = decompose_question(
-        "Which man leads the country that uses Libya, Libya, Libya as its national anthem?",
-        client,
-    )
-finally:
-    client.close()
-```
-
-This example makes a paid request. `decompose_question(question, client)` returns an ordered `list[str]` for retrieval/scoring without creating retrieval or memory state. `build_decomposition_prompt(question)` and `parse_sub_questions(content)` also work independently without API calls.
-
-The original question must be a nonblank string and is inserted unchanged. A completed (`finish_reason: stop`), nonrefused response must contain only a nonempty JSON array of nonblank strings. Markdown fences, prose and malformed lists are rejected. Strings, order and duplicates are preserved. Figure 7 sets no question-count limit; Figure 8's one-to-three limit concerns subsequent memory-management questions. These checks validate structure, not semantic correctness.
-
-Invalid inputs and outputs raise `ValueError` without exposing their text in validation messages. Transport and accounting errors propagate from `LLMClient`; output validation adds no retry, fallback or substitute question.
-
-`tests/test_question_decomposition.py` covers prompt constraints, literal input insertion, JSON validation, response envelopes, refusals, truncation, transport failures, request payloads, retries and accounting. All HTTP calls in these tests are mocked.
-
-## Potential subgraph construction
-
-[`potential_subgraph.py`](../src/agent/potential_subgraph.py) implements FoG §3.3, Eq. 10: $G^{\mathrm{pot}} = \{t \in G^{\mathrm{xpd}} \mid s_t > \tau_p\}$. Pass member C's refined scores after feedback propagation, aligned with the expanded triples. The default cutoff is $0.7$, matching `potential_threshold` in `config/config-dev.yml`; a caller loading YAML must pass that value explicitly.
-
-```python
-from src.agent.potential_subgraph import build_potential_subgraph
-
-triples = [["Country A", "led_by", "Person B"], ["Country A", "anthem", "Song C"]]
-refined_scores = [0.7, 0.85]
-potential = build_potential_subgraph(triples, refined_scores)
-# [("Country A", "anthem", "Song C")]
-```
-
-`build_potential_subgraph(triples, scores, potential_threshold=0.7)` accepts aligned sequences and returns a new `list[tuple[str, str, str]]`. Each triple contains three nonblank strings in head/relation/tail order. Their characters and direction are preserved; duplicate qualifying triples occur once, in first qualifying occurrence order. Inputs remain unchanged. Empty input and an empty result are valid. Equality with the cutoff is excluded without a tolerance.
-
-Scores and the cutoff must be finite real scalars, excluding booleans. The function compares scores directly, without sigmoid, normalization, clipping or an assumed $[0, 1]$ range. Member C owns the score scale; the paper's training sigmoid does not introduce an additional transformation into Eq. 10 here. For a one-dimensional PyTorch score tensor, explicitly use `scores.detach().cpu().tolist()` at the caller boundary; multidimensional score lists fail scalar validation. The local member C modules are still placeholders, so their eventual pipeline adapter remains integration work.
-
-Malformed triples, invalid numeric values and mismatched lengths raise `ValueError`, including invalid rows below the cutoff. Validation errors exclude triple text. Filtering makes no API calls and maintains no memory or exclusion state: a triple filtered in one round can qualify on a later call. Permanent rejection belongs to the later LLM memory-management step.
-
-`tests/test_potential_subgraph.py` checks the strict floating-point boundary, YAML default agreement, custom score scales, graph identity and ordering, input preservation, empty results, later-round recovery and invalid inputs. All checks are offline.
-
-## Question-local persistent memory
-
-[`memory_state.py`](../src/agent/memory_state.py) implements the state foundation for FoG §3.3. `QuestionMemory(original_question)` initializes $G^{\mathrm{mem}}$ and the permanent rejection set as empty. Create a separate instance for each question run, including repeated runs with identical question text, and retain the snapshot across that run's reasoning rounds. Persistence here means retention within the run; there is no disk storage or global question cache.
-
-```python
-from src.agent.memory_state import QuestionMemory
-
-first = QuestionMemory("Who leads Country A?")
-second = QuestionMemory("Who leads Country B?")
-assert first.memory_triplets == frozenset()
-assert first.rejected_triplets == frozenset()
-assert second.memory_triplets == frozenset()
-```
-
-`original_question` must be a nonblank string and is stored verbatim. The optional `memory_triplets` and `rejected_triplets` constructor arguments accept iterables of head/relation/tail sequences. Both are copied to `frozenset[tuple[str, str, str]]`: exact duplicates collapse, strings and direction remain unchanged, and iteration order is unspecified. Each triple must contain exactly three nonblank strings. Malformed inputs and overlapping memory/rejection sets raise `ValueError` without including query or triple text. Fields and nested values are immutable, so subsequent changes to supplied lists cannot affect the snapshot or another question.
-
-The update coordinator below constructs a new snapshot only after validating the complete LLM result and carries prior permanent rejections forward. Keeping the old snapshot supports failure preservation. This container stores explicit state and provides expansion filtering as described below; it does not select evidence, infer rejection or call the LLM. Threshold filtering does not populate either graph.
-
-`tests/test_memory_state.py` verifies empty initialization, isolation across different questions and repeated query text, immutable detached snapshots, exact graph identity, invalid-input preservation and threshold filtering without rejection. All checks are offline.
-
-## Memory-management prompt
-
-Two-hop paths now use a separate binding schema: observed steps retain request-local evidence IDs; completely missing steps accept only `{kind: missing}` and reject legacy direction fields. Code creates `scope="incident"` gaps and fixed `Find triples involving "<target>" with relation "<relation>".` queries. This expands retrieval to both endpoints of the named relation. Direction is deferred until observed facts arrive; if some frontier candidates have facts, their observed direction still governs the remaining candidates. False missing declarations remain invalid when either endpoint has matching facts. Member E must validate actual retrieval recall and cost; controlled module acceptance does not establish either. See the [current acceptance status](part_d.zh-CN.md#当前验收状态与剩余事项) for current live acceptance and budget. TODO 2.3.5 remains a separate delivery gate.
-
-[`memory_prompt.py`](../src/agent/memory_prompt.py) implements `build_memory_prompt(question, memory_triplets, potential_triplets)` from FoG §3.3 and Appendix C, Figure 8 (paper page 21). The template retains the figure's wording, high-recall selection principle, evidence-only answering, exact triple/entity copying constraints, conditional one-to-three clarification questions and the three-field JSON output example.
-
-`update_memory` and public `manage_memory` default to `prompt_variant="evidence_decision"`. A strict extraction schema describes question type, a single-relation equality condition and one-hop requirements grouped by query entity. Code evaluates the condition on the full submitted graph, derives directions from request-local fact IDs/endpoints and collects all matches, required evidence and gaps. Final selection uses the base strict schema. Local gates require all necessary evidence, forbid answers under unknown conditions and require answering without further questions when resolved and gap-free. For gaps, code generates fixed open-value queries; final questions must be exact, unique members and include unknown-condition queries. Failure publishes no snapshot and adds no output repair or business retry. Successful omissions still create permanent rejection; multiple answers still receive separate ranking.
-
-This is an engineering enhancement, validated on the recorded controlled GPT-4o conditional cases and GPT-4o-mini path and conditional smoke cases. Its protocol supports nonconditional one-hop requirements, single-relation equality conditions, and `nonconditional_path` with exactly two ordered relation/binding steps and a `root_entity` copied from the original question. Code follows every reachable connection in the complete submitted graph, protects all matched prefixes and asks only for currently reachable gaps. Any candidate gap blocks answering; complete paths constrain answers to derived terminal `answer_candidates`. Self-loops and reverse-only matches fail with fixed diagnostics. Other paths, aggregation and complex requirements remain unsupported. Conservative reverse-match rejection can reject a legitimate query in the other direction. The current implementation passed $136$ offline tests and focused controlled path acceptance. The call budget is unchanged: normally two logical calls per transaction, three with ranking. Focused two-hop acceptance passed under this default; TODO 2.3.5 stays open for independent delivery acceptance. Query templates establish consistency with derived gaps, not C/E recall, which Member E validates during integration.
-
-`build_memory_prompt` remains a single-selection prompt builder defaulting to `retrieval_questions`, not the complete default transaction. Explicit `paper` retains Figure 8; `retrieval_questions` retains the former enhancement for missing relations, known named entities and avoiding repeated facts. These comparisons preserve parsing, permanent rejection and transport retries. Unknown variants fail before requests; failures never switch to a comparison automatically.
-
-Opt-in `prompt_variant="answer_ranking"` adds support comparison, presentation-order independence and answer completeness instructions to `retrieval_questions`, without changing defaults or adding a model stage. This single-call experiment failed screening and remains a comparison option. The supported enhancement is [separate answer ranking](#separate-answer-ranking), which does not require this variant.
-
-```python
-from src.agent.memory_prompt import build_memory_prompt
-from src.agent.memory_state import QuestionMemory
-
-state = QuestionMemory("Who leads the country with Song C?", [
-    ("Country A", "anthem", "Song C"),
-])
-potential = [("Country A", "led_by", "Person B")]
-prompt = build_memory_prompt(state.original_question, state.memory_triplets, potential)
-```
-
-The original question must be a nonblank string and is inserted verbatim. Both graphs accept iterables of head/relation/tail sequences with exactly three nonblank strings each, including empty graphs, unordered snapshots and generators. Figure 8 has one `Knowledge` field: it receives the union of historical and potential triples, deduplicated by exact equality and sorted lexicographically by tuple for stable presentation. JSON array serialization preserves Unicode and round-trips quotes, newlines, backslashes and all original string values. Sorting graph rows does not change positions within a triple. The graph union and serialization are reproduction choices; the paper does not specify an input ordering or serialization encoding.
-
-Malformed inputs raise `ValueError` without exposing their text. Mutable input containers and memory snapshots remain unchanged; one-shot iterators are consumed. This function only builds text: it makes no API call, validates no model output and performs no memory or rejection update. The caller supplies the eligible potential graph; the builder does not implicitly access rejection sets or retrieval results. The structured-output parser below enforces field types and exact input membership; semantic evidence checks remain pending.
-
-`tests/test_memory_prompt.py` checks the paper instructions and JSON example, graph union and stable ordering, exact string and direction preservation, empty graphs, invalid-input handling and composition with existing memory/potential modules. All checks are offline.
-
-## Structured memory output
-
-[`memory_response.py`](../src/agent/memory_response.py) implements `parse_memory_response(content, memory_triplets, potential_triplets)` for FoG §3.3, Eq. 11 and Appendix C, Figure 8. Pass the assistant content string and the same historical/potential graphs submitted in that call's prompt. The parser accepts exactly one standard JSON object with exactly the three required fields; every field must be an array.
-
-```python
-from src.agent.memory_response import parse_memory_response
-
-memory = [("Country A", "anthem", "Song C")]
-potential = [("Country A", "led_by", "Person B")]
-content = '''{
-  "selected_triplets": [["Country A", "led_by", "Person B"]],
-  "predict_answer": ["Person B"],
-  "subsequent_question": []
-}'''
-result = parse_memory_response(content, memory, potential)
-assert result.predict_answer == ("Person B",)
-```
-
-`selected_triplets` must contain arrays of exactly three nonblank strings, each matching a triple in the submitted graph union with identical head/relation/tail positions and characters. `predict_answer` must contain nonblank strings matching heads or tails in the selected triples exactly; entities occurring only in unselected input, relation-only strings, substrings, case changes and whitespace normalization are rejected. Empty selection requires empty answers. `subsequent_question` contains at most three nonblank strings and must be nonempty when answers are empty; see the clarification contract below. Figure 8's all-empty object remains a schema illustration in the prompt, but fails completed-response validation.
-
-For tentative answering (TODO 2.1.8), Figure 8 instructs the LLM to use only selected triples and rank multiple answers by likelihood from that evidence. The parser preserves the returned ranking, duplicates and literal entity strings, including across selected multi-hop paths and historical/new evidence. It does not sort by graph order, alphabet or triple counts. Selected-entity membership is a necessary constraint, not proof that an entity answers the question or that the ranking is correct; semantic entailment, sufficiency and relative support remain LLM responsibilities. The parser itself makes no model call; the recommended facade adds [separate answer ranking](#separate-answer-ranking).
-
-The frozen `MemoryResponse` result contains tuple fields named `selected_triplets`, `predict_answer` and `subsequent_question`; selected rows are tuples too. Model order, answer ranking, duplicates and all string characters are preserved. Use the parser for validation: direct construction of the data container does not validate graph membership. Input graphs accept the same iterable contract as the prompt builder. Materialize one-shot iterators before using them for both prompt building and parsing; each call consumes them.
-
-Malformed graphs or outputs raise `ValueError` with content-free messages. Missing, extra or duplicate fields, prose, code fences, trailing values, nonstandard JSON numbers, malformed array items and out-of-range triples/entities are rejected without repair. Duplicate-key rejection and exact field sets are explicit parsing choices to avoid ambiguous responses. The parser makes no API calls, adds no retries and changes neither memory nor permanent rejection state. The coordinator below handles completion envelopes and state updates; the state snapshot exposes expansion exclusions.
-
-`tests/test_memory_response.py` covers literal strings, ordering, immutability, empty fields, question-count boundaries, strict JSON and schema errors, graph/entity membership, threshold-hidden and rejected evidence, prompt composition and failure preservation. All checks are offline.
-
-### Exact-match constraints
-
-TODO 2.1.10 uses Figure 8's prohibition of external knowledge, fabrication and triple rewriting/creation/reordering/merging/splitting. The parser enforces exact membership of each complete decoded head/relation/tail tuple in the submitted union. It rejects component permutations, cross-row recombination, compressed paths, split or merged names, case/whitespace changes and Unicode normalization unless the resulting triple itself was submitted. It does not repair output. Equivalent JSON escapes represent the same decoded strings and are accepted. Reordering intact rows in `selected_triplets` is allowed; the component positions within each triple remain fixed.
-
-Answers must exactly match selected endpoint strings as described above. These checks reject fabricated triples and out-of-range entities, but cannot detect external reasoning that returns an otherwise valid input entity. Evidence-only reasoning remains an LLM instruction. Clarification questions are natural-language retrieval queries and are not subject to triple membership. Invalid selection or answers fail before publication, preserving both old sets without an application retry. Regression tests cover all nonidentity component permutations, rewriting/merging/splitting, equivalent JSON escapes, selected row order and coordinator state preservation.
-
-## LLM-guided memory replacement
-
-[`memory_update.py`](../src/agent/memory_update.py) implements `update_memory(state, potential_triplets, client)` for FoG §3.3, Eqs. 11–12. It submits the original question and the exact union of historical memory and eligible new evidence through Figure 8. Its high-recall instruction keeps triples unless the LLM is confident they are irrelevant; this is a prompt policy, not a measured recall guarantee.
-
-```python
-from src.agent.memory_update import update_memory
-
-# state is a QuestionMemory; potential contains eligible triples.
-# client is a caller-owned LLMClient. This call incurs API usage.
-updated_state, response = update_memory(state, potential, client)
-state = updated_state  # Publish only after the whole call succeeds.
-```
-
-The returned pair contains a new `QuestionMemory` and the parsed `MemoryResponse`. Memory becomes exactly the set of `response.selected_triplets`, rather than a union with old memory. Historical evidence can survive multiple rounds when selected again, disappear when omitted, or be cleared by an empty selection. Response order, duplicates, answer ranking and questions remain available in the response; memory stores an unordered deduplicated graph. The original question and prior permanent rejections are preserved.
-
-Potential input follows the prompt's graph contract, including empty graphs and generators. The coordinator materializes it once so prompt construction and parsing use identical evidence. Invalid state/graphs and potential triples overlapping prior permanent rejections raise `ValueError` before any request; the caller must supply eligible evidence. After complete validation, omitted submitted triples join the permanent rejection set according to the exploration policy below.
-
-Only completed (`finish_reason: stop`), nonrefused responses with all three valid output fields produce a new snapshot. Bad envelopes, malformed JSON and out-of-range selections or answers raise `ValueError`, including answers found only in omitted input triples; transport and accounting failures propagate. No path mutates the input snapshot. The caller owns client lifetime and assigns the returned state only on success. Transport retries and per-attempt logging remain in `LLMClient`; output validation adds no retry or fallback. Tentative-answer validation and its semantic limits are described above.
-
-`tests/test_memory_update.py` covers controlled multi-round retention, removal and empty replacement, literal generator evidence, ordered outputs, preserved rejection state, invalid-input prevention, full-output validation, refused/truncated completions, failure preservation, question isolation and mocked HTTP retry/accounting integration. All checks are offline.
-
-### Controlled multi-round validation
-
-TODO 2.2.1 is covered by `tests/test_memory_rounds.py` through `manage_memory` and the real `LLMClient`, with only the HTTP adapter mocked. A five-round script accumulates one, two and three triples, removes an old triple with no new candidates, then clears memory with an empty selection. Each round checks the actual submitted evidence union, unchanged original question, exact selected memory, ordered answers and follow-up questions, distinct returned snapshots and preservation of every earlier snapshot. Five successful accounting rows establish one HTTP attempt per round. Run this check with `python -m unittest discover -s tests -p test_memory_rounds.py -v` using the project environment. It validates controlled state transitions without paid requests; real-model selection quality and C/E pipeline integration remain unverified.
-
-### Controlled rejection and recovery validation
-
-TODO 2.2.2 is covered by `tests/test_rejection_rounds.py` through public `manage_memory` and real `LLMClient` parsing, mocking only HTTP transport. At both default and custom cutoffs, six rounds keep below-cutoff and equal-cutoff triples unsubmitted for two rounds, then select them after their scores rise above the unchanged cutoff. A submitted omission stays rejected despite repeated high-scoring input; later removal of historical memory adds permanent rejections, which survive memory clearing and another all-blocked round. Every round independently checks the actual prompt union, exact memory, cumulative rejection and expansion masks, eligible retrieval candidates, ordered output and unchanged earlier snapshots. Each cutoff produces exactly six successful simulated accounting rows. Run `python -m unittest discover -s tests -p test_rejection_rounds.py -v` using the project environment. This controlled check makes no paid requests; real-model quality and C/E integration remain unverified.
-
-### Controlled question-isolation validation
-
-TODO 2.2.3 is covered by `tests/test_question_isolation.py` through public `manage_memory` and one shared real `LLMClient`, mocking only HTTP transport. Nine interleaved calls run with different query texts, then repeat with identical texts. Two runs select overlapping evidence differently, accumulate independent rejections and resume after the other run changes state. A third run created after both have nonempty memory and masks starts empty and selects triples rejected by the older runs. Every call checks the submitted evidence union, original question, ordered output, all active runs' memory, rejection and expansion masks, eligible retrieval candidates and every historical snapshot. Each scenario produces exactly nine successful simulated accounting rows. Run `python -m unittest discover -s tests -p test_question_isolation.py -v` using the project environment. Isolation requires callers to retain separate snapshots for independent runs; concurrent execution, real C/E wiring and live-model quality are not validated. No paid requests are made.
-
-## Exploration efficiency
-
-TODO 2.1.11 implements the two exclusion rules in FoG §3.3. `state.excluded_triplets` is the immutable union of current memory and cumulative permanent rejections. Call `state.filter_expansion_triplets(candidates)` at each retrieval/expansion boundary, before scoring or further expansion. It returns an ordered list of eligible tuples, preserving first occurrences and literal strings while removing exact duplicates. It validates every row, including excluded candidates, consumes generators once and leaves state and input containers unchanged. Filtering is by complete triple identity; sharing an entity or reversing an edge does not by itself exclude another triple.
-
-```python
-# candidates are triples returned by caller-owned retrieval.
-eligible = state.filter_expansion_triplets(candidates)
-# Score eligible only; scores must stay positionally aligned with eligible.
-potential = build_potential_subgraph(eligible, refined_scores)
-state, response = update_memory(state, potential, client)
-excluded_for_next_round = state.excluded_triplets
-```
-
-The caller must apply the exclusion at every expansion step; this module does not implement a retriever or modify member C's scoring. Already absorbed memory is excluded from repeated expansion, but is still submitted from `state.memory_triplets` in every memory-management prompt. Supplying overlapping memory in a potential graph is harmless: the prompt deduplicates it. Supplying permanently rejected evidence to `update_memory` raises before an API request, guarding against a missed upstream filter.
-
-For a fully valid LLM response, let $U = G^{\mathrm{mem}} \cup G^{\mathrm{pot}}$ be the exact submitted union and $S$ the selected set. The new memory is $S$, and permanent rejections become $R' = R \cup (U \setminus S)$. This includes both unselected new evidence and omitted historical memory. Mapping all omitted submitted triples to “explicit rejection” is a user-approved reproduction assumption; the paper does not explicitly define this mapping. No decision is inferred from malformed, refused, unfinished or failed calls. Rejections persist for that question run, including after memory is emptied; fresh runs have independent masks even with identical question text. Threshold-hidden triples never submitted in that call are outside $U$ and acquire no rejection; later retrieval can recover them.
-
-`tests/test_exploration_efficiency.py` covers candidate order and exact identity, validation, cumulative multi-round masks, historical prompt retention, rejected-input prevention, threshold-hidden recovery, failed-response preservation and question isolation. Existing update tests also verify rejection of removed historical memory and empty selections. All checks are offline; actual retrieval-loop wiring remains integration work.
-
-## Fault tolerance for threshold-hidden evidence
-
-TODO 2.1.12 composes the existing potential-subgraph, expansion-filter and memory-update boundaries. A triple with refined score $s_t \leq \tau_p$ is absent from that round's potential graph. If it is also absent from historical memory, it is not submitted to the LLM and gains no permanent rejection. Temporary hiding creates no separate state or persistent candidate blacklist. Historical memory still reaches the LLM regardless of current retrieval scores; its omission from a valid selection does create permanent rejection under the policy above.
-
-For the next round, pass `response.subsequent_question` to retrieval, apply the current state's expansion exclusions, obtain new positionally aligned refined scores, and call `build_potential_subgraph` again. Previously hidden evidence remains eligible even after several low-score rounds; it can enter the potential graph once its new score strictly exceeds the same cutoff and enter memory if selected by the LLM. Recovery requires rediscovery and re-scoring; it is not automatic reinsertion, a threshold reduction or a retry of the previous LLM request. A submitted, rejected triple remains excluded even if later retrieval would assign it a higher score.
-
-An empty potential graph is valid: memory management still submits historical memory, or an empty Knowledge array when memory is also empty. An undetermined response must supply clarification questions under the parser contract. `tests/test_fault_tolerance.py` verifies clarification-driven retrieval and re-scoring, below/equal cutoffs at default and custom thresholds, recovery after an initially empty graph, repeated hiding, retained history and permanent-rejection controls. Prompt assertions check exactly which evidence was submitted each round. These are controlled offline integration tests of Member D boundaries; real C/E retrieval and scoring integration and live-model quality remain unverified.
-
-## Separate answer ranking
-
-The paper requires multiple answers to be ranked by evidence support, so ranking is a default module responsibility rather than an optional caller feature. Public [`manage_memory`](../src/agent/memory_management.py) performs evidence selection, tentative answering and follow-up generation, then ranks at least two candidates using [`answer_ranking.py`](../src/agent/answer_ranking.py). To improve correctness, ranking and presentation order use a separate LLM call, supplied only the original question, actual selected triples and actual candidates. Zero or one answer skips the comparison stage.
-
-There is no business option to disable ranking. `prompt_variant` selects the decision/selection workflow before ranking; even `paper` still ranks multiple answers separately. `manage_memory_ranked` is a compatibility alias for `manage_memory`. Lower-level `update_memory` handles decision, selection, parsing and state replacement before ranking; it is not an alternative complete MSM interface.
-
-This is an implementation enhancement beyond the paper's single joint MSM call. The screened instructions are preserved verbatim; tuning has stopped. Standard JSON must contain exactly `predict_answer`, with identical candidate strings and multiplicities. Only answer order may change: evidence, questions, memory and permanent rejections remain unchanged. No answer or missing path is repaired, and no gold labels, retrieval scores, relation-weight dictionary or deterministic sorting are supplied.
-
-All stages share the caller-owned `LLMClient`, including transport retries and one CSV row per attempt. The default uses $3$ logical requests for multiple answers, at most `3 * (max_retries + 1)` HTTP attempts, currently $9$; zero or one answer uses $2$ logical requests, at most $6$ attempts. Explicit single-selection variants use one fewer logical request. Any stage's transport, accounting or validation failure returns no partial `MSMResult`, business retry or fallback. Publish `result.state` only after the whole call succeeds; the caller still closes the client.
-
-On 2026/11/09, the $14$-transaction screen passed, followed by $70$ independent real transactions and $136$ GPT-4o-mini requests without retries or exceptions. Direct cases passed all $36$ permutations/repetitions, equal-support $6/6$ and single-answer $2/2$. Two-hop ranking improved from $12/24$ upstream to $23/24$ after ranking; separate upstream omissions retained complete paths in only $17/24$. Empty-graph clarification also produced an unresolved author reference. The one ranking failure shared an identical stage-two prompt with four successes. These are retained semantic capability and stability limitations under the current model and prompt design; omissions and clarification defects are not proven to be random variation.
-
-The user accepted these engineering results and remaining semantic limitations, stopped tuning, and authorized shared delivery and closure of the ranking investigation. The earlier zero-failure criterion is no longer required for closing this item. This does not guarantee correct ranking on arbitrary graphs or change permanent rejection. Conditional reasoning, correct old-memory removal and the overall TODO 2.3.5 gate remain separate pending work.
-
-The default implementation replayed all $70$ recorded real transactions and $136$ stages offline, matching exact prompts, literal answers, selected evidence, questions and snapshots. Replay establishes migration parity, not fresh model-quality acceptance. `tests/test_answer_ranking.py` covers default ranking, the compatibility alias, variants, custom thresholds, skips, duplicates and literal strings, evidence isolation, strict multisets, atomic failure and mocked HTTP retry/accounting through the real client. Runner tests verify default routing for every memory round and its $25$-request ceiling; controlled expected replies actually use $15$ requests. All $100$ offline tests passed. Making ranking the default incurred no new API usage or private configuration changes. Historical reports, actual usage and cost assumptions remain in the [archived ranking record](https://github.com/yyht6300a/AI6103-Project-FoG/blob/b7f4faac112fca370499803c7242ac23d6675d72/docs/part_d.zh-CN.md#独立答案排序). Current ranking behavior is documented above.
-
-## Scored-round MSM interface
-
-[`memory_management.py`](../src/agent/memory_management.py) exposes `manage_memory(state, triples, scores, client, potential_threshold=0.7)` for TODO 2.1.13. Member C supplies positionally aligned expanded triples and refined scores after feedback propagation; member E owns the question snapshot, retrieval loop and client lifetime. Input types, finite-number checks, exact string handling, strict threshold and explicit tensor conversion follow [potential subgraph construction](#potential-subgraph-construction). Pass a YAML-loaded cutoff explicitly; this function does not read files or configuration.
-
-```python
-from src.agent.memory_management import manage_memory
-from src.agent.memory_state import QuestionMemory
-
-state = QuestionMemory(original_question)  # Once per independent question run.
-# Repeat these steps in E's loop; retrieval and C's scorer are caller supplied.
-candidates = state.filter_expansion_triplets(retrieve(sub_questions))
-scores = refine_scores(candidates)  # Aligned 1-D Python scalar sequence.
-result = manage_memory(state, candidates, scores, client, potential_threshold=0.7)
-state = result.state  # Publish only when the entire call succeeds.
-sub_questions = result.response.subsequent_question
-```
-
-The retrieval/scoring names above illustrate caller dependencies, not implemented functions. Calling the entry point incurs LLM usage, including for empty input or an empty potential graph. `manage_memory` includes the ranking stage by default, with unchanged parameters and `MSMResult` return type; callers need no alternate entry point or ranking switch. Transport retries and accounting remain owned by `LLMClient`.
-
-| Returned field | C/E use |
-| --- | --- |
-| `result.state.memory_triplets` | Updated immutable evidence graph |
-| `result.response.predict_answer` | Tentative answer tuple in model ranking order |
-| `result.response.subsequent_question` | Ordered next-round retrieval queries |
-| `result.state.excluded_triplets` | Current memory plus permanent rejections; exclude at each expansion boundary |
-| `result.state.rejected_triplets` | Permanent question-local mask |
-| `result.response.selected_triplets` | Validated selection retaining model order and duplicates |
-
-`MSMResult` is a frozen container with `state: QuestionMemory` and `response: MemoryResponse`; it reuses existing immutable contracts rather than maintaining duplicate state. All rows and scores are validated before filtering, including stale memory/rejected rows and low scores. Thresholding operates on aligned pairs before exact deduplication: a duplicate qualifies if any occurrence exceeds the cutoff. The facade defensively removes current memory and permanent rejections from new potential input; historical memory independently reaches the prompt even when absent or low-scoring now. This differs from lower-level `update_memory`, which rejects permanently rejected potential input. E must still filter at retrieval/expansion boundaries to avoid wasted expansion and scoring; filtering an already scored list without filtering its matching scores would break alignment.
-
-Only fully validated output yields a new result. `ValueError` reports invalid input or output; transport and accounting errors propagate unchanged. No input snapshot is mutated, no application retry/fallback is added and no client is closed. E retains its prior snapshot on exceptions and decides stopping conditions and round limits; neither a tentative answer nor an empty question tuple automatically terminates a loop here. Permanent omission and temporary threshold hiding follow the policies above. `tests/test_memory_management.py` covers aligned duplicate rows, stale exclusions, all output fields, empty/custom-threshold inputs, multi-round recovery/removal, question isolation and failed-call preservation. Real C/E wiring and live-model quality remain integration work.
-
-## LLM failures and state preservation
-
-The latest 2026/11/10 free analysis identifies the observed unequal failure at requirement extraction: a second Mira Vale group adds `lived_in` ID 1 alongside confirmed/possible birthplace IDs 0/2. Decoding deduplicates targets but preserves every query; evaluation makes residence required evidence and Harbor City an allowed answer. Selection follows that contaminated decision and ranking preserves its three-candidate multiset. Confirmed still precedes possible; the whole-tuple `support_order` check also fails on an extra answer. This is not independent evidence of an ordering defect. Saved source hashes, extraction instructions, schema and replayed requests match the inspected `a8da104` revision.
-
-Free counterfactuals separate duplicate grouping from relevance: merging residence into one group still contaminates the result, while splitting only relevant queries preserves the correct derived cities but fails the fixture's grouping gate. Production-error projections and their outer exception guard work in focused probes. However, a production success followed by a controlled failure retains raw `stages`, including arbitrary successful-envelope metadata; a synthetic sentinel reproduces this gap. Deep JSON can escape the projection helper as `RecursionError`, although the outer production-error guard protects the original exception. Derived candidates and actual downstream request inputs also lack independent ranking-gate checks. The [authoritative unequal analysis and implementation plan](part_d.zh-CN.md#20261110-unequal-深入归因与修复方案) supersedes earlier pending plans: clarify question-grounded relation scope, enforce unique entities within each branch without forbidding legitimate multiple relations, cover post-production controlled failures with bounded reporting, and independently check propagation and relative support order. No production fix or paid call was made in this analysis.
-
-The private diagnosis completed $24$ transaction experiments and $15$ probes with expected outcomes, including deliberate failures; $48$ focused existing tests passed. Production, runner, formal tests, retained reports and usage-ledger hashes stayed unchanged. The previous full $145$-test baseline remains historical. Prompt effects remain unmeasured; same-group irrelevant relations are not solved by uniqueness alone. After implementation and offline gates, a new explicit paid authorization would permit the maintained ranking suite first, then the affected Bronze and Silver chains: $18$ normal logical calls, at most $24$ logical calls and $72$ HTTP attempts under the existing retry ceiling. No resampling or extra model stages are proposed. Business acceptance, historical reconciliation and final module delivery remain open.
-
-On 2026/11/10, conditional failure reports gained bounded extraction, derived-decision and validated final-output projections without additional requests or production error payloads. All $138$ offline tests passed. Fresh GPT-4o-mini/OpenAI Bronze and Silver three-round chains passed automated checks and manual review of original completions. The first ranking case then failed at `evidence_decision / decision_path_conflict` after one request; the second was not executed. The nonconditional failure report did not retain its extraction, so the exact defect remains unproven and no production repair or identical resampling was attempted. This batch used $13$ HTTP attempts without retries, $19048$ input and $1219$ output tokens. Overall acceptance and historical usage reconciliation remain open; authoritative outcomes and next steps are in the [latest acceptance record](part_d.zh-CN.md#条件失败留证与真实复验结果).
-
-The subsequent free diagnosis traced all six conflict raises: under the inspected runtime code, this failure entered a two-hop description even though the question asks independent one-hop facts. Only three raises are reachable on its disjoint graph; the precise extraction remains unavailable. Four correct one-hop order permutations completed all three mocked stages. Synthetic counterexamples also exposed missing ranking-specific coverage/order assertions, missing failure projections, unchecked projection envelopes and an outer diagnostic exception that can mask the original error. Historical raw ranking stages and deterministic request reconstruction do not recover this live reply. No production repair or paid call was performed. The [authoritative diagnosis and pending plan](part_d.zh-CN.md#ranking-首错归因与最短后续方案) specifies safe reporting through ranking, controlled assertions, a minimal independent-versus-dependent extraction contrast, offline gates, and then the two ranking cases ($6$ normal logical calls, at most $18$ HTTP attempts). Preserve the accepted Bronze/Silver results; rerun their full chains only if the eventual changes affect their shared prompt or semantics. Acceptance remains open.
-
-For the default evidence-decision variant, one-hop and conditional answers must also belong to code-derived `answer_candidates`. Candidates are the opposite endpoints of all exact directional matches in the applicable requirements, deduplicated and sorted; unknown conditions have no candidates. Condition-only facts do not contribute answers. The final prompt distinguishes queried subjects from answer values, and invalid candidates raise `decision_answer_candidate` at `decision_consistency` before publication. Existing two-hop terminal checks, legacy parsing and independent ranking retain their contracts. On 2026/11/10, all $138$ offline tests passed, saved valid completions remained accepted, and the recorded Bronze wrong-subject reply was rejected. The subsequent Bronze/Silver live chains passed; the remaining ranking boundary and overall delivery gate are described in the diagnosis above.
-
-TODO 2.1.14 uses the existing `LLMClient` retry policy and atomic `manage_memory` / `update_memory` boundary. Each request has the configured connect/read timeout; timeouts, connection failures, HTTP 429 and HTTP 5xx allow at most `max_retries` additional attempts, with delays of $1$, $2$, $4$, then at most $8$ seconds. Exhaustion propagates the transport exception (`requests.Timeout`, `requests.ConnectionError` or `requests.HTTPError`). Other HTTP errors, malformed HTTP JSON and invalid completion envelopes or structured output propagate without a business retry, JSON repair or provider fallback. Invalid JSON and output validation raise `ValueError`; this includes triples outside the submitted union and answers outside the selected triples' exact head/tail entity strings.
-
-No failure returns an `MSMResult` or changes the input snapshot's memory, permanent rejections or expansion exclusions. Submitted omissions acquire rejection only after the entire response passes validation. E should assign `state = result.state` only on success; after an exception it retains the old snapshot and decides whether to stop or explicitly call again. Retaining state does not roll back API usage: every transport attempt has its own CSV row. Malformed HTTP JSON is an accounting error, while a valid HTTP JSON object whose model content later fails validation keeps its HTTP success row and returned usage metadata. Logging failures propagate as `OSError` without an automatic retry.
-
-`tests/test_memory_failures.py` exercises real HTTP response decoding and the scored-round entry point with only the network adapter and retry clock replaced. It verifies zero/two extra retry budgets for timeout and rate-limit exhaustion, identical evidence across timeout/429 recovery, per-attempt accounting, malformed outer and inner JSON, invalid envelopes, invented/hidden/rejected selections, unknown and unselected-history answers, unchanged nonempty state and a successful explicit call after validation failures. These tests use synthetic credentials and private temporary CSV files; they make no paid requests and do not validate live-model quality or E's exception policy.
-
-TODO 2.2.4 additionally validates six success/failure/recovery sequences in the same test file: timeout and HTTP 429 exhaustion, malformed outer and content JSON, an invented triple and an unknown answer entity. Each sequence first establishes memory and permanent rejection through `manage_memory`, then checks that a failed caller assignment retains the identical snapshot and retrieval eligibility. An explicit recovery call selects the failed round's candidate and newly qualifying threshold-hidden evidence, preserves prior rejection and rejects removed history only on success. Assertions check exact request payloads and timeouts, bounded retries, ordered outputs, unchanged historical snapshots and one metadata-only CSV row per attempt. Run `python -m unittest discover -s tests -p test_memory_failures.py -v` using the project environment. All scenarios are offline; real-model validation remains a separate delivery gate.
-
-On 2026/11/10, a free review of the Bronze probe failure confirmed the earlier manual judgment in direction but narrowed its basis. In the saved probe round the numbered graph held only Nolan Reed's `born_in` edge and the publisher edge: Mira Vale's birth edge had become a permanent rejection after the resolved round and was filtered before submission. The true branch still declares `{kind: missing, direction: incoming}` for a birthplace question whose required fact is `(Mira Vale, born_in, city)` with Mira as head. Decoding and `resolve_query` accept the direction because no fact with that relation touches Mira in either direction, and `derive_decision` evaluates only the active false branch, so nothing reaches required evidence, candidates, selection or memory. Changing that inactive direction leaves the derived decision byte-identical; a synthetic publisher value of Silver Press renders the reversed query `Which entity connects to "Mira Vale" ...` instead of the outgoing template. The conditional runner gate checks only memory, answers, questions, rejection and filtering, so two inactive-branch mutations still pass, whereas an active-branch relation change fails during decoding. Because the same relation is legitimately queried in both directions for different questions and the maintained contract deliberately does not judge an absent fact's declared direction, no deterministic code rule can validate it without guessing. The [authoritative analysis and shortest plan](part_d.zh-CN.md#20261110-bronze-probe-缺失单跳方向独立复核与最短方案) therefore recommends a prompt-level decision rule with two generic examples that use no fixture names or answers, plus a fixture-style conditional extraction check covering the inactive branch. Deferring one-hop direction to incident retrieval is rejected for now: it changes the accepted contract, broadens retrieval and moves role choice to whichever facts arrive. A later bounded live acceptance would run Bronze and then Silver, six normal logical calls per chain with at most nine logical calls and 27 HTTP attempts each, keep the independent ranking pass without rerunning it, and stop at the first automatic or manual semantic failure. This analysis made no real API call and left production, runner, tests, reports and the usage ledger unchanged.
-
-On 2026/11/10 the authorized bounded Bronze-then-Silver acceptance ran at `57407f4b14f1c92a0a58e9a7fd036e3150c7b31d` under the delivery configuration (`gpt-4o-mini`, `https://api.openai.com/v1`, 60-second timeout, two extra retries), after a free preview of the eight conditional cases. Unknown and resolved passed all nine controlled checks, including the new branch-extraction gate: unknown kept both birth facts with no answer and only the publisher question, and resolved answered `Cedar City` while permanently rejecting Mira Vale's other-branch birth fact. The probe round failed automatically on its first logical call: its true branch declared Mira Vale's `born_in` as `observed` evidence id 0, but that id is Nolan Reed's birth edge, so `resolve_query` raised `decision_queries` while both branches were being decoded; the false branch binding was correct. The prior snapshot, the permanent rejection of Mira's birth edge and the filtering set stayed unchanged, and no answer, candidate or memory publication occurred. This is a different failure shape from the earlier manual `missing/incoming` finding: it is caught by production decoding before decision derivation, so one sample cannot attribute it to the prompt wording or to the model's internal cause. Per the stop rule Silver was not executed, and no resampling or prompt edit was made. The run added five logical and five HTTP successes with no retries, `gpt-4o-mini-2024-07-18`, 8530 input and 534 output tokens; the ledger grew from 572 to 577 rows with its old byte prefix unchanged, the four retained stage usages match the first four new rows in order, and every other protected artifact matched its baseline. Bronze remains unaccepted, so TODO 2.3.5, 2.3.6 and 2.4 stay open, and a free attribution of the observed-binding choice now precedes any new paid authorization. Private records are `tmp/tmp_part_d_validation_20261109T185956130602Z.json` and `tmp_dsh/tmp_bounded_recheck_baseline_20261109T185920245056Z.json`; the [authoritative Chinese record](part_d.zh-CN.md#20261110-缺失方向提示后的有界真实验收结果) holds the full evidence and the next-step boundary.
-
-Free attribution of the probe's `observed` binding (2026/11/10; real API calls $0$) reconstructed the extraction request through `request_evidence_decision` and matched the saved unknown and resolved requests exactly, so no simulated reply was needed. The probe graph held only Nolan Reed's birth edge and the publisher edge; the saved reply used id 0 for both branch entities, making Nolan's binding correct and Mira's non-incident. Earlier rounds with both birth edges visible used distinct entity-consistent ids, and the resolved round's inactive true branch was also correct, so inactivity alone does not explain the failure. The contract requires an observed id to be incident to the group entity with the exact relation (`resolve_query:320–325`) and an existing test fixes that rule; derivation resolves all branches before choosing the active one, so the invalid inactive binding fails at `derive_decision:480` before any candidate. Counterfactuals: `missing/outgoing` accepts with the same active decision, `missing/incoming` derives an identical decision, a false missing declaration raises `decision_conflict`, and a synthetic nonconditional non-incident id also fails. The conditional gate rejects the saved shape independently, but the real run stopped in production decoding first. The prompt contains only the terse clause `Reference facts with the exact relation and target endpoint`, uses `target` rather than the schema's `entity`, and gives no example for a relation that exists only on another entity. The minimal decision is therefore a prompt clarification (one incidence rule plus a generic `headquarters` example), not a contract change, a new error code or a new gate. A scan of 21 preserved grouped-protocol transactions found no other non-incident observed binding, so no rate is claimed; prompt effectiveness and the model's internal cause remain unknown. A bounded Bronze-then-Silver revalidation still needs new authorization; TODO 2.3.5, 2.3.6 and 2.4 remain open. Private artifacts are `tmp_dsh/tmp_probe_observed_attribution.py` and `tmp_dsh/tmp_probe_observed_attribution_20261109T191614843468Z.json`.
-
-2026/11/10 offline implementation of the probe `observed` incidence clarification completed with real API calls $0$. The shared `DECISION_INSTRUCTIONS` observed-binding block now requires an observed ID's exact relation to have the group entity as one endpoint, states that a fact with that relation touching only another entity is not evidence for this entity, requires a `missing` declaration when the graph has no such fact for the group entity even if the relation appears elsewhere, and adds one generic example: given only `Helios Ltd -> headquarters -> Northport`, the headquarters of `Selene Ltd` is missing, not observed. The ambiguous `target endpoint` clause was removed; schema, decoder, evaluator, publication validation, answer candidates, ranking, public error codes, the two-hop incident contract and the existing runner gate are unchanged, and no test or gate was added. Saved-reply replay kept unknown and resolved validated with identical controlled checks, states, submitted graphs and outputs; the saved probe extraction is still rejected with `decision_queries` at `derive_decision`/`resolve_query` after one logical call, now on lines 485/330 because the prompt insertion moved later code by five lines; both ranking cases stayed validated. Rebuilding the three Bronze extraction requests showed only the instruction prefix changed, with an identical question and knowledge payload and response format. Focused tests pass $27$ and $29$; the final tree passes all $153$ tests; character, AST, protected-hash and diff checks pass. Only `src/agent/evidence_decision.py` changed among production and test inputs (`9c2772285f3f91da38849c5b1efd2633838c419a7946a261a21e7403842ae0d9` to `d4b6cdadf23025db849643a0aea93d279799c01e3088ca320e9a4dac5c8cadc8`), with the 577-row ledger, saved reports and other modules unchanged and all socket/configuration/dotenv/client guard counters at zero. Prompt effectiveness, the model's internal cause, the Silver chain and alias false-rejection rates remain unknown. Business acceptance and TODO 2.3.5, 2.3.6 and 2.4 stay open; a bounded Bronze-then-Silver revalidation (six normal logical calls per chain, at most nine logical or 27 HTTP each) still needs new authorization. The [authoritative record](part_d.zh-CN.md#20261110-probe-observed-绑定的提示入射澄清与离线门槛) owns commands, fingerprints and private artifacts.
-
-On 2026/11/10 the bounded Bronze revalidation ran at `e04a390788718b66cf2e4a5939f280346a6c8142` under the delivery configuration (`gpt-4o-mini`, `https://api.openai.com/v1`, 60-second timeout, two extra retries) with the clarified incidence prompt (`d4b6cdadf23025db849643a0aea93d279799c01e3088ca320e9a4dac5c8cadc8`). Unknown and resolved passed all nine controlled checks each, including the four branch-extraction checks. The probe failed again on its first logical call with `MemoryValidationError`/`decision_queries` at `derive_decision:485`/`resolve_query:330`: its inactive true branch bound Mira Vale's `born_in` to observed id 0, but in that two-fact submitted graph id 0 is Nolan Reed's birth edge. The submitted graph and the failed extraction description (sorted serialization) are byte-identical to the pre-clarification run (`9c277228...`, report `tmp/tmp_part_d_validation_20261109T185956130602Z.json`; description SHA-256 `fe7d0645b4122f37fdcc62e854d6365ff8ee99c5e6e871e28f61109dd65175b2`), so the clarification did not change this binding in two samples. In the resolved round the extraction graph also held Mira's birth fact and both branches bound entity-consistent ids, so the error appears only when the group entity's fact is absent. Per the stop rule Bronze remains unaccepted, Silver was not executed, and no resampling, prompt edit, reply repair or production change was made. The run used five logical and five HTTP successes without retries, $8759$ input and $530$ output tokens, all `gpt-4o-mini-2024-07-18`; the ledger grew from $577$ to $582$ rows with its old prefix unchanged, the first four new rows match the retained stage usages in order, and the fifth is the failed extraction call ($2263$/$140$). All twenty protected files and $96$ prior private reports matched the baseline. The first paid attempt was denied while writing the private `tmp/` report and produced no API call; one execution-boundary approval then ran the successful attempt, with no ACL, ownership or authentication change. Prompt effectiveness, the model's internal cause and the error rate remain unknown, and any production repair or renewed paid validation needs new authorization. TODO 2.3.5, 2.3.6 and 2.4 stay open. The [authoritative Chinese record](part_d.zh-CN.md#20261110-observed-入射澄清后的有界-bronze-复验结果) holds the commands, evidence and private artifacts.
-
-On 2026/11/10 the user accepted the inactive-branch binding as a documented model limitation and stopped further prompt or structural repair for this fixture. The defect is confined to the intermediate extraction of the branch the condition does not activate: production rejects it during decoding, and it never reaches memory, answers, queries, permanent rejection, filtering or publication. The branch-table protocol and per-branch binding expectations are local engineering additions, not Section 3.3 requirements. TODO 2.3.5 is closed within that scope: the previously accepted GPT-4o-mini suites, the final-prompt Bronze unknown/resolved pass, and offline replay parity of saved replies cover the accepted behavior; the model's internal cause and error rate remain unknown, and the final prompt did not trigger a fresh full live rerun of the single, multi, removal or Silver chains. No further probe repair or paid run is planned; TODO 2.3.6 historical usage reconciliation and 2.4 delivery are next. The [authoritative decision record](part_d.zh-CN.md#20261110-observed-入射澄清后的有界-bronze-复验结果) is the same section that holds the run evidence.
+`--list-cases` is free and reads no private configuration; other commands incur real usage. A default memory transaction permits at most $3$ logical calls (extraction, selection, ranking) and initial decomposition takes $1$. The table computes HTTP ceilings from the shared YAML's current two additional retries:
+
+| Suite | Cases / transactions | Logical-call ceiling | HTTP-attempt ceiling |
+| --- | --- | --- | --- |
+| `single`, including one decomposition | $4$ | $10$ | $30$ |
+| `multi` | $4$ | $12$ | $36$ |
+| `removal` | $3$ | $9$ | $27$ |
+| `ranking` | $2$ | $6$ | $18$ |
+| `all`, the four suites above | $13$ | $37$ | $111$ |
+| `conditional`, run alone | $8$ | $24$ | $72$ |
+| `multihop`, run alone | $6$ | $18$ | $54$ |
+
+`multihop` uses only the default `evidence_decision` protocol and reuses `single.sufficient`, `single.insufficient`, `single.empty`, `multi.partial`, `multi.recovery` and `multi.exclusion_probe`, without decomposition or independent-isolation cases. `conditional` is excluded from `all` and covers the Silver/Bronze conditional full graphs plus the `unknown`, `resolved` and `probe` three-round chains. `reference_diagnostic`, `clarification_diagnostic` and `empty_diagnostic` are separate diagnostic suites, none included in `all`.
+
+Explicit `--prompt-variant paper`, `retrieval_questions` or `answer_ranking` runs a comparison, changing the `all` ceiling to at most $25$ logical calls and $75$ HTTP attempts, without automatic fallback.
+
+Each paid run writes a unique private `tmp/tmp_part_d_validation_<UTC timestamp>.json` containing controlled inputs, actual queries, validated outputs, staged requests and schemas of successful transactions, original completions and before/after snapshots. Failures store only exception classes and fixed diagnostics, never failed raw text, keys or arbitrary exception messages. Actual HTTP usage still appends to the shared ledger; reports are not committed. Exit code $0$ means parsing, state checks and the suite's automatic assertions passed, while `semantic_review` remains pending manual review.

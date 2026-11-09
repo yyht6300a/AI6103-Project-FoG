@@ -473,8 +473,11 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
     author_query = 'Which entity does "The Glass Orchard" connect to through relation "written_by"?'
     birth_query = 'Which entity does "Mira Vale" connect to through relation "born_in"?'
 
-    def extraction(self):
+    def extraction(self, graph=()):
         """Build a fresh two-hop response without binding an intermediate name.
+
+        Args:
+            graph: Complete sorted-ID evidence available in this transaction.
 
         Returns:
             Wire description rooted in the literal question entity, with exact
@@ -482,8 +485,11 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         """
         return {"description": {
             "kind": "nonconditional_path", "root_entity": self.author[0],
-            "steps": [{"relation": "written_by", "direction": "outgoing"},
-                      {"relation": "born_in", "direction": "outgoing"}]}}
+            "steps": [{"relation": relation, "binding": (
+                {"kind": "observed", "evidence_ids": [sorted(graph).index(edge)]}
+                if edge in graph and self.author in graph else
+                {"kind": "missing", "direction": "outgoing"})}
+                for relation, edge in (("written_by", self.author), ("born_in", self.birth))]}}
 
     def run_round(self, state, graph, scores, selected, answers, questions,
                   submitted, required, gaps, candidates):
@@ -506,7 +512,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         """
         before = copy.deepcopy(state)
         client = Mock()
-        client.complete.side_effect = [envelope(self.extraction()),
+        client.complete.side_effect = [envelope(self.extraction(submitted)),
                                        completion(selected, answers, questions)]
         # Deliberately omit prompt_variant: every case must use the public default.
         result = manage_memory(state, graph, scores, client)
@@ -520,7 +526,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         self.assertEqual(json.loads(knowledge), [list(t) for t in sorted(submitted)])
         active_text = remainder.split("Return only the existing three output fields.\n", 1)[1]
         active = json.loads(active_text.split("\nAllowed retrieval questions:", 1)[0])
-        self.assertEqual(active["path"], self.extraction()["description"])
+        self.assertEqual(active["path"], self.extraction(submitted)["description"])
         self.assertEqual(set(map(tuple, active["required_triplets"])), set(required))
         self.assertEqual(active["missing_relations"], gaps)
         self.assertEqual(active["answer_candidates"], candidates)
@@ -661,7 +667,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
                 state = QuestionMemory(self.question, [self.distractor], [("Old", "edge", "Rejected")])
                 before = copy.deepcopy(state)
                 client = Mock()
-                client.complete.side_effect = [envelope(self.extraction()), final]
+                client.complete.side_effect = [envelope(self.extraction(set(graph) | state.memory_triplets)), final]
                 with patch.object(QuestionMemory, "__post_init__",
                                   side_effect=AssertionError("Unexpected snapshot construction")) as constructor:
                     with self.assertRaises(MemoryValidationError) as caught:
@@ -671,6 +677,44 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
                 constructor.assert_not_called()
                 self.assertEqual(client.complete.call_count, 2)
                 self.assertEqual(state, before)
+
+    def test_frontier_bindings_and_invalid_observations(self):
+        """Derive incoming roles and reject unconnected or ambiguous references.
+
+        Unreferenced parallel edges remain protected; malformed bindings and
+        false gaps fail before a decision can be published.
+        """
+        from src.agent.evidence_decision import derive_decision
+        for reverse_first, reverse_second in ((True, False), (False, True), (True, True)):
+            graph = sorted([self.author[::-1] if reverse_first else self.author,
+                            self.birth[::-1] if reverse_second else self.birth])
+            record = self.extraction()
+            for step, edge in zip(record["description"]["steps"],
+                                  (self.author[::-1] if reverse_first else self.author,
+                                   self.birth[::-1] if reverse_second else self.birth)):
+                step["binding"] = {"kind": "observed", "evidence_ids": [graph.index(edge)]}
+            decision = derive_decision(record, self.question, graph)
+            self.assertEqual(decision["answer_candidates"], [self.birth[2]])
+            self.assertEqual(set(decision["required_triplets"]), set(graph))
+        graph = sorted([self.author, self.birth, self.orphan_birth])
+        for binding in ({"kind": "observed", "evidence_ids": [True]},
+                        {"kind": "observed", "evidence_ids": []},
+                        {"kind": "observed", "evidence_ids": [-1]},
+                        {"kind": "observed", "evidence_ids": [99]},
+                        {"kind": "observed", "evidence_ids": [graph.index(self.birth)]},
+                        {"kind": "observed", "evidence_ids": [graph.index(self.orphan_birth)]},
+                        {"kind": "missing", "direction": "outgoing"}):
+            record = self.extraction(graph)
+            record["description"]["steps"][0]["binding"] = binding
+            with self.assertRaises(MemoryValidationError):
+                derive_decision(record, self.question, graph)
+        for extra in ((self.author[0], "written_by", self.author[0]),
+                      (self.author[2], "written_by", self.author[0])):
+            graph = sorted([self.author, extra])
+            record = self.extraction(graph)
+            record["description"]["steps"][0]["binding"]["evidence_ids"] = list(range(2))
+            with self.assertRaises(MemoryValidationError):
+                derive_decision(record, self.question, graph)
 
     def test_invalid_path_structures_stop_before_selection(self):
         """Reject malformed or ungrounded plans during the extraction stage.

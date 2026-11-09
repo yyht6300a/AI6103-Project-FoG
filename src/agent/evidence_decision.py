@@ -68,8 +68,8 @@ Multiple entities and multiple relations per entity are allowed, including
 incoming relations and entities with no observed facts.
 For a nonconditional two-hop linear question use nonconditional_path instead:
 {kind: nonconditional_path, root_entity: exact entity from the original question,
- steps: [{relation: exact relation, direction: outgoing or incoming},
-         {relation: exact relation, direction: outgoing or incoming}]}.
+ steps: [{relation: exact relation, binding: observed or missing binding},
+         {relation: exact relation, binding: observed or missing binding}]}.
 Start with root_entity as the current node. At EACH step, direction is relative
 to that step's currently reachable node: outgoing means it is the triple's head;
 incoming means it is the triple's tail. Move to the other endpoint, then determine
@@ -83,7 +83,14 @@ company owning Aurora Tower uses root Aurora Tower and steps
 owns/incoming then headquarters/outgoing. If the first fact instead is
 Aurora Tower -> owned_by -> Helios Ltd, its first step is owned_by/outgoing.
 Extract both ordered steps even if the graph is empty. Never fill intermediate
-entities, predicted answers or evidence IDs. Code follows all actual connections
+entities or predicted answers. For each observed step use binding
+{kind: observed, evidence_ids: [IDs from Numbered knowledge]} and no direction.
+Reference exact-relation edges connected to the current reachable frontier.
+Code derives direction from endpoint roles and follows ALL matching edges.
+Only when no frontier entity has that relation in either direction use
+{kind: missing, direction: outgoing or incoming}. If an earlier step is missing,
+keep subsequent steps as missing requirements without inventing an entity or
+referencing disconnected facts. Code follows all actual connections
 from the root. Do not flatten a dependent path into independent entity groups.
 Other path lengths, conditional paths, aggregation and complex requirements
 are unsupported: use the unsupported description variant.
@@ -135,9 +142,9 @@ DESCRIPTION_VARIANTS = [
          "root_entity": {"type": "string", "minLength": 1},
          "steps": {"type": "array", "minItems": 2, "maxItems": 2, "items": {
              "type": "object", "additionalProperties": False,
-             "required": ["relation", "direction"], "properties": {
+             "required": ["relation", "binding"], "properties": {
                  "relation": {"type": "string", "minLength": 1},
-                 "direction": {"type": "string", "enum": ["outgoing", "incoming"]}}}}}},
+                 "binding": BRANCH_SCHEMA["properties"]["requirements"]["items"]["properties"]["fact_queries"]["items"]["properties"]["binding"]}}}}},
     {"type": "object", "additionalProperties": False,
      "required": ["kind", "condition", "branches"], "properties": {
          "kind": {"type": "string", "enum": ["conditional_equals"]},
@@ -186,9 +193,19 @@ def decode_description(record, question):
                 or not isinstance(item["steps"], list) or len(item["steps"]) != 2):
             raise MemoryValidationError("decision_path")
         for step in item["steps"]:
-            if (not isinstance(step, dict) or set(step) != {"relation", "direction"}
+            if (not isinstance(step, dict) or set(step) != {"relation", "binding"}
                     or not isinstance(step["relation"], str) or not step["relation"].strip()
-                    or step["direction"] not in ("outgoing", "incoming")):
+                    or not isinstance(step["binding"], dict)):
+                raise MemoryValidationError("decision_path")
+            binding = step["binding"]
+            if not ((set(binding) == {"kind", "evidence_ids"}
+                     and binding["kind"] == "observed"
+                     and isinstance(binding["evidence_ids"], list)
+                     and binding["evidence_ids"]
+                     and all(type(i) is int and i >= 0 for i in binding["evidence_ids"]))
+                    or (set(binding) == {"kind", "direction"}
+                        and binding["kind"] == "missing"
+                        and binding["direction"] in ("outgoing", "incoming"))):
                 raise MemoryValidationError("decision_path")
         return item
     if kind == "conditional_equals" and set(item) == {"kind", "condition", "branches"}:
@@ -312,10 +329,34 @@ def derive_path_decision(description, graph):
     frontier = {description["root_entity"]}
     required, missing, matches = set(), [], []
     for step in description["steps"]:
-        index = 0 if step["direction"] == "outgoing" else 2
+        binding = step["binding"]
+        if not frontier:
+            if binding["kind"] == "observed":
+                raise MemoryValidationError("decision_path_conflict")
+            continue
+        if binding["kind"] == "observed":
+            roles = set()
+            for evidence_id in binding["evidence_ids"]:
+                if not 0 <= evidence_id < len(graph):
+                    raise MemoryValidationError("decision_evidence_id")
+                triple = graph[evidence_id]
+                endpoints = {d for d, position in (("outgoing", 0), ("incoming", 2))
+                             if triple[position] in frontier and triple[1] == step["relation"]}
+                if len(endpoints) != 1:
+                    raise MemoryValidationError("decision_path_conflict")
+                roles.update(endpoints)
+            if len(roles) != 1:
+                raise MemoryValidationError("decision_path_conflict")
+            direction = roles.pop()
+        else:
+            direction = binding["direction"]
+            if any(t[1] == step["relation"] and (t[0] in frontier or t[2] in frontier)
+                   for t in graph):
+                raise MemoryValidationError("decision_path_conflict")
+        index = 0 if direction == "outgoing" else 2
         following = set()
         for target in sorted(frontier):
-            query = {"target": target, **step}
+            query = {"target": target, "relation": step["relation"], "direction": direction}
             facts = [t for t in graph if t[index] == target and t[1] == step["relation"]]
             if any(t[0] == t[2] for t in facts):
                 raise MemoryValidationError("decision_path_conflict")

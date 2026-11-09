@@ -140,7 +140,11 @@ class PartDValidationTests(unittest.TestCase):
                 before = validation.snapshot(state)
                 extraction = self.path_envelopes()[0]
                 description = json.loads(extraction["choices"][0]["message"]["content"])
-                description["description"]["steps"][1]["direction"] = direction
+                graph = sorted([validation.AUTHOR, birth])
+                description["description"]["steps"][0]["binding"]["evidence_ids"] = [graph.index(validation.AUTHOR)]
+                description["description"]["steps"][1]["binding"] = (
+                    {"kind": "missing", "direction": direction} if direction == "incoming" and not reverse
+                    else {"kind": "observed", "evidence_ids": [graph.index(birth)]})
                 extraction["choices"][0]["message"]["content"] = json.dumps(description)
                 client = Mock(spec=LLMClient)
                 client.complete.side_effect = [extraction, completion(
@@ -181,12 +185,6 @@ class PartDValidationTests(unittest.TestCase):
         Returns:
             Twelve synthetic completions, ordered extraction then selection.
         """
-        extraction = completion()
-        extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
-            "kind": "nonconditional_path", "root_entity": validation.AUTHOR[0],
-            "steps": [{"relation": "written_by", "direction": "outgoing"},
-                      {"relation": "born_in", "direction": "outgoing"}],
-        }})
         envelopes = []
         for index, selected in enumerate((
             [validation.AUTHOR, validation.BIRTH], [validation.AUTHOR], [],
@@ -200,6 +198,17 @@ class PartDValidationTests(unittest.TestCase):
                                 else (validation.BIRTH[0], "born_in"))
             questions = [] if complete else [
                 f'Which entity does "{target}" connect to through relation "{relation}"?']
+            graph = ([] if index == 2 else [validation.AUTHOR, validation.BIRTH]
+                     if complete else [validation.AUTHOR])
+            if index == 3 or (keep_distractor and index >= 4):
+                graph.append(validation.DISTRACTOR)
+            extraction = completion()
+            extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+                "kind": "nonconditional_path", "root_entity": validation.AUTHOR[0],
+                "steps": [{"relation": edge[1], "binding": (
+                    {"kind": "observed", "evidence_ids": [sorted(graph).index(edge)]}
+                    if edge in graph else {"kind": "missing", "direction": "outgoing"})}
+                    for edge in (validation.AUTHOR, validation.BIRTH)]}})
             envelopes.extend([extraction, completion(
                 selected, [validation.BIRTH[2]] if complete else [], questions)])
         return envelopes

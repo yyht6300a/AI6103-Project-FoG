@@ -410,9 +410,22 @@ def check_two_hop(record: dict) -> None:
         checks["two_hop_extraction"] = (
             description.get("kind") == "nonconditional_path"
             and description.get("root_entity") == AUTHOR[0] and len(steps) == 2
-            and steps[0] in [{"relation": rel, "direction": "outgoing"} for rel in root_relations]
-            and steps[1] in [{"relation": rel, "direction": "outgoing"} for rel in end_relations]
+            and steps[0].get("relation") in root_relations
+            and steps[1].get("relation") in end_relations
+            and steps[0].get("binding", {}).get("kind") == ("missing" if empty else "observed")
+            and steps[1].get("binding", {}).get("kind") == ("observed" if complete else "missing")
         )
+        if checks["two_hop_extraction"] and all(checks.values()):
+            from src.agent.evidence_decision import derive_decision
+            derived = derive_decision(extraction, QUESTION, submitted)
+            final_text = stages[1]["messages"][0]["content"]
+            active = json.loads(final_text.split(
+                "Return only the existing three output fields.\n", 1)[1].split(
+                "\nAllowed retrieval questions:", 1)[0])
+            checks["derived_path"] = all(active.get(key) == json.loads(json.dumps(derived[key]))
+                for key in ("query_matches", "missing_relations", "required_triplets", "answer_candidates"))
+            checks["derived_directions"] = all(q["direction"] == "outgoing"
+                for q in derived["query_matches"])
         first_prompt = stages[0]["messages"][0]["content"]
         numbered = json.loads(first_prompt.split("\nNumbered knowledge: ", 1)[1])
         second_prompt = stages[1]["messages"][0]["content"]

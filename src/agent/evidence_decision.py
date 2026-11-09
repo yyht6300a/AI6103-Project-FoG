@@ -73,6 +73,13 @@ Reference facts with the exact relation and target endpoint; code derives direct
 For absent facts binding is {kind: missing, direction: outgoing or incoming}.
 Outgoing means target is head; incoming means target is tail. A missing declaration
 is invalid if either direction has the exact target/relation in the graph.
+For a missing fact, target means the group entity, never the answer value.
+Direction describes that entity's role in the fact the ORIGINAL QUESTION asks
+for, so determine the requested fact first and then choose head or tail. Never
+decide it from answer position, graph order, relation spelling or match counts.
+For example, asking for a person's birthplace makes that person the head, so
+the missing direction is outgoing; asking which work a person created makes
+that person the tail, so the missing direction is incoming.
 Describe every target's required
 one-hop fact even when absent from the graph. Use exact graph relation names
 when present. Never supply predicted values or select evidence. Both conditional

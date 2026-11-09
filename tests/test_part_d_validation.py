@@ -53,6 +53,75 @@ class PartDValidationTests(unittest.TestCase):
         last["choices"][0]["message"]["content"] = json.dumps({"predict_answer": answers})
         return [first, completion(rows, answers, []), last]
 
+    def conditional_chain_envelopes(self, value, active, direction="outgoing",
+                                    condition_relation="published_by"):
+        """Build the three conditional rounds for one publisher chain.
+
+        Args:
+            value: Publisher value submitted by this chain.
+            active: Birthplace triple selected by the activated branch.
+            direction: Direction declared for an absent birthplace fact.
+            condition_relation: Condition relation declared by the extraction.
+
+        Returns:
+            Six mocked completions: extraction then selection for each of the
+            unknown, resolved and probe rounds.
+        """
+        v = validation
+        envelopes = []
+        for stage in ("unknown", "resolved", "probe"):
+            publisher = (*v.PUBLISHER[:2], value)
+            graph = sorted([v.BIRTH, v.OTHER_BIRTH] if stage == "unknown"
+                           else [publisher, active] if stage == "probe"
+                           else [publisher, v.BIRTH, v.OTHER_BIRTH])
+            branches = {}
+            for case, birth in (("true", v.BIRTH), ("false", v.OTHER_BIRTH)):
+                binding = ({"kind": "observed", "evidence_ids": [graph.index(birth)]}
+                           if birth in graph else {"kind": "missing", "direction": direction})
+                branches[case] = {"requirements": [{"entity": birth[0], "fact_queries": [
+                    {"relation": "born_in", "binding": binding}]}]}
+            extraction = completion()
+            extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+                "kind": "conditional_equals",
+                "condition": {"subject": v.PUBLISHER[0], "relation": condition_relation,
+                              "operator": "eq", "value": v.CONDITION_VALUE,
+                              "uniqueness_quote": "The Glass Orchard has exactly one publisher.",
+                              "condition_quote": "If it was published by Silver Press"},
+                "branches": branches,
+            }})
+            selection = completion(
+                [v.BIRTH, v.OTHER_BIRTH] if stage == "unknown" else [publisher, active],
+                [] if stage == "unknown" else [active[2]],
+                ['Which entity does "The Glass Orchard" connect to through relation "published_by"?']
+                if stage == "unknown" else [])
+            envelopes.extend([extraction, selection])
+        return envelopes
+
+    def conditional_record(self, submitted, branches, relation="published_by"):
+        """Build a minimal successful conditional record for the extraction gate.
+
+        Args:
+            submitted: Positional graph rows defining the evidence identifiers.
+            branches: True and false branch requirement groups.
+            relation: Condition relation declared by the extraction.
+
+        Returns:
+            Record with only the first-stage completion and submitted graph used
+            by the runner's independent gate.
+        """
+        v = validation
+        extraction = completion()
+        extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "conditional_equals",
+            "condition": {"subject": v.PUBLISHER[0], "relation": relation,
+                          "operator": "eq", "value": v.CONDITION_VALUE,
+                          "uniqueness_quote": "The Glass Orchard has exactly one publisher.",
+                          "condition_quote": "If it was published by Silver Press"},
+            "branches": {case: {"requirements": groups}
+                         for case, groups in branches.items()},
+        }})
+        return {"stages": [{"completion": extraction}], "submitted": submitted}
+
     def test_ranking_complete_and_first_error_stop(self):
         """Require six synthetic completions and stop immediately on omission.
 
@@ -759,6 +828,113 @@ class PartDValidationTests(unittest.TestCase):
         self.assertEqual(client.complete.call_count, 2)
         self.assertEqual(len(report["results"]), 1)
         self.assertEqual(report["results"][0]["status"], "controlled_check_failure")
+
+    def test_conditional_extraction_gate_accepts_clean_rounds(self):
+        """Pass the new gate on three clean rounds without changing any stage.
+
+        The synthetic Bronze chain declares the question-grounded outgoing
+        direction for each absent fact, so each round must still use exactly two
+        logical calls and publish its retained snapshot.
+        """
+        v = validation
+        cases = ["conditional.bronze_unknown", "conditional.bronze_resolved",
+                 "conditional.bronze_probe"]
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = self.conditional_chain_envelopes(
+            "Bronze Press", v.OTHER_BIRTH)
+        report = {"plan": v.case_plan("conditional", cases=cases), "results": []}
+        v.run_cases(client, report, "conditional")
+        self.assertEqual(client.complete.call_count, 6)
+        self.assertEqual(len(report["results"]), 3)
+        for record in report["results"]:
+            self.assertEqual(record["logical_calls_started"], 2)
+            self.assertEqual(len(record["stages"]), 2)
+            self.assertTrue(all(record["controlled_checks"].values()))
+            self.assertTrue(record["controlled_validated"])
+        # The gate is read-only: inspecting a retained record again changes no
+        # stage, selection, answer or published state.
+        record = report["results"][-1]
+        keys = ("stages", "selected_triplets", "predict_answer", "state_after")
+        before = json.dumps({key: record[key] for key in keys}, sort_keys=True)
+        self.assertTrue(all(v.check_conditional_extraction(record).values()))
+        after = json.dumps({key: record[key] for key in keys}, sort_keys=True)
+        self.assertEqual(before, after)
+
+    def test_conditional_extraction_gate_rejects_inactive_direction(self):
+        """Reject an inactive incoming direction before the next round starts.
+
+        Production still accepts the reply and returns the correct city, so only
+        the independent extraction gate can stop the chain with the fixed error.
+        """
+        v = validation
+        cases = ["conditional.bronze_unknown", "conditional.bronze_resolved",
+                 "conditional.bronze_probe"]
+        calls = self.conditional_chain_envelopes("Bronze Press", v.OTHER_BIRTH)
+        payload = json.loads(calls[4]["choices"][0]["message"]["content"])
+        binding = payload["description"]["branches"]["true"]["requirements"][0][
+            "fact_queries"][0]["binding"]
+        binding["direction"] = "incoming"
+        calls[4]["choices"][0]["message"]["content"] = json.dumps(payload)
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = calls
+        report = {"plan": v.case_plan("conditional", cases=cases), "results": []}
+        with self.assertRaises(RuntimeError) as caught:
+            v.run_cases(client, report, "conditional")
+        self.assertEqual(str(caught.exception), "Conditional acceptance expectation failed")
+        self.assertEqual(client.complete.call_count, 6)
+        self.assertEqual(len(report["results"]), 3)
+        record = report["results"][-1]
+        self.assertEqual(record["status"], "controlled_check_failure")
+        self.assertFalse(record["controlled_checks"]["conditional_true_branch"])
+        self.assertTrue(record["controlled_checks"]["conditional_false_branch"])
+        self.assertTrue(record["controlled_checks"]["answers"])
+        self.assertTrue(record["controlled_checks"]["memory"])
+        self.assertIn("stages", record)
+        self.assertFalse(record["controlled_validated"])
+        self.assertTrue(record["old_state_unchanged"])
+
+    def test_conditional_extraction_gate_accepts_relation_alias(self):
+        """Accept a declared birthplace alias that matches the submitted fact.
+
+        The alias must still point to the outgoing person-to-city fact, so an
+        alias is not a way to bypass the entity role check.
+        """
+        v = validation
+        alias, other = ((v.BIRTH[0], "birthplace", v.BIRTH[2]),
+                        (v.OTHER_BIRTH[0], "birthplace", v.OTHER_BIRTH[2]))
+        groups = {
+            "true": [{"entity": alias[0], "fact_queries": [{
+                "relation": alias[1],
+                "binding": {"kind": "observed", "evidence_ids": [0]}}]}],
+            "false": [{"entity": other[0], "fact_queries": [{
+                "relation": other[1],
+                "binding": {"kind": "observed", "evidence_ids": [1]}}]}],
+        }
+        checks = v.check_conditional_extraction(
+            self.conditional_record([alias, other], groups))
+        self.assertTrue(all(checks.values()))
+        # The same alias with the reversed city-as-head fact must fail.
+        reversed_ = (v.BIRTH[2], "birthplace", v.BIRTH[0])
+        checks = v.check_conditional_extraction(
+            self.conditional_record([reversed_, other], groups))
+        self.assertFalse(checks["conditional_true_branch"])
+
+    def test_conditional_extraction_gate_accepts_both_condition_relations(self):
+        """Accept the pre-resolution and post-resolution condition relation names."""
+        v = validation
+        groups = {
+            "true": [{"entity": v.BIRTH[0], "fact_queries": [{
+                "relation": v.BIRTH[1],
+                "binding": {"kind": "observed", "evidence_ids": [0]}}]}],
+            "false": [{"entity": v.OTHER_BIRTH[0], "fact_queries": [{
+                "relation": v.OTHER_BIRTH[1],
+                "binding": {"kind": "observed", "evidence_ids": [1]}}]}],
+        }
+        for relation in ("publisher", "published_by"):
+            with self.subTest(relation=relation):
+                checks = v.check_conditional_extraction(self.conditional_record(
+                    sorted([v.BIRTH, v.OTHER_BIRTH]), groups, relation=relation))
+                self.assertTrue(all(checks.values()))
 
     def test_unknown_memory_variant_fails_before_a_paid_request(self) -> None:
         """Reject configuration mistakes without publishing or sending anything.

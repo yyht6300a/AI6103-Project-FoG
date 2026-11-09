@@ -46,6 +46,9 @@ PATH_CASE_NAMES = {f"single.{name}" for name, _, _ in SINGLE_PATH_CASES} | {
 # Missing relations may use these explicit semantic aliases, never keyword matches.
 AUTHOR_RELATIONS = ("written_by", "author", "authored_by")
 BIRTH_RELATIONS = ("born_in", "birthplace", "place_of_birth")
+# The shared conditional question compares one verbatim publisher value.
+CONDITION_RELATIONS = ("publisher", "published_by")
+CONDITION_VALUE = "Silver Press"
 BRANCH_QUESTION = (
     "The Glass Orchard has exactly one publisher. If it was published by Silver "
     "Press, which city was Mira Vale born in? Otherwise, which city was Nolan Reed "
@@ -664,6 +667,76 @@ def check_two_hop(record: dict) -> None:
         raise RuntimeError("Two-hop acceptance expectation failed")
 
 
+def check_conditional_extraction(record: dict) -> dict:
+    """Independently gate both conditional branches before the next round runs.
+
+    Args:
+        record: Successful conditional transaction retaining the first-stage
+            completion and the exact submitted graph.
+
+    Returns:
+        Named boolean expectations. Unreadable content yields one failed check
+        rather than a second exception path.
+
+    The gate derives its expectations from fixture constants and ``submitted``,
+    so the inactive and active branches share one rule. It proves this fixture's
+    extraction fidelity, not a general improvement of live extraction, and it
+    never edits, merges or repairs the model reply.
+    """
+    try:
+        description = safe_payload(record["stages"][0])["description"]
+    except (KeyError, IndexError, TypeError, ValueError):
+        return {"conditional_extraction": False}
+    condition = description.get("condition")
+    condition = condition if isinstance(condition, dict) else {}
+    branches = description.get("branches")
+    branches = branches if isinstance(branches, dict) else {}
+    graph = [tuple(row) for row in record["submitted"]]
+
+    def branch_ok(case: str, birth: tuple) -> bool:
+        """Check one branch's single group, relation alias and binding role.
+
+        Args:
+            case: Branch key in the extracted description.
+            birth: Expected entity, relation and birthplace city fixture triple.
+
+        Returns:
+            Whether the branch binds exactly the requested birthplace fact with
+            the question-grounded direction.
+        """
+        body = branches.get(case)
+        groups = body.get("requirements") if isinstance(body, dict) else None
+        if not isinstance(groups, list) or len(groups) != 1:
+            return False
+        group = groups[0]
+        queries = group.get("fact_queries")
+        if (not isinstance(queries, list) or len(queries) != 1
+                or group.get("entity") != birth[0]):
+            return False
+        query = queries[0]
+        relation, binding = query.get("relation"), query.get("binding")
+        if relation not in BIRTH_RELATIONS or not isinstance(binding, dict):
+            return False
+        fact = (birth[0], relation, birth[2])
+        if fact not in graph:
+            return binding == {"kind": "missing", "direction": "outgoing"}
+        ids = binding.get("evidence_ids")
+        return (binding.get("kind") == "observed"
+                and set(binding) == {"kind", "evidence_ids"}
+                and isinstance(ids, list) and bool(ids)
+                and all(type(index) is int and 0 <= index < len(graph) for index in ids)
+                and all(graph[index] == fact for index in ids))
+
+    return {
+        "conditional_kind": description.get("kind") == "conditional_equals",
+        "conditional_condition": condition.get("subject") == PUBLISHER[0]
+            and condition.get("value") == CONDITION_VALUE
+            and condition.get("relation") in CONDITION_RELATIONS,
+        "conditional_true_branch": branch_ok("true", BIRTH),
+        "conditional_false_branch": branch_ok("false", OTHER_BIRTH),
+    }
+
+
 def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     """Execute fixed single-round and/or adaptive-state multi-round fixtures.
 
@@ -716,9 +789,14 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
                         frozenset() if stage == "unknown" else frozenset({other})),
                     "filtered": stage != "probe" or other not in map(tuple, record["submitted"]),
                 }
+                # The default protocol must describe both branches faithfully,
+                # including the branch the current condition does not activate.
+                if record["prompt_variant"] == "evidence_decision":
+                    checks.update(check_conditional_extraction(record))
                 record["controlled_checks"] = checks
                 if not all(checks.values()):
                     record["status"] = "controlled_check_failure"
+                    record["controlled_validated"] = False
                     raise RuntimeError("Conditional acceptance expectation failed")
                 prior = result
 

@@ -459,10 +459,33 @@ class PartDValidationTests(unittest.TestCase):
                     manage_memory(state, probe["triples"], probe["scores"], client)
                 self.assertEqual(caught.exception.code, "decision_answer_candidate")
                 self.assertEqual(caught.exception.stage, "decision_consistency")
+                client.complete.side_effect = [envelopes[-2], completion(
+                    probe["state_after"]["memory"], [answer], [])]
+                failed_report = {"plan": validation.case_plan("conditional"), "results": []}
+                with self.assertRaises(MemoryValidationError) as reported:
+                    validation.memory_round(client, failed_report, "conditional.bronze_probe",
+                                            state, probe["triples"], probe["scores"], ())
+                self.assertEqual(reported.exception.code, "decision_answer_candidate")
+                failed = failed_report["results"][0]
+                projection = failed["failure_projection"]
+                self.assertEqual(projection["decision"]["answer_candidates"], ["Cedar City"])
+                self.assertEqual(projection["final"]["predict_answer"], ("Nolan Reed",))
+                self.assertTrue(failed["old_state_unchanged"])
+                self.assertNotIn("stages", failed)
+                self.assertEqual(client.complete.call_count, 4)
+                for unsafe in ("secret-key", json.dumps({"selected_triplets": [],
+                               "predict_answer": [], "subsequent_question": ["secret-key"]})):
+                    bad = completion()
+                    bad["choices"][0]["message"]["content"] = unsafe
+                    safe = validation.conditional_failure_projection(
+                        [{"completion": envelopes[-2]}, {"completion": bad}], state,
+                        set(map(tuple, probe["submitted"])))
+                    self.assertEqual(safe["final"], {"status": "unavailable"})
+                    self.assertNotIn("secret-key", json.dumps(safe))
             else:
                 result = manage_memory(state, probe["triples"], probe["scores"], client)
                 self.assertEqual(result.response.predict_answer, (answer,))
-            self.assertEqual(client.complete.call_count, 2)
+            self.assertEqual(client.complete.call_count, 4 if answer == validation.OTHER_BIRTH[0] else 2)
             self.assertEqual(validation.snapshot(state), snapshot)
 
         # A structurally valid full-graph answer retaining the irrelevant branch

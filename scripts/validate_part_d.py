@@ -18,7 +18,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.agent.validation_error import failure_diagnostics
-from src.agent.evidence_decision import decode_description
+from src.agent.evidence_decision import decode_description, derive_decision
+from src.agent.memory_response import parse_memory_response
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
 from src.agent.memory_management import manage_memory
@@ -255,7 +256,8 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
         vocabulary = {part for row in submitted for part in row} | {
             "nonconditional_path", "nonconditional", "conditional_equals", "unsupported",
             "incident", "observed", "missing", "outgoing", "incoming", "eq", "written_by",
-            "born_in", "author", "authored_by", "birthplace", "place_of_birth", "",
+            "born_in", "author", "authored_by", "birthplace", "place_of_birth",
+            "published_by", "publisher", "",
         }
         def bounded(value):
             """Check nested values against public fixture strings and size bounds.
@@ -287,6 +289,49 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
         return {"status": "validated_projection", "description": description, "hits": hits}
     except (KeyError, IndexError, TypeError, ValueError):
         return unavailable
+
+
+def conditional_failure_projection(calls: list, state: QuestionMemory, submitted: set) -> dict:
+    """Retain bounded validated fields from already captured conditional replies.
+
+    Args:
+        calls: Completed stage records; no further requests are made.
+        state: Unchanged prior snapshot supplying the original question.
+        submitted: Exact controlled graph supplied to the transaction.
+
+    Returns:
+        Safe extraction, derived decision and final-output projections. Missing
+        or unsafe stages carry fixed markers and never raw failed content.
+    """
+    unavailable = {"status": "unavailable"}
+    result = {"extraction": unavailable, "decision": unavailable, "final": unavailable}
+    if calls:
+        result["extraction"] = extraction_projection(calls[0], state, submitted)
+    if result["extraction"].get("status") == "validated_projection":
+        try:
+            decision = derive_decision({"description": result["extraction"]["description"]},
+                                       state.original_question, submitted)
+            result["decision"] = {key: decision[key] for key in (
+                "condition_status", "query_matches", "answer_candidates",
+                "required_triplets", "missing_relations")}
+        except Exception:
+            pass  # Diagnostic failures must never replace the public exception.
+    if len(calls) > 1:
+        try:
+            content = calls[1]["completion"]["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or len(content) > 12000:
+                return result
+            response = parse_memory_response(content, state.memory_triplets, submitted)
+            from src.agent.evidence_decision import missing_relation_queries
+            allowed = missing_relation_queries(result["decision"]["missing_relations"]) if "condition_status" in result["decision"] else []
+            if all(query in allowed for query in response.subsequent_question):
+                result["final"] = {"status": "validated_projection",
+                                   "selected_triplets": response.selected_triplets,
+                                   "predict_answer": response.predict_answer,
+                                   "subsequent_question": response.subsequent_question}
+        except Exception:
+            pass
+    return result
 
 
 def memory_round(
@@ -336,6 +381,8 @@ def memory_round(
                       state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
         if name in PATH_CASE_NAMES and counted.calls and prompt_variant == "evidence_decision":
             record["failed_extraction"] = extraction_projection(counted.calls[0], state, submitted)
+        if name.startswith("conditional.") and prompt_variant == "evidence_decision":
+            record["failure_projection"] = conditional_failure_projection(counted.calls, state, submitted)
         raise
 
     selected = result.state.memory_triplets

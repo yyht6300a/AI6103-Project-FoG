@@ -69,7 +69,12 @@ put its multiple requested relations in that single group.
 Each query belongs to its group's entity and has only relation and binding.
 For observed facts,
 binding is {kind: observed, evidence_ids: [integer IDs from Numbered knowledge]}.
-Reference facts with the exact relation and target endpoint; code derives direction.
+Reference only numbered facts whose exact relation has the group entity as one
+endpoint; code derives direction. A fact with that relation that touches only a
+different entity is not evidence for this entity. When the graph has no such
+fact for the group entity, declare missing even if the relation appears
+elsewhere; for example, given only Helios Ltd -> headquarters -> Northport, the
+headquarters of Selene Ltd is missing, not observed.
 For absent facts binding is {kind: missing, direction: outgoing or incoming}.
 Outgoing means target is head; incoming means target is tail. A missing declaration
 is invalid if either direction has the exact target/relation in the graph.

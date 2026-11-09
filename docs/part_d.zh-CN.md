@@ -913,3 +913,33 @@ probe 当轮编号图没有 Mira 的出生边，唯一 `born_in` 事实是 Nolan
 私有脚本为 `tmp_dsh/tmp_probe_observed_attribution.py`，结果为 `tmp_dsh/tmp_probe_observed_attribution_20261109T191614843468Z.json`（机器 UTC 文件名，对应本地 2026/11/10）；账本为 $577$ 条数据行（文件 $578$ 行含表头），前后摘要一致。脚本在网络、配置、dotenv 与客户端入口设阻断计数器，未复制图算法或生产求值逻辑。
 
 尚未知：新提示的真实效果、模型内部原因、该形状的发生率、Silver 链结果，以及关系别名的误拒概率。以上不影响“契约正确、提示需澄清、下一轮须新授权”的结论，也不构成业务验收通过；TODO 2.3.5、2.3.6 与 2.4 保持开放。
+
+#### 2026/11/10 probe observed 绑定的提示入射澄清与离线门槛
+
+本轮按上一节的[最小决策](#最小决策)实施共享提示澄清，真实 API 调用为 $0$，未读取 `.env` 或加载生产配置，未创建真实客户端，未执行 smoke 或付费 suite，未改私有配置、ACL、所有权或认证。改动只有 `src/agent/evidence_decision.py` 的 `DECISION_INSTRUCTIONS` 与两份模块文档的本轮记录；未改账本、历史报告或旧审阅记录。
+
+##### 提示改动
+
+`observed` 段原来的单句 `Reference facts with the exact relation and target endpoint; code derives direction.` 被替换为四点：编号事实的精确关系必须以组实体为一端，方向仍由代码派生；只触及另一实体的同关系事实不是本实体的证据；图中本实体没有该事实时必须声明 `missing`，即使该关系在别处出现；并给出一个不含夹具人物、关系或答案的通用示例，仅给出 `Helios Ltd -> headquarters -> Northport` 时，询问 `Selene Ltd` 的 `headquarters` 是缺失而不是 `observed`。四类描述、条件字段、`observed` 方向由代码派生、两跳 `{kind: missing}` 无方向与 incident 契约、`once per branch` 分组均未改；schema、decoder、求值器、发布校验、候选派生、排序算法、公开接口、错误码与运行器门槛均未改，也未新增测试或门槛。
+
+`DECISION_INSTRUCTIONS` 插入 $5$ 行，其后函数行号整体后移 $5$；`resolve_query` 的入射拒绝当前位于第 $330$ 行，`derive_decision` 的解析调用当前位于第 $485$ 行。历史记录中的 $325$／$480$ 仍是各自修订的行号，不回改。
+
+##### 离线门槛
+
+| 检查 | 结果 |
+| --- | --- |
+| `tests/test_evidence_decision.py` | $27$ 项通过 |
+| `tests/test_part_d_validation.py` | $29$ 项通过 |
+| 最终树全套 `python -m unittest discover -s tests -q` | $153$ 项通过 |
+| 保存回复重放 | Bronze $5$ 次完成回复：unknown／resolved `validated`，受控检查、状态、提交图与输出同报告一致；probe `error`，`decision_queries`，仅 $1$ 次逻辑调用，`derive_decision`／`resolve_query` 帧与保存记录一致；ranking $6$ 次回复两例 `validated` |
+| 请求对比 | 三条 Bronze 抽取请求与保存消息仅指令前缀不同，`Original question`／`Numbered knowledge` 载荷与 `response_format` 逐字相同；ranking 的抽取前缀变化、后续阶段请求逐字相同 |
+| 字符与 AST | 无 emoji、异常零宽／双向控制或 BOM；`ast.parse` 通过 |
+| 保护摘要 | 重放时 $20$ 个受保护源码路径中只有 `src/agent/evidence_decision.py` 变化，SHA-256 `9c2772285f3f91da38849c5b1efd2633838c419a7946a261a21e7403842ae0d9` → `d4b6cdadf23025db849643a0aea93d279799c01e3088ca320e9a4dac5c8cadc8`；其余 $14$ 个 `src/agent/*.py`、运行器、两份定向测试与两份模块文档当时同基线，两份报告与 $577$ 行账本不变；随后只追加本节文档 |
+
+重放脚本在 socket、配置、dotenv 与真实客户端入口设阻断计数器，计数全为 $0$。测试通过需要写入仓库 `tmp/` 下的临时目录，沙箱子进程对该目录只读会使 `tempfile` 反复重试，按既有做法使用一次执行边界批准运行测试；未修改 ACL、所有权或认证。
+
+##### 边界与剩余未知
+
+本轮只完成离线提示澄清与门槛，不构成业务验收：新提示对真实模型的效果、模型内部原因、该形状的发生率、Silver 链结果与关系别名的误拒概率均未知。Silver 仍从未执行，ranking 保留其独立通过记录、默认不重跑。下一轮有界真实复验须另行授权：先 Bronze 三轮，通过后 Silver 三轮；每链正常 $6$ 次逻辑调用，上限每链 $9$ 逻辑／$27$ HTTP，两链合计 $18$／$54$；首个自动或人工语义失败即停，不重采样、不循环改提示、不修补回复、不放宽解码。付费前须确认有效模型为 `gpt-4o-mini`、端点为 `https://api.openai.com/v1`、密钥匹配，且不打印或上传私有配置。TODO 2.3.5、2.3.6 与 2.4 保持开放。
+
+私有产物为 `tmp_dsh/tmp_incidence_baseline.py`、`tmp_dsh/tmp_incidence_baseline_20261109T193010972448Z.json`、`tmp_dsh/tmp_incidence_prompt_replay.py` 与 `tmp_dsh/tmp_incidence_prompt_replay_20261109T193046854018Z.json`；测试诊断日志为 `tmp_dsh/tmp_focused_validation.log` 与 `tmp_dsh/tmp_diag_single.log`。

@@ -238,3 +238,43 @@ python scripts/validate_part_d.py --suite all
 当前协议支持非条件单跳需求和单关系相等条件。提示要求模型将多跳、聚合和复杂需求标记为 `unsupported`，代码以 `decision_unsupported` 终止；原有多跳用例在新默认下的兼容性仍待处理。原题理解、需求完整性和关系语义依赖 LLM，受控 GPT-4o 通过不代表开放问题集上的稳定性。
 
 TODO 2.3.5 的独立 GPT-4o-mini/OpenAI 模块验收保持待办，不能由 GPT-4o 结果替代；原有 `all` 中的两跳用例仍保留为回归，不能预先视为通过。TODO 2.3.6 的历史用量核对和 2.4 最终交付也尚未完成。实际 C/E 接线与召回由成员 E 验证，不作为成员 D 模块验收前置条件。已删除的排查过程保留在 Git 历史和私有原始报告中，本文只维护当前架构、已确认结果及剩余事项。
+
+### 多跳问题与新默认协议不兼容
+
+原有验收要求模块沿“书 → 作者 → 出生城市”的两跳路径作答，但新默认 `evidence_decision` 只描述已知对象的一跳需求，并明确要求将多跳标为 `unsupported`。模型按提示返回该类型时，代码会以 `decision_unsupported` 终止，无法继续保留路径、追问或作答。这是协议与既有用例的兼容问题，不只是模型答错。
+
+**受控用例**
+
+原问题为 `Which city was the author of The Glass Orchard born in?`，正确答案为 `Linden City`。输入事实如下；阈值为 $0.7$，只有严格高于阈值的新事实才提交给模型。
+
+```text
+AUTHOR     = ("The Glass Orchard", "written_by", "Mira Vale")
+BIRTH      = ("Mira Vale", "born_in", "Linden City")
+DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
+```
+
+| 用例 | 输入与预期行为 |
+| --- | --- |
+| `single.sufficient` | 空快照，提供 `AUTHOR`、`BIRTH`，分数均为 $0.95$。保留两条路径事实，回答 `Linden City`，不再追问。 |
+| `single.insufficient` | 空快照，仅提供 $0.95$ 的 `AUTHOR`。保留作者事实，不回答，追问 `Mira Vale` 的出生城市。 |
+| `single.empty` | 空快照、空图。不回答，先追问书的作者；不能编造作者名或城市。 |
+| `multi.partial` | 空快照，依次提供三条事实，分数为 $0.95$、$0.7$、$0.95$。保留 `AUTHOR`，追问出生城市；`BIRTH` 未提交，不能被永久拒绝。 |
+| `multi.recovery` | 继承上一轮实际快照和查询，三条事实均改为 $0.95$。补回 `BIRTH`，保留完整路径并回答 `Linden City`；已永久拒绝的干扰事实仍须过滤。 |
+| `multi.exclusion_probe` | 继承恢复轮快照，再次以 $0.95$ 输入三条事实。路径和答案保持有效，已永久拒绝的干扰事实不能重新提交。 |
+
+这些用例位于 [`scripts/validate_part_d.py`](../scripts/validate_part_d.py) 的 `QUESTION`、`CASES` 和 `run_cases`；`single`、`multi` 均包含在 `all` 中。`multi.independent` 是独立的一跳隔离用例，不是本问题的两跳复现。干扰事实只有实际提交且被省略后才进入永久拒绝，不能预先假定模型一定将其拒绝。
+
+**已观察到的表现与证据边界**
+
+- 旧默认单次选择流程曾使用 `deepseek-flash` 通过上述单轮和多轮场景：完整图保留两跳并回答 `Linden City`；只有作者时保留作者并追问出生城市；空图追问作者；阈值隐藏的出生事实在下一轮恢复，干扰事实被拒绝后持续过滤。历史结果见[旧版单轮记录](https://github.com/yyht6300a/AI6103-Project-FoG/blob/b7f4faac112fca370499803c7242ac23d6675d72/docs/part_d.zh-CN.md#单轮真实验收结果)，亦可查阅[英文单轮与多轮记录](part_d.md#single-round-live-result)。这些结果不能算作新默认通过。
+- 新默认的已验收 GPT-4o 条件题直接点名 `Mira Vale`、`Nolan Reed`，只需读取各自的一跳出生事实；它们没有验证从书推导作者再查询出生地的能力。
+- 新默认对上述两跳用例尚无已确认的真实通过结果。`unsupported → decision_unsupported` 来自当前提示和解析逻辑，不是本次新增实测；模型是否绕过多跳限制、只抽取作者出生地并漏保留作者路径，也需要检查实际抽取。本次只记录问题，不调用 API。
+- 旧记录引用的私有报告 `tmp/tmp_part_d_validation_20261108T163125709480Z.json`、`tmp/tmp_part_d_validation_20261108T163553245365Z.json` 当前工作区不存在；历史表现依据已提交文档，不能声称已重新核验原始回复。
+
+**供 sol extra high 排查的入口与目标**
+
+先检查 [`evidence_decision.py`](../src/agent/evidence_decision.py) 的 `DECISION_INSTRUCTIONS`、`decode_description`、`resolve_query` 和 `derive_decision`：当前按已知 `entity` 匹配事实的协议，能否表达“先找作者，再找该作者出生地”的依赖？证据充足时，如何同时保护用于确定作者的边和出生地边？证据不足时，如何逐轮补全依赖，并避免把后续仍需使用的路径边永久拒绝？再检查 [`memory_update.py`](../src/agent/memory_update.py) 与 [`memory_management.py`](../src/agent/memory_management.py) 的发布流程，确保异常仍保留旧快照。
+
+[`tests/test_memory_response.py`](../tests/test_memory_response.py) 的多跳实体归属测试和 [`tests/test_memory_update.py`](../tests/test_memory_update.py) 的路径选择测试仅覆盖各自使用的解析或选择流程，不能替代新默认完整事务的多跳验收。免费入口为 `python scripts/validate_part_d.py --suite single --list-cases` 和 `python scripts/validate_part_d.py --suite multi --list-cases`；去掉 `--list-cases` 会产生真实 API 用量。
+
+方案以这些受控用例达标为目标，保留现有条件题的证据保护、严格阈值、永久拒绝和失败不发布规则。不要求开放问题集零失败，不把不同模型效果一致或 GPT-4o-mini 达到其他模型水平作为修复目标；TODO 未完成项和 C/E 集成不列为本问题的排查内容。先分析协议与路径表达方案，再决定实现和必要的受控验证。

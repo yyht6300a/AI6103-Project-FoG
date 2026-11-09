@@ -48,7 +48,7 @@ A question snapshot (`QuestionMemory`) contains the verbatim original question `
 
 `prompt_variant` values:
 
-- `"evidence_decision"` (default): first extracts the original question's information requirements (entities, relations and conditions to look up) under a strict JSON Schema, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks (required evidence, condition state, answer candidates and gap queries must all agree with the code-derived decision), or no snapshot is published; see [Gap queries and publication gates](#gap-queries-and-publication-gates).
+- `"evidence_decision"` (default): first extracts the original question's information requirements (entities, relations and conditions to look up) under a strict JSON Schema, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks: the evidence, answers and follow-up questions the model finally chooses must conform to the states, sets and constraints already computed by code, or no snapshot is published; see [Gap queries and publication gates](#gap-queries-and-publication-gates).
 - `"paper"`: uses only the original Figure 8 prompt for a single selection, with no requirement-extraction or retrieval-wording addition; multiple answers are still ranked separately after selection.
 - `"retrieval_questions"`: adds retrieval-question instructions to the Figure 8 prompt, requiring follow-up questions to target a knowledge-graph retriever, anchor named entities and ask only for missing relations; it remains a single selection.
 - `"answer_ranking"`: adds both retrieval-question and answer-ranking instructions, asking the single selection stage to order candidates by evidential support; the separate ranking stage still runs for multiple answers.
@@ -82,7 +82,7 @@ flowchart TD
 
 Intermediate decisions never publish memory. The final output must satisfy structure, input membership, required evidence, answer candidates, condition status and gap-query constraints at once; the public entry point returns a publishable result only after ranking also succeeds. Any stage failure propagates, and the caller keeps the old snapshot; there is no reselection, answer repair, question rewriting or business retry.
 
-When the condition is unknown, the module protects the matched evidence of both branches and forbids an answer; once resolved, it protects only the applicable branch and the actual condition facts. Missing required evidence or an answer outside the code-derived candidates fails before a candidate snapshot is built. Local checks prove the output is consistent with the extracted requirements and the submitted graph; they do not prove question understanding or extraction semantics.
+When the condition is unknown, the module protects the matched evidence of both branches and forbids an answer; once resolved, it protects only the applicable branch and the actual condition facts. Missing required evidence or an answer outside the code-computed candidates fails before a candidate snapshot is built. Local checks prove the output is consistent with the extracted requirements and the submitted graph; they do not prove question understanding or extraction semantics.
 
 ## LLM configuration and requests
 

@@ -61,6 +61,8 @@
 | `result.state` | `QuestionMemory` | 本轮更新后的新快照。 |
 | `result.response` | `MemoryResponse` | 校验后的结构化输出，含选中三元组、排序答案与下一轮子问题。 |
 
+`MSMResult` 是冻结的不可变容器，只含 `state` 与 `response`：前者是下一轮使用的 `QuestionMemory` 快照，后者保留本次选中的三元组、排序后的答案与后续问题。`manage_memory` 返回的实例只表示整体成功后的可发布结果，直接构造该对象不会执行校验；字段细节见[结构化记忆输出](#结构化记忆输出)与[问题级持久记忆](#问题级持久记忆)，接口用法见[MSM 重打分轮次接口](#msm-重打分轮次接口)。
+
 ## 当前默认架构
 
 ```mermaid

@@ -61,6 +61,8 @@ Outputs:
 | `result.state` | `QuestionMemory` | New snapshot produced by this round. |
 | `result.response` | `MemoryResponse` | Validated structured output with selected triples, ranked answers and next-round sub-questions. |
 
+`MSMResult` is a frozen, immutable container with only `state` and `response`: the former is the `QuestionMemory` snapshot used by the next round, and the latter keeps this round's selected triples, ranked answers and follow-up questions. An instance returned by `manage_memory` represents a publishable result only after the whole call succeeds; directly constructing the object performs no validation. Field details are in [Structured memory output](#structured-memory-output) and [Question-local persistent memory](#question-local-persistent-memory); usage is in [Scored-round MSM interface](#scored-round-msm-interface).
+
 ## Current default architecture
 
 ```mermaid

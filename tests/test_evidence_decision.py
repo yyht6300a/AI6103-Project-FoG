@@ -29,6 +29,21 @@ class IndependentRequirementTests(unittest.TestCase):
     Existing path and conditional tests retain their stricter dependency gates.
     """
 
+    def test_duplicate_groups_are_branch_local(self):
+        """Reject duplicate related groups while retaining diagnostic structure.
+
+        Synthetic repeated groups use valid evidence; rejection concerns only
+        representation. Separate decoder calls represent separate branches.
+        """
+        group = {"entity": LEFT[0], "fact_queries": [{"relation": LEFT[1],
+            "binding": {"kind": "observed", "evidence_ids": [0]}}]}
+        branch = {"requirements": [group, copy.deepcopy(group)]}
+        with self.assertRaisesRegex(MemoryValidationError, "decision_queries"):
+            decode_branch(branch)
+        self.assertEqual(len(decode_branch(branch, allow_duplicate_entities=True)["fact_queries"]), 2)
+        for _ in ("true", "false"):
+            self.assertEqual(decode_branch({"requirements": [group]})["targets"], [LEFT[0]])
+
     def test_multiple_objects_and_multiple_relations_remain_independent(self):
         """Derive both answers for separately named objects or relations.
 

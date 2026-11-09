@@ -55,10 +55,17 @@ is the exact original-question passage explicitly establishing a single value,
 or empty if absent. A definite article such as "the author" does not explicitly
 establish a single value and cannot supply uniqueness_quote.
 The comparison value is a query constraint, NEVER an observed fact.
+First identify the requested attributes and qualifiers from the ORIGINAL QUESTION,
+then map them to exact graph relations. Adjacent facts, including other relations
+whose endpoints are cities, do not add requirements. Not selecting evidence means
+not returning the final evidence subset; still describe only requested relations.
+For example, asking where an organization was founded and where its headquarters
+are permits both relations; asking only for headquarters excludes founding place.
 Only for conditional_equals and nonconditional, the following grouped one-hop
 binding instructions apply. For each branch supply requirements: groups with entity and fact_queries.
 entity is the known entity whose attribute or relation the question asks about,
-not the retrieved answer endpoint. Generate that entity only once per group.
+not the retrieved answer endpoint. Generate each entity only once per branch;
+put its multiple requested relations in that single group.
 Each query belongs to its group's entity and has only relation and binding.
 For observed facts,
 binding is {kind: observed, evidence_ids: [integer IDs from Numbered knowledge]}.
@@ -175,12 +182,13 @@ DECISION_RESPONSE_FORMAT = {"type": "json_schema", "json_schema": {
     "properties": {"description": {"anyOf": DESCRIPTION_VARIANTS}}}}}
 
 
-def decode_description(record, question):
+def decode_description(record, question, *, allow_duplicate_entities=False):
     """Decode the tagged wire structure without inferring or repairing fields.
 
     Args:
         record: Untrusted response object containing a single description.
         question: Original question used to validate literal condition quotes.
+        allow_duplicate_entities: Diagnostic-only structural inspection mode.
 
     Returns:
         Condition and three branch slots for the existing graph evaluator.
@@ -229,21 +237,22 @@ def decode_description(record, question):
             raise MemoryValidationError("decision_targets")
         return {"condition": {"kind": "equals", **{k: v for k, v in condition.items()
                                                   if k != "condition_quote"}},
-                "branches": {**{case: decode_branch(branches[case]) for case in ("true", "false")}, "not_conditional": empty}}
+                "branches": {**{case: decode_branch(branches[case], allow_duplicate_entities=allow_duplicate_entities) for case in ("true", "false")}, "not_conditional": empty}}
     if kind == "nonconditional" and set(item) == {"kind", "branch"}:
         return {"condition": {"kind": "none", **dict.fromkeys(
                     ("subject", "relation", "operator", "value", "uniqueness_quote"), "")},
-                "branches": {"true": empty, "false": empty, "not_conditional": decode_branch(item["branch"])}}
+                "branches": {"true": empty, "false": empty, "not_conditional": decode_branch(item["branch"], allow_duplicate_entities=allow_duplicate_entities)}}
     if kind == "unsupported" and set(item) == {"kind", "quote"}:
         raise MemoryValidationError("decision_unsupported")
     raise MemoryValidationError("decision_fields")
 
 
-def decode_branch(branch):
+def decode_branch(branch, *, allow_duplicate_entities=False):
     """Expand grouped wire requirements into the internal query contract.
 
     Args:
         branch: Untrusted branch with entity groups and bound fact requests.
+        allow_duplicate_entities: Inspect duplicate groups for safe diagnostics only.
 
     Returns:
         Internal targets and queries inheriting their group's entity exactly.
@@ -261,6 +270,8 @@ def decode_branch(branch):
         if (not isinstance(group, dict) or set(group) != {"entity", "fact_queries"}
                 or not isinstance(group["entity"], str) or not group["entity"].strip()
                 or not isinstance(group["fact_queries"], list) or not group["fact_queries"]):
+            raise MemoryValidationError("decision_queries")
+        if group["entity"] in targets and not allow_duplicate_entities:
             raise MemoryValidationError("decision_queries")
         targets.append(group["entity"])
         for query in group["fact_queries"]:

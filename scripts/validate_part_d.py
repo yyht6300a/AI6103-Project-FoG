@@ -282,7 +282,7 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
     unavailable = {"status": "unavailable"}
     try:
         payload = safe_payload(call)
-        decode_description(payload, state.original_question)
+        decode_description(payload, state.original_question, allow_duplicate_entities=True)
         description = payload["description"]
         vocabulary = {part for row in submitted for part in row} | {
             "nonconditional_path", "nonconditional", "conditional_equals", "unsupported",
@@ -342,7 +342,7 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
         collect(description)
         return {"status": "validated_projection", "description": description, "hits": hits,
                 "production_validated": False, "out_of_range_ids": [i for i in ids if i >= len(submitted)]}
-    except (KeyError, IndexError, TypeError, ValueError):
+    except (KeyError, IndexError, TypeError, ValueError, RecursionError):
         return unavailable
 
 
@@ -452,6 +452,7 @@ def memory_round(
                                prompt_variant=prompt_variant)
     except Exception as error:
         record.update(status="error", error_type=type(error).__name__,
+                      production_validated=False, controlled_validated=False,
                       **failure_diagnostics(error),
                       state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
         if prompt_variant == "evidence_decision":
@@ -495,13 +496,27 @@ def memory_round(
         removed_memory=sorted(state.memory_triplets - selected),
         newly_rejected=sorted(result.state.rejected_triplets - state.rejected_triplets),
     )
-    if not record["old_state_unchanged"] or not record["state_rules_match"]:
-        record["status"] = "state_rule_failure"
-        raise RuntimeError("Acceptance state invariant failed")
-    if name in PATH_CASE_NAMES and prompt_variant == "evidence_decision":
-        check_two_hop(record)
-    if name.startswith("ranking.") and prompt_variant == "evidence_decision":
-        check_ranking(record)
+    record["production_validated"] = True
+    record["controlled_validated"] = False
+    try:
+        if not record["old_state_unchanged"] or not record["state_rules_match"]:
+            record["status"] = "state_rule_failure"
+            raise RuntimeError("Acceptance state invariant failed")
+        if name in PATH_CASE_NAMES and prompt_variant == "evidence_decision":
+            check_two_hop(record)
+        if name.startswith("ranking.") and prompt_variant == "evidence_decision":
+            check_ranking(record)
+    except Exception as error:
+        record.pop("stages", None)
+        if record["status"] == "validated":
+            record["status"] = "controlled_check_failure"
+        record.update(error_type=type(error).__name__, **failure_diagnostics(error))
+        try:
+            record["failure_projection"] = conditional_failure_projection(counted.calls, state, submitted)
+        except Exception:
+            record["failure_projection"] = {"status": "unavailable"}
+        raise
+    record["controlled_validated"] = True
     return result
 
 
@@ -528,6 +543,14 @@ def check_ranking(record: dict) -> None:
         for g in groups for q in g["fact_queries"])
     candidates = Counter([BIRTH[2], OTHER_BIRTH[2]])
     selection = safe_payload(stages[1])
+    from src.agent.memory_prompt import build_decision_memory_prompt
+    from src.agent.answer_ranking import build_ranking_prompt
+    question = record["state_before"]["question"]
+    decision = derive_decision({"description": description}, question, set(graph))
+    memory = set(map(tuple, record["state_before"]["memory"]))
+    expected_selection = build_decision_memory_prompt(question, memory, set(graph) - memory, decision)
+    expected_ranking = build_ranking_prompt(question, selection["selected_triplets"], selection["predict_answer"])
+    answers = record["predict_answer"]
     checks = {
         "independent_extraction": description["kind"] == "nonconditional"
             and observed == expected and bindings
@@ -539,7 +562,13 @@ def check_ranking(record: dict) -> None:
         "rejection": set(map(tuple, record["state_after"]["rejected"])) == (set() if equal else {RESIDENCE}),
         "ranking_executed": len(stages) == 3,
         "selection_complete": Counter(selection["predict_answer"]) == candidates,
-        "support_order": equal or tuple(record["predict_answer"]) == (BIRTH[2], OTHER_BIRTH[2]),
+        "derived_candidates": Counter(decision["answer_candidates"]) == candidates,
+        "derived_required": set(map(tuple, decision["required_triplets"])) == required,
+        "selection_input": stages[1]["messages"] == [{"role": "user", "content": expected_selection}],
+        "ranking_input": len(stages) == 3 and stages[2]["messages"] == [{"role": "user", "content": expected_ranking}],
+        "ranking_multiset": len(stages) == 3 and Counter(safe_payload(stages[2])["predict_answer"]) == Counter(selection["predict_answer"]) == Counter(answers),
+        "support_order": equal or (BIRTH[2] in answers and OTHER_BIRTH[2] in answers
+            and answers.index(BIRTH[2]) < answers.index(OTHER_BIRTH[2])),
         "old_state_unchanged": record["old_state_unchanged"],
     }
     record["controlled_checks"] = checks

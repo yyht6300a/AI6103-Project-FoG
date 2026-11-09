@@ -172,7 +172,7 @@ class PartDValidationTests(unittest.TestCase):
         self.assertEqual(report["results"][0]["status"], "controlled_check_failure")
 
     def test_observed_unequal_residence_contamination_is_rejected(self):
-        """Fix the newly observed legal extraction as a semantic negative case.
+        """Reject the observed duplicate extraction before selection begins.
 
         Public fixture fields transcribe the 2026/11/10 bounded acceptance reply;
         transport metadata and the private original report are not imported.
@@ -190,12 +190,101 @@ class PartDValidationTests(unittest.TestCase):
         report = {"plan": validation.case_plan("ranking"), "results": []}
         client = Mock(spec=LLMClient)
         client.complete.side_effect = calls
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError) as caught:
             validation.run_cases(client, report, "ranking")
-        self.assertEqual(client.complete.call_count, 6)
-        checks = report["results"][-1]["controlled_checks"]
-        for name in ("independent_extraction", "exact_evidence", "complete_answers", "rejection"):
-            self.assertFalse(checks[name])
+        self.assertEqual(str(caught.exception), "decision_queries")
+        self.assertEqual(client.complete.call_count, 4)
+        record = report["results"][-1]
+        self.assertNotIn("stages", record)
+        projection = record["failure_projection"]
+        self.assertTrue(projection["extraction_decodable"])
+        self.assertFalse(projection["evaluation_succeeded"])
+        self.assertEqual(len(projection["extraction"]["description"]["branch"]["requirements"]), 2)
+
+    def test_controlled_pollution_and_request_tampering(self):
+        """Reject synthetic merged pollution and altered downstream requests.
+
+        These counterfactuals exercise gates after production success and verify
+        that arbitrary envelope metadata is absent from failed reports.
+        """
+        for mode in ("merged", "selection", "ranking", "derived"):
+            with self.subTest(mode=mode):
+                calls = self.ranking_envelopes() + self.ranking_envelopes(True)
+                if mode == "merged":
+                    payload = json.loads(calls[3]["choices"][0]["message"]["content"])
+                    payload["description"]["branch"]["requirements"][0]["fact_queries"].append({
+                        "relation": "lived_in", "binding": {"kind": "observed", "evidence_ids": [1]}})
+                    calls[3]["choices"][0]["message"]["content"] = json.dumps(payload)
+                    answers = ["Linden City", "Cedar City", "Harbor City"]
+                    calls[4] = completion([validation.CONFIRMED_BIRTH, validation.RESIDENCE,
+                                          validation.POSSIBLE_BIRTH], answers, [])
+                    calls[5]["choices"][0]["message"]["content"] = json.dumps({"predict_answer": answers})
+                for call in calls:
+                    call["metadata"] = "private-sentinel"
+                original = validation.check_ranking
+
+                def controlled(record):
+                    """Alter captured evidence only after production returns.
+
+                    The first fixture remains an independent successful record.
+                    """
+                    if record["case"] == "ranking.unequal_support":
+                        if mode in ("selection", "ranking"):
+                            record["stages"][1 if mode == "selection" else 2]["messages"] = []
+                        if mode == "derived":
+                            with patch.object(validation, "derive_decision", return_value={
+                                    "answer_candidates": [], "required_triplets": []}):
+                                original(record)
+                            return
+                    original(record)
+
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = calls
+                report = {"plan": validation.case_plan("ranking"), "results": []}
+                with patch.object(validation, "check_ranking", side_effect=controlled):
+                    with self.assertRaises(RuntimeError):
+                        validation.run_cases(client, report, "ranking")
+                record = report["results"][-1]
+                self.assertEqual(client.complete.call_count, 6)
+                self.assertNotIn("stages", record)
+                self.assertNotIn("private-sentinel", json.dumps(record))
+                self.assertIn("stages", report["results"][0])
+                self.assertTrue(record["production_validated"])
+                self.assertFalse(record["controlled_validated"])
+                if mode == "merged":
+                    self.assertTrue(record["controlled_checks"]["support_order"])
+
+    def test_controlled_failure_projection_guard(self):
+        """Preserve the exact controlled exception when projection also fails.
+
+        Synthetic successful replies carry arbitrary metadata that must be
+        removed even when bounded diagnostic construction is unavailable.
+        """
+        error = RuntimeError("private-sentinel")
+        calls = self.ranking_envelopes()
+        for call in calls:
+            call["metadata"] = "private-sentinel"
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = calls
+        report = {"plan": validation.case_plan("ranking"), "results": []}
+        with patch.object(validation, "check_ranking", side_effect=error), patch.object(
+                validation, "conditional_failure_projection", side_effect=RecursionError("private-sentinel")):
+            with self.assertRaises(RuntimeError) as caught:
+                validation.run_cases(client, report, "ranking")
+        self.assertIs(caught.exception, error)
+        self.assertNotIn("private-sentinel", json.dumps(report))
+        self.assertNotIn("stages", report["results"][0])
+
+    def test_projection_recursion_is_unavailable(self):
+        """Bound deeply nested JSON before it can replace an original failure.
+
+        The payload fits the byte limit but exceeds the JSON parser stack.
+        """
+        from src.agent.memory_state import QuestionMemory
+        call = {"completion": completion()}
+        call["completion"]["choices"][0]["message"]["content"] = '[' * 1100 + '0' + ']' * 1100
+        result = validation.extraction_projection(call, QuestionMemory("Question"), set())
+        self.assertEqual(result, {"status": "unavailable"})
 
     def test_selected_case_and_dependencies(self):
         """Execute only the chosen transaction and reject missing prior rounds.

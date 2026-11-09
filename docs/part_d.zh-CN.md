@@ -563,6 +563,33 @@ The Glass Orchard has exactly one publisher. If it was published by Silver Press
 
 实际模型均为 `gpt-4o-mini-2024-07-18`，$12$ 次事务各一次成功 HTTP 请求，无传输或业务重试、输出修复或多答案排序。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $12$ 行，输入 $6348$、输出 $510$ tokens；HTTP 成功与应用校验失败分别记录。项目 Python 执行私有入口 `tmp/tmp_evidence_inequality.py`，完整问题、请求、原始回复、提交图、前后状态及审阅保存在 `tmp/tmp_evidence_inequality_20261109T042514950435Z.json`。全部 $12$ 次事务免费精确重放通过，包括 $6$ 次校验失败及空旧状态保持；逐次模型和用量与 CSV 一致，全部 $100$ 项离线回归通过。本轮仅交付诊断记录与用量。
 
+#### 直接与条件出版社作答对照
+
+2026/11/09 执行上一轮安排的 $12$ 次独立 MSM 事务，在 Silver、Bronze 两张完整图上交替比较上一节逐字给出的直接出版社题与条件出版社题，每图每版重复 $3$ 次。固定私有字符串数组说明、默认 `retrieval_questions`、全部 $0.95$ 分数、严格阈值 $0.7$ 和公开 `manage_memory`；每次从空记忆与空拒绝集合开始。未添加保留增强、条件判断指令或正确分支提示。
+
+| 图与问题版本 | 原始输出与严格事务结果 |
+| --- | --- |
+| Silver，直接题 | $3/3$ 只选出版社事实，回答 `Silver Press`，无追问，完整事务通过 |
+| Silver，条件题 | 同上，$3/3$ 完整通过 |
+| Bronze，直接题 | $3/3$ 只选出版社事实，回答 `Bronze Press`，无追问，完整事务通过 |
+| Bronze，条件题 | 同上，$3/3$ 完整通过 |
+
+已逐项审阅全部原始回复、选择、答案、追问及发布状态。原始正确答案加无追问与完整语义验收均为 $12/12$，无空答案、错误类型答案、重复追问、`answer_membership` 或其他校验失败。答案均来自所选出版社事实，全部旧快照不变，记忆、拒绝及展开排除符合规则。每次永久拒绝两条无关出生地，合计 $24$ 个独立问题内拒绝项；这些拒绝与出版社小问题相符，没有跨问题继承，不构成完整城市题漏选必要证据或正确移除旧记忆的验证。
+
+本轮直接题及条件题均通过，表明这两种问法下已有出版社事实可以正确作答；两题均可直接复制出版社，不能据此宣告相等／不等于比较或人物分支推理通过。上一轮 Bronze 人物题的空答案与重复追问仍未解决，纯人物题仅选出版社时与答案来源契约的冲突仍单独保留。本次下一步已完成，原证据丢失问题及 TODO 2.3.5 保持开放。
+
+新的下一步：按上一轮两题均通过的分支，准备以下 Silver 正向条件与 Bronze 正向条件的人物题对照。后者交换正向条件和人物分支顺序，但在两张受控图上保持正确人物不变；两图都满足单出版社前提，Silver 应答 `Mira Vale`，Bronze 应答 `Nolan Reed`，均无追问。固定其他输入及独立空状态，每图每版交替重复 $3$ 次，共 $12$ 次 MSM 事务；默认排序下保守最多 $24$ 次逻辑调用，当前最多 $72$ 次 HTTP 尝试。该下一步尚未执行，本轮不追加付费调用。
+
+```text
+The Glass Orchard has exactly one publisher. Which person is selected by this rule: choose Mira Vale if The Glass Orchard was published by Silver Press; otherwise choose Nolan Reed? Answer with only the selected person's name.
+
+The Glass Orchard has exactly one publisher. Which person is selected by this rule: choose Nolan Reed if The Glass Orchard was published by Bronze Press; otherwise choose Mira Vale? Answer with only the selected person's name.
+```
+
+原始人物判断与完整接口成功继续分别统计，逐项记录所选证据、空答案、错误类型答案、已知出版社追问、`answer_membership`、发布及拒绝状态。若失败随 otherwise 分支从 Bronze 转移至 Silver，可记录与分支位置相关的现象，不能据此推断内部比较过程；若 Bronze 正向仍失败，则保留其与具体出版社或人物映射相关的可能性，不作因果断言。原始人物正确但因仅选出版社而失败时，继续单独评估诊断题与答案契约的适配性，不放宽生产校验、不强塞出生地。即使人物判断改善，也不能直接视为完整城市题通过；暂不推广增强、不进入连续移除验证、不解除永久屏蔽。
+
+实际模型均为 `gpt-4o-mini-2024-07-18`，$12$ 次事务各一次成功 HTTP 请求，无传输或业务重试、输出修复或多答案排序。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $12$ 行，输入 $6126$、输出 $467$ tokens，逐次返回模型及用量与 CSV 一致。运行命令为项目 Python 执行私有入口 `tmp/tmp_evidence_publisher.py`；完整问题、请求、原始回复、提交图、前后状态及审阅保存在 `tmp/tmp_evidence_publisher_20261109T043304197599Z.json`。全部 $12$ 次事务免费精确重放通过，全部 $100$ 项离线回归通过。生产实现、严格解析器、永久拒绝规则及私有 OpenAI 配置均未变。
+
 ### 尚未验证模型能正确移除旧记忆
 
 问题：原用例确实移除了旧记忆，但连必要证据也一起删除，不能算正确移除；澄清条件后的复测又保留了全部证据。离线状态转换测试通过，不等于 GPT 已正确判断哪些旧证据不再有用。

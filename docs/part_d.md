@@ -48,7 +48,7 @@ A question snapshot (`QuestionMemory`) contains the verbatim original question `
 
 `prompt_variant` values:
 
-- `"evidence_decision"` (default): first extracts the original question's information requirements (entities, relations and conditions to look up) under a strict JSON Schema, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks, or no snapshot is published.
+- `"evidence_decision"` (default): first extracts the original question's information requirements (entities, relations and conditions to look up) under a strict JSON Schema, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks (required evidence, condition state, answer candidates and gap queries must all agree with the code-derived decision), or no snapshot is published; see [Gap queries and publication gates](#gap-queries-and-publication-gates).
 - `"paper"`: uses only the original Figure 8 prompt for a single selection, with no requirement-extraction or retrieval-wording addition; multiple answers are still ranked separately after selection.
 - `"retrieval_questions"`: adds retrieval-question instructions to the Figure 8 prompt, requiring follow-up questions to target a knowledge-graph retriever, anchor named entities and ask only for missing relations; it remains a single selection.
 - `"answer_ranking"`: adds both retrieval-question and answer-ranking instructions, asking the single selection stage to order candidates by evidential support; the separate ranking stage still runs for multiple answers.
@@ -173,7 +173,7 @@ The first two templates serve gaps with a known direction; the third exists only
 
 The final request always uses the base strict `MEMORY_RESPONSE_FORMAT` schema and generates no dynamic query enumeration. The model selects queries verbatim through `subsequent_question`; local checks require a nonempty, duplicate-free subset of the allowed queries that includes every unknown-condition query. At most three questions are allowed, and remaining gaps can be retrieved in later rounds; an unasked gap does not become satisfied.
 
-The final output first passes `parse_memory_response`, then `validate_decision_response` checks that all required evidence is selected; no answer is given under an unknown condition; a resolved or nonconditional gap-free decision answers without further questions; and one-hop, conditional and two-hop answers belong to their respective `answer_candidates`. Any inconsistency fails before an inheritable snapshot is returned. Fixed queries guarantee consistency with the derived gaps, not complete extraction or real retrieval recall.
+The final output first passes `parse_memory_response`; `validate_decision_response` then performs the decision-consistency checks: all required evidence is selected; no answer is given under an unknown condition; a resolved or nonconditional gap-free decision answers without further questions; and one-hop, conditional and two-hop answers belong to their respective `answer_candidates`. Any inconsistency fails before an inheritable snapshot is returned. Fixed queries guarantee consistency with the derived gaps, not complete extraction or real retrieval recall.
 
 ### Explicit comparison interfaces
 

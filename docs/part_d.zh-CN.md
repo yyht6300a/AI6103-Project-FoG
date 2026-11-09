@@ -536,6 +536,33 @@ The Glass Orchard has exactly one publisher. Which person is selected by this ru
 
 实际模型均为 `gpt-4o-mini-2024-07-18`，$12$ 次事务各一次成功 HTTP 请求，无传输或业务重试、输出修复或多答案排序；HTTP 成功与上述应用校验失败分别统计。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $12$ 行，输入 $6414$、输出 $691$ tokens，已逐条核对模型及用量。运行命令为项目 Python 执行私有入口 `tmp/tmp_evidence_wording.py`；完整问题、请求、原始回复、提交图、前后状态及审阅保存在 `tmp/tmp_evidence_wording_20261109T041641726832Z.json`。全部 $12$ 次事务精确免费重放通过，包括两次校验失败及原状态保持；全部 $100$ 项离线回归通过。生产实现、严格解析器、永久拒绝规则和私有 OpenAI 配置均未变。
 
+#### otherwise 与显式不等于对照
+
+2026/11/09 执行上一轮安排的 $12$ 次独立 MSM 事务，交替比较纯人物题中的 `otherwise choose Nolan Reed` 与 `choose Nolan Reed if The Glass Orchard was not published by Silver Press`，两种完整出版社图、每图每版各重复 $3$ 次。仅改变上述问题文字，其余沿用私有字符串数组说明、默认 `retrieval_questions`、$0.95$ 分数、严格阈值 $0.7$ 和公开 `manage_memory`。每次从独立空状态开始，不添加提示词增强或正确分支提示。
+
+| 图与问题版本 | 原始人物判断 | 严格接口及发布状态 |
+| --- | --- | --- |
+| Silver，otherwise | $3/3$ 回答 `Mira Vale`，无追问 | 全部只选出版社，$3/3$ 因 `answer_membership` 失败，空旧状态保持 |
+| Silver，显式不等于 | 同上，$3/3$ 原始正确 | 同上，$3/3$ 校验失败，无状态发布 |
+| Bronze，otherwise | $3/3$ 空答案，追问 `Who published The Glass Orchard?` | $3/3$ 结构通过，只保留出版社，各永久拒绝两条出生地 |
+| Bronze，显式不等于 | $3/3$ 空答案，分别询问是否由 Silver 出版、是 Silver 还是其他出版社、由谁出版 | $3/3$ 结构通过，选择和拒绝与 otherwise 相同 |
+
+原始人物判断加无追问，两版各通过 $3/6$；完整语义验收两版均为 $0/6$。严格事务合计 $6/12$ 通过，另 $6$ 次均为所选证据缺少答案实体而失败，没有发布原始选择或拒绝。所有旧快照保持不变，成功事务的记忆、拒绝及展开排除符合规则。全部原始回复已逐项审阅，没有错误类型的非空答案；Silver 的失败属于答案来源契约，不能记作人物判断错误。显式不等于没有改善 Bronze，仅改变了部分追问措辞；这不能证明内部究竟未完成出版社比较，还是比较后未采用其结果。
+
+本轮再次确认纯人物题的诊断适配限制：人物选择可由问题规则和出版社推出，但人物并非出版社关系的头尾实体。该题能观察原始人物判断，无法在仅选出版社时满足现有答案契约；不应为此放宽生产校验或强塞与人物选择无关的出生地事实。Bronze 的 $6$ 次成功事务共发布 $12$ 个问题内出生地拒绝项，与独立人物小问题相符，未跨问题传递，不能视作完整城市题漏选必要证据或正确移除旧记忆的验证。本次下一步已完成，未改善 Bronze，原证据丢失问题及 TODO 2.3.5 保持开放；生产实现、严格解析器、永久拒绝规则和私有 OpenAI 配置均未变。
+
+新的下一步：先将诊断答案目标改为出版社实体，隔离“直接抽取事实”与“包含相等／不等于条件的回答决策”，避免人物题的答案来源冲突。固定两种完整图、类型说明、分数、阈值和独立空状态，对下面两题在每图各交替重复 $3$ 次，共 $12$ 次 MSM 事务。两题均预期 Silver 图只回答 `Silver Press`、Bronze 图只回答 `Bronze Press`，无追问；答案须在所选出版社事实中，不要求保留两条无关出生地。逐项记录原始回复、选择、重复追问、校验失败和发布状态，默认多答案排序不变，保守最多 $24$ 次逻辑调用、当前最多 $72$ 次 HTTP 尝试，实际用量另记。该下一步尚未执行。
+
+```text
+Who published The Glass Orchard? Answer with only the publisher's name.
+
+The Glass Orchard has exactly one publisher. If it was published by Silver Press, answer Silver Press; if it was not published by Silver Press, answer its actual publisher. Answer with only the publisher's name.
+```
+
+此对照只能测试条件措辞是否妨碍已有出版社事实的作答；即使全部通过，也可能只是直接复制出版社，不能据此宣告相等比较或人物分支推理通过。若直接题通过而条件题仍追问，继续定位条件问法下的回答决策；若两题均通过，再准备以 Bronze 为正向条件、交换分支顺序但保持两张受控图正确人物不变的对照，原始人物判断与接口成功仍须分开统计。若直接题失败，先保留事实抽取回归证据。暂不推广增强、不进入完整城市题或连续移除验证、不解除永久屏蔽。
+
+实际模型均为 `gpt-4o-mini-2024-07-18`，$12$ 次事务各一次成功 HTTP 请求，无传输或业务重试、输出修复或多答案排序。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $12$ 行，输入 $6348$、输出 $510$ tokens；HTTP 成功与应用校验失败分别记录。项目 Python 执行私有入口 `tmp/tmp_evidence_inequality.py`，完整问题、请求、原始回复、提交图、前后状态及审阅保存在 `tmp/tmp_evidence_inequality_20261109T042514950435Z.json`。全部 $12$ 次事务免费精确重放通过，包括 $6$ 次校验失败及空旧状态保持；逐次模型和用量与 CSV 一致，全部 $100$ 项离线回归通过。本轮仅交付诊断记录与用量。
+
 ### 尚未验证模型能正确移除旧记忆
 
 问题：原用例确实移除了旧记忆，但连必要证据也一起删除，不能算正确移除；澄清条件后的复测又保留了全部证据。离线状态转换测试通过，不等于 GPT 已正确判断哪些旧证据不再有用。

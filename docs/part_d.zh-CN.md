@@ -203,6 +203,8 @@ finally:
 
 ```text
 python scripts/validate_part_d.py --list-cases
+python scripts/validate_part_d.py --suite multihop --list-cases
+python scripts/validate_part_d.py --suite multihop
 python scripts/validate_part_d.py --suite conditional --list-cases
 python scripts/validate_part_d.py --suite single
 python scripts/validate_part_d.py --suite multi
@@ -222,6 +224,9 @@ python scripts/validate_part_d.py --suite all
 | `ranking` | $2$ | $6$ | $18$ |
 | `all`，上述四组 | $13$ | $37$ | $111$ |
 | `conditional`，单独运行 | $8$ | $24$ | $72$ |
+| `multihop`，单独运行 | $6$ | $18$ | $54$ |
+
+`multihop` 仅使用默认 `evidence_decision`，复用 `single.sufficient`、`single.insufficient`、`single.empty`、`multi.partial`、`multi.recovery`、`multi.exclusion_probe` 的事实及实际返回快照，不运行分解或独立隔离用例。正常为 $12$ 次逻辑调用；上表保守计入可选排序和额外两次传输重试。共用 `check_two_hop` 检查完整两跳抽取、必留路径、精确答案／空答案、具体允许查询、阈值隐藏事实、恢复及两阶段实际提交图；同一检查也用于默认 `single`、`multi` 和 `all` 中的六例，显式旧提示对照保留原行为。缺失关系仅接受脚本中列出的有限语义别名；图中已有关系必须精确匹配。不要求选择或拒绝无关干扰边；`distractor_rejection` 和 `multihop_observations` 单独记录自然拒绝及过滤是否已观察到，未拒绝时明确为 `not_observed`。任何必需断言失败立即停止、退出码为 $1$，不继承失败轮候选快照；成功事务保留原始抽取供人工审阅。新增入口已通过离线检查，尚未做真实两跳验收。
 
 `conditional` 不加入 `all`，对 Silver／Bronze 各执行一张独立完整图和一条从空快照开始的三轮链。首轮只给两条出生地，次轮真实继承快照且仅补出版社，末轮以 $0.95$ 重输全部事实。逐轮检查完整记忆、答案、每条查询、永久拒绝及提交前过滤；失败即停。自动检查仍需人工审阅原始需求抽取、方向、条件语义及证据支持。
 
@@ -298,7 +303,7 @@ DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
 
 保留 `evidence_decision` 默认入口、现有单跳与相等条件描述，新增明确的 `nonconditional_path` 描述变体，先只支持本问题所需的非条件两跳线性路径；聚合、递归和条件内多跳仍明确不支持。路径长度先严格限制为 $2$，不顺带实现通用查询语言或任意依赖图。
 
-首阶段仍只调用一次 LLM：抽取题中根实体及按顺序排列的关系和方向，不填写中间实体名、预测答案或自行判断路径已满足。第 1 步已实现以下协议，第 2 步已完成离线场景门槛；验收脚本断言与真实验收仍待后续步骤完成。
+首阶段仍只调用一次 LLM：抽取题中根实体及按顺序排列的关系和方向，不填写中间实体名、预测答案或自行判断路径已满足。第 1 步已实现以下协议，第 2 步已完成离线场景门槛，第 3 步已补齐验收脚本断言；真实验收待第 4 步完成。
 
 ```json
 {
@@ -339,7 +344,10 @@ DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
    > 2026/11/09：第 2 步已完成。`tests/test_evidence_decision.py` 新增 `TwoHopDefaultEntryTests` 的 $8$ 项测试，以合成首阶段和最终回复通过公开默认 `manage_memory` 覆盖 `single.sufficient`、`single.insufficient`、`single.empty`、`multi.partial`、`multi.recovery`、`multi.exclusion_probe`，多轮真实继承返回快照及查询。逐轮核对两阶段完整提交图、必留前缀、可达缺口、终跳候选、精确答案／查询及拒绝集合；阈值等于 $0.7$ 的出生事实不提交、不拒绝，升至 $0.95$ 后接通旧记忆，已有精确连接不产生伪缺口。补齐断开出生事实、无关城市、双作者一条缺证据的反例，并用预置拒绝快照确认高分干扰边在两阶段请求前过滤，不依赖真实模型主动拒绝。漏选作者边、回答中间人物／不相连城市、缺口时提前回答、错误查询及 $13$ 种无效路径结构均被对应阶段拦截，未构造新快照，旧记忆和永久拒绝保持。定向命令 `python -m unittest discover -s tests -p test_evidence_decision.py -v` 的 $21$ 项及完整命令 `python -m unittest discover -s tests -v` 的 $125$ 项全部通过；未调用真实 API，未修改生产逻辑、私有配置或共享用量账本。可以推进第 3 步，补齐维护验收脚本的 `multihop` 组及失败断言；真实两跳验收和 TODO 2.3.5 独立交付仍待办。
 
 3. **补齐同一组用例的验收断言**：在 `scripts/validate_part_d.py` 复用现有事实和轮次，增加只运行上述六个场景的 `multihop` 组，保留 `single`、`multi` 的既有入口；共用两跳检查函数，避免复制两份预期。把必需路径、精确答案、空答案、具体允许查询、阈值隐藏事实未拒绝、恢复及已拒绝事实未重新提交设为失败门槛。完整图要求包含 `AUTHOR`、`BIRTH` 并回答 `Linden City`；空图问作者；部分图保留 `AUTHOR` 并问 `Mira Vale` 的出生地。不把是否选中无关干扰边设为修复成败条件；若它从未被拒绝，报告应明确未观察到该项自然拒绝，不能冒称过滤已实测。失败立即停止，不继承失败轮结果。
-4. **离线通过后才做有界真实验证**：先运行新增路径测试及 `python -m unittest discover -s tests -v`，确认现有条件保护、严格阈值、永久拒绝和排序失败不发布均未回归。再用维护入口免费预览新组，随后只执行一次六场景真实验收，使用私有配置中的 GPT-4o-mini/OpenAI，不加业务重试、不换模型做效果竞赛。六次事务正常为 $12$ 次逻辑调用；按现有每事务最多三次及额外两次传输重试，保守上限为 $18$ 次逻辑调用、$54$ 次 HTTP 尝试。这些是待实现组的预算，当前尚不能运行 `--suite multihop`。
+
+   > 2026/11/09：第 3 步已完成。新增 `--suite multihop`，仅复用指定六例，保留默认 `single`、`multi` 入口并共用 `check_two_hop`。必留路径、精确答案／空答案、具体允许查询、完整两跳抽取、阈值隐藏事实未提交且未拒绝、继承恢复及两阶段实际提交图均成为失败门槛；失败立即停止，CLI 返回 $1$，不继承失败轮候选结果。干扰边可保留也可拒绝，报告分别记录自然拒绝和过滤覆盖；从未拒绝时明确 `not_observed`。新增离线测试覆盖六例真实快照／查询交接、自然拒绝与始终保留干扰边两种情况、碰巧答对的错误单跳抽取及逐项断言故障；脚本层 $11$ 项、完整离线 $129$ 项全部通过。免费命令 `python scripts/validate_part_d.py --suite multihop --list-cases` 确认六例和 $18$ 次逻辑调用上限；按额外两次传输重试，HTTP 上限为 $54$ 次。未调用真实 API，未修改生产模块、私有配置或共享账本。可以推进第 4 步，在 GPT-4o-mini/OpenAI 上执行一次有界真实验收并人工审阅抽取；真实两跳效果、条件冒烟和 TODO 2.3.5 独立交付仍待后续步骤。
+
+4. **离线通过后才做有界真实验证**：先运行新增路径测试及 `python -m unittest discover -s tests -v`，确认现有条件保护、严格阈值、永久拒绝和排序失败不发布均未回归。再用维护入口免费预览新组，随后只执行一次六场景真实验收，使用私有配置中的 GPT-4o-mini/OpenAI，不加业务重试、不换模型做效果竞赛。六次事务正常为 $12$ 次逻辑调用；按现有每事务最多三次及额外两次传输重试，保守上限为 $18$ 次逻辑调用、$54$ 次 HTTP 尝试。第 3 步已提供 `--suite multihop`；其离线通过及免费预览不代表真实验收已完成。
 5. **只补受影响的条件回归**：新描述变体会改变首阶段 schema，即便旧求值代码不动，也不能只靠离线测试断言模型输出无变化。六场景通过后，以现有条件入口复用两张 Silver／Bronze 完整图作真实冒烟，先提供仅运行完整图的选择能力；正常增加 $4$ 次逻辑调用，保守上限 $6$ 次逻辑调用／$18$ 次 HTTP 尝试。旧三轮链优先重放已保存的有效原始输出以验证求值与状态；schema 已改变时只能称输出重放，不能称请求与 schema 精确一致。只有共享条件逻辑改动或出现回归证据，才扩大到完整条件链，不重跑历史措辞实验或完整 `all`。
 6. **失败按阶段就地修复**：路径类型、根实体或关系抽取错误，检查首阶段提示与结构；路径抽取正确而必留／缺口／候选错误，修求值；派生正确而选择、答案或查询错误，修最终提示或发布校验。只复验失败场景及受影响的依赖链；恢复轮依赖部分轮时，从链首重新运行，不伪造前态。采用标准为六场景逐项断言、实际抽取人工审阅及受影响条件回归通过；只记录观察到的结果，不将本修复等同于 TODO 中整个独立交付验收完成。实现时同步中英文模块说明及预算，本次仅提交中文归因和计划。
 

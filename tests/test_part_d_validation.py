@@ -28,6 +28,185 @@ class PartDValidationTests(unittest.TestCase):
     loads the user's dotenv or writes to the shared usage CSV.
     """
 
+    def path_envelopes(self, keep_distractor: bool = False) -> list:
+        """Build six valid path transactions for real public-parser replay.
+
+        Args:
+            keep_distractor: Keep the optional edge to exercise honest reporting
+                when the model never naturally rejects it.
+
+        Returns:
+            Twelve synthetic completions, ordered extraction then selection.
+        """
+        extraction = completion()
+        extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional_path", "root_entity": validation.AUTHOR[0],
+            "steps": [{"relation": "written_by", "direction": "outgoing"},
+                      {"relation": "born_in", "direction": "outgoing"}],
+        }})
+        envelopes = []
+        for index, selected in enumerate((
+            [validation.AUTHOR, validation.BIRTH], [validation.AUTHOR], [],
+            [validation.AUTHOR], [validation.AUTHOR, validation.BIRTH],
+            [validation.AUTHOR, validation.BIRTH],
+        )):
+            if keep_distractor and index >= 3:
+                selected = selected + [validation.DISTRACTOR]
+            complete = index in (0, 4, 5)
+            target, relation = ((validation.AUTHOR[0], "written_by") if index == 2
+                                else (validation.BIRTH[0], "born_in"))
+            questions = [] if complete else [
+                f'Which entity does "{target}" connect to through relation "{relation}"?']
+            envelopes.extend([extraction, completion(
+                selected, [validation.BIRTH[2]] if complete else [], questions)])
+        return envelopes
+
+    def test_multihop_reuses_six_cases_and_checks_actual_state_handoffs(self):
+        """Replay twelve calls with and without natural distractor rejection.
+
+        Actual public transactions feed each successor. Both model-stage graphs
+        are checked, and an unobserved natural rejection remains explicitly so.
+        """
+        for keep in (False, True):
+            with self.subTest(keep_distractor=keep):
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = self.path_envelopes(keep)
+                report = {"plan": validation.case_plan("multihop"), "results": []}
+                validation.run_cases(client, report, "multihop")
+                records = report["results"]
+                self.assertEqual({r["case"] for r in records}, validation.PATH_CASE_NAMES)
+                self.assertEqual(client.complete.call_count, 12)
+                self.assertTrue(all(all(r["controlled_checks"].values()) for r in records))
+                for previous, current in zip(records[3:], records[4:]):
+                    self.assertEqual(current["state_before"], previous["state_after"])
+                    self.assertEqual(current["queries"], previous["subsequent_question"])
+                self.assertNotIn(validation.BIRTH, records[3]["submitted"])
+                self.assertNotIn(validation.BIRTH, records[3]["state_after"]["rejected"])
+                self.assertEqual(report["multihop_observations"], {
+                    "natural_distractor_rejection": not keep,
+                    "rejected_distractor_filtering": "not_observed" if keep else "observed",
+                })
+
+    def test_multihop_rejects_semantically_flattened_extraction_before_next_case(self):
+        """Stop a structurally valid one-hop answer that drops the author edge.
+
+        Production endpoint checks permit this synthetic extraction, so only the
+        runner's controlled two-hop gate distinguishes it from real path success.
+        """
+        extraction = completion()
+        extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional", "branch": {"requirements": [{
+                "entity": validation.BIRTH[0], "fact_queries": [{"relation": "born_in",
+                    "binding": {"kind": "observed", "evidence_ids": [0]}}],
+            }]},
+        }})
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = [extraction, completion(
+            [validation.BIRTH], [validation.BIRTH[2]], [])]
+        report = {"plan": validation.case_plan("multihop"), "results": []}
+        with self.assertRaises(RuntimeError):
+            validation.run_cases(client, report, "multihop")
+        self.assertEqual(client.complete.call_count, 2)
+        self.assertEqual(len(report["results"]), 1)
+        record = report["results"][0]
+        self.assertEqual(record["status"], "controlled_check_failure")
+        self.assertFalse(record["controlled_checks"]["two_hop_extraction"])
+        self.assertFalse(record["controlled_checks"]["required_path"])
+        self.assertTrue(record["old_state_unchanged"])
+        # The CLI must propagate this gate as failure and close its client,
+        # rather than merely reporting a false observation with exit status zero.
+        (ROOT / "tmp").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT / "tmp", prefix="tmp_path_gate_") as directory:
+            client.reset_mock()
+            client.complete.side_effect = [extraction, completion(
+                [validation.BIRTH], [validation.BIRTH[2]], [])]
+            config = LLMConfig("gpt-4o-mini", "offline-secret", "https://test.invalid/v1", 2, 2)
+            with patch.object(validation, "ROOT", Path(directory)), patch.object(
+                validation, "load_llm_config", return_value=config,
+            ), patch.object(validation, "LLMClient", return_value=client), redirect_stdout(io.StringIO()):
+                self.assertEqual(validation.main(["--suite", "multihop"]), 1)
+            client.close.assert_called_once()
+            self.assertEqual(client.complete.call_count, 2)
+            saved = json.loads(next((Path(directory) / "tmp").glob("tmp_*.json")).read_text(encoding="utf-8"))
+            self.assertEqual(saved["status"], "error")
+            self.assertEqual(len(saved["results"]), 1)
+            self.assertEqual(saved["results"][0]["status"], "controlled_check_failure")
+
+    def test_existing_default_suites_share_the_path_gate(self):
+        """Preserve decomposition and isolation while sharing six expectations.
+
+        The focused suite only omits unrelated calls; default single and multi
+        must invoke the identical checker on their corresponding path records.
+        """
+        decomp = completion()
+        decomp["choices"][0]["message"]["content"] = json.dumps([validation.QUESTION])
+        independent = completion()
+        independent["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional", "branch": {"requirements": [{
+                "entity": validation.DISTRACTOR[0], "fact_queries": [{
+                    "relation": validation.DISTRACTOR[1],
+                    "binding": {"kind": "observed", "evidence_ids": [0]},
+                }],
+            }]},
+        }})
+        path = self.path_envelopes()
+        for suite, envelopes in (
+            ("single", [decomp] + path[:6]),
+            ("multi", path[6:] + [independent, completion(
+                [validation.DISTRACTOR], [validation.DISTRACTOR[2]], [])]),
+        ):
+            with self.subTest(suite=suite):
+                client = Mock(spec=LLMClient)
+                client.complete.side_effect = envelopes
+                report = {"plan": validation.case_plan(suite), "results": []}
+                with patch.object(validation, "check_two_hop", wraps=validation.check_two_hop) as gate:
+                    validation.run_cases(client, report, suite)
+                self.assertEqual(gate.call_count, 3)
+                self.assertEqual(len(report["results"]), 4)
+                self.assertEqual(client.complete.call_count, len(envelopes))
+
+    def test_two_hop_checks_fail_independently_for_each_required_expectation(self):
+        """Inject faults after valid replay to verify runner-only failure gates.
+
+        These mutations model incorrectly permissive public results, including
+        resubmission in an actual prompt despite a correct computed union.
+        """
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = self.path_envelopes()
+        report = {"plan": validation.case_plan("multihop"), "results": []}
+        validation.run_cases(client, report, "multihop")
+        faults = (
+            (0, "selected_triplets", [validation.BIRTH], "required_path"),
+            (0, "predict_answer", (validation.BIRTH[0],), "exact_answer"),
+            (0, "subsequent_question", ("More evidence?",), "reachable_query"),
+            (1, "predict_answer", (validation.BIRTH[2],), "exact_answer"),
+            (1, "subsequent_question", ('Which entity does "Nolan Reed" connect to through relation "born_in"?',), "reachable_query"),
+            (2, "selected_triplets", [validation.AUTHOR], "empty_selection"),
+            (3, "submitted", [validation.AUTHOR, validation.BIRTH], "hidden_not_submitted_or_rejected"),
+            (4, "submitted", [validation.AUTHOR, validation.BIRTH, validation.DISTRACTOR], "prior_rejections_filtered"),
+        )
+        for index, field, value, failed_check in faults:
+            with self.subTest(check=failed_check, case=index):
+                record = json.loads(json.dumps(report["results"][index]))
+                record[field] = value
+                with self.assertRaises(RuntimeError):
+                    validation.check_two_hop(record)
+                self.assertFalse(record["controlled_checks"][failed_check])
+        record = json.loads(json.dumps(report["results"][4]))
+        record["state_before"]["memory"] = []
+        with self.assertRaises(RuntimeError):
+            validation.check_two_hop(record)
+        self.assertFalse(record["controlled_checks"]["recovery"])
+        record = json.loads(json.dumps(report["results"][5]))
+        # A syntactically valid request graph with the rejected edge injected.
+        prompt, _ = record["stages"][0]["messages"][0]["content"].split("\nNumbered knowledge: ")
+        graph = sorted([validation.AUTHOR, validation.BIRTH, validation.DISTRACTOR])
+        record["stages"][0]["messages"][0]["content"] = prompt + "\nNumbered knowledge: " + json.dumps(
+            [[i, list(t)] for i, t in enumerate(graph)])
+        with self.assertRaises(RuntimeError):
+            validation.check_two_hop(record)
+        self.assertFalse(record["controlled_checks"]["both_stage_graphs"])
+
     def test_conditional_suite_uses_default_protocol_and_inherits_real_snapshots(self):
         """Replay complete graphs and two independent chains without a provider.
 
@@ -185,7 +364,7 @@ class PartDValidationTests(unittest.TestCase):
         for suite, count, limit in (("single", 4, 10), ("multi", 4, 12), ("removal", 3, 9),
                                    ("ranking", 2, 6), ("empty_diagnostic", 1, 3),
                                    ("reference_diagnostic", 3, 5), ("clarification_diagnostic", 6, 12),
-                                   ("all", 13, 37), ("conditional", 8, 24)):
+                                   ("all", 13, 37), ("conditional", 8, 24), ("multihop", 6, 18)):
             with self.subTest(suite=suite), patch.object(validation, "load_llm_config") as load, patch.object(
                 validation, "LLMClient",
             ) as client, redirect_stdout(io.StringIO()) as output:

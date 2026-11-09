@@ -29,6 +29,17 @@ QUESTION = "Which city was the author of The Glass Orchard born in?"
 AUTHOR = ("The Glass Orchard", "written_by", "Mira Vale")
 BIRTH = ("Mira Vale", "born_in", "Linden City")
 DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
+SINGLE_PATH_CASES = (
+    ("sufficient", [AUTHOR, BIRTH], [0.95, 0.95]),
+    ("insufficient", [AUTHOR], [0.95]),
+    ("empty", [], []),
+)
+PATH_CASE_NAMES = {f"single.{name}" for name, _, _ in SINGLE_PATH_CASES} | {
+    "multi.partial", "multi.recovery", "multi.exclusion_probe",
+}
+# Missing relations may use these explicit semantic aliases, never keyword matches.
+AUTHOR_RELATIONS = ("written_by", "author", "authored_by")
+BIRTH_RELATIONS = ("born_in", "birthplace", "place_of_birth")
 BRANCH_QUESTION = (
     "The Glass Orchard has exactly one publisher. If it was published by Silver "
     "Press, which city was Mira Vale born in? Otherwise, which city was Nolan Reed "
@@ -62,8 +73,8 @@ CASES = {
     "single": [
         ("decomposition", "Nonempty standalone retrieval questions; review usefulness."),
         ("sufficient", "Retain the two-hop path; answer Linden City from selected evidence."),
-        ("insufficient", "Author alone cannot establish birthplace; ask for missing evidence."),
-        ("empty", "No selected evidence or answer; return 1-3 clarification questions."),
+        ("insufficient", "Retain AUTHOR, withhold answers and ask only for Mira Vale's birthplace."),
+        ("empty", "No selected evidence or answer; ask only for The Glass Orchard's author."),
     ],
     "multi": [
         ("partial", "Keep useful author evidence; birth score 0.7 is hidden, not rejected."),
@@ -99,8 +110,10 @@ def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dic
     """List the fixed calls and expectations without loading private settings.
 
     Args:
-        suite: CLI-validated acceptance or diagnostic selection. Conditional
-            full graphs/chains are separate from the original thirteen-case all.
+        suite: CLI-validated acceptance or diagnostic selection. Multihop reuses
+            exactly the six path cases, without decomposition or isolation.
+            Conditional full graphs/chains are separate from the original
+            thirteen-case all.
         prompt_variant: Default decision pipeline or explicit comparison variant.
 
     Returns:
@@ -108,13 +121,15 @@ def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dic
         permits decision, selection and ranking if it returns multiple answers;
         decomposition permits one request. Each has YAML transport retries.
     """
-    groups = ("single", "multi", "removal", "ranking") if suite == "all" else (suite,)
+    groups = (("single", "multi", "removal", "ranking") if suite == "all"
+              else ("single", "multi") if suite == "multihop" else (suite,))
     memory_limit = 3 if prompt_variant == "evidence_decision" else 2
     return [{"case": f"{group}.{name}", "expected": expected,
              "logical_call_limit": 1 if (group == "single" and name == "decomposition")
                  or (group == "reference_diagnostic" and name != "named_author")
                  else 2 if group == "clarification_diagnostic" else memory_limit}
-            for group in groups for name, expected in CASES[group]]
+            for group in groups for name, expected in CASES[group]
+            if suite != "multihop" or f"{group}.{name}" in PATH_CASE_NAMES]
 
 
 def snapshot(state: QuestionMemory) -> dict:
@@ -263,7 +278,80 @@ def memory_round(
     if not record["old_state_unchanged"] or not record["state_rules_match"]:
         record["status"] = "state_rule_failure"
         raise RuntimeError("Acceptance state invariant failed")
+    if name in PATH_CASE_NAMES and prompt_variant == "evidence_decision":
+        check_two_hop(record)
     return result
+
+
+def check_two_hop(record: dict) -> None:
+    """Gate the shared six path fixtures before a returned state is inherited.
+
+    Args:
+        record: Completed public transaction, including original stage requests
+            and completions. Checks and natural-rejection coverage are appended.
+
+    Raises:
+        RuntimeError: Any fixture expectation fails. Optional distractor selection
+            is never a failure; filtering is claimed only for prior rejection.
+    """
+    name = record["case"]
+    complete = name in ("single.sufficient", "multi.recovery", "multi.exclusion_probe")
+    empty = name == "single.empty"
+    required = set() if empty else {AUTHOR, BIRTH} if complete else {AUTHOR}
+    selected = set(map(tuple, record["selected_triplets"]))
+    before_rejected = set(map(tuple, record["state_before"]["rejected"]))
+    submitted = set(map(tuple, record["submitted"]))
+    after_rejected = set(map(tuple, record["state_after"]["rejected"]))
+    target, relations = (AUTHOR[0], AUTHOR_RELATIONS) if empty else (BIRTH[0], BIRTH_RELATIONS)
+    allowed = {f'Which entity does "{target}" connect to through relation "{relation}"?'
+               for relation in relations}
+    questions = record["subsequent_question"]
+    checks = {
+        "required_path": required <= selected,
+        "exact_answer": tuple(record["predict_answer"]) == ((BIRTH[2],) if complete else ()),
+        "reachable_query": not questions if complete else
+            len(questions) == 1 and questions[0] in allowed,
+        "empty_selection": not empty or not selected,
+        "hidden_not_submitted_or_rejected": name != "multi.partial" or
+            BIRTH not in submitted | after_rejected,
+        "recovery": name != "multi.recovery" or
+            AUTHOR in set(map(tuple, record["state_before"]["memory"])) and BIRTH in selected,
+        "prior_rejections_filtered": not before_rejected.intersection(submitted),
+    }
+    if record["prompt_variant"] == "evidence_decision":
+        # Inspect actual requests too: the runner's computed union alone cannot
+        # prove that rejected evidence was absent from both model stages.
+        stages = record["stages"]
+        extraction = json.loads(stages[0]["completion"]["choices"][0]["message"]["content"])
+        description = extraction["description"]
+        root_relations = AUTHOR_RELATIONS if empty else (AUTHOR[1],)
+        end_relations = (BIRTH[1],) if complete else BIRTH_RELATIONS
+        steps = description.get("steps", [])
+        checks["two_hop_extraction"] = (
+            description.get("kind") == "nonconditional_path"
+            and description.get("root_entity") == AUTHOR[0] and len(steps) == 2
+            and steps[0] in [{"relation": rel, "direction": "outgoing"} for rel in root_relations]
+            and steps[1] in [{"relation": rel, "direction": "outgoing"} for rel in end_relations]
+        )
+        first_prompt = stages[0]["messages"][0]["content"]
+        numbered = json.loads(first_prompt.split("\nNumbered knowledge: ", 1)[1])
+        second_prompt = stages[1]["messages"][0]["content"]
+        graph = json.loads(second_prompt.split("Knowledge: ", 1)[1].split(
+            "\n### Validated Evidence Decision", 1)[0])
+        checks["both_stage_graphs"] = (
+            numbered == [[i, list(t)] for i, t in enumerate(sorted(submitted))]
+            and graph == [list(t) for t in sorted(submitted)]
+        )
+    record["controlled_checks"] = checks
+    record["distractor_rejection"] = {
+        "observed_before": DISTRACTOR in before_rejected,
+        "observed_after": DISTRACTOR in after_rejected,
+        "filtering": "observed" if DISTRACTOR in before_rejected
+            and all(checks.values()) else "not_observed",
+    }
+    if not all(checks.values()):
+        record["status"] = "controlled_check_failure"
+        raise RuntimeError("Two-hop acceptance expectation failed")
 
 
 def run_cases(client: LLMClient, report: dict, suite: str) -> None:
@@ -272,9 +360,9 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
     Args:
         client: Real LLMClient, shared across independent question states.
         report: Mutable report storing validated output for later semantic review.
-        suite: Standard acceptance group, conditional full graphs/chains, an
-            explicit diagnostic group, or all. Conditional and diagnostics are
-            excluded from all, which retains thirteen cases.
+        suite: Standard acceptance group, focused multihop group, conditional
+            full graphs/chains, an explicit diagnostic group, or all. Conditional
+            and diagnostics are excluded from all, which retains thirteen cases.
 
     Multi-round retrieval consumes the preceding response's questions but returns
     controlled rows rather than implementing C/E. Empty questions are recorded
@@ -346,21 +434,19 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
         memory_round(client, report, "empty_diagnostic.probe",
                      QuestionMemory(BRANCH_QUESTION), [], [], (BRANCH_QUESTION,))
 
-    if suite in ("single", "all"):
-        record = begin_case(report, "single.decomposition")
-        record["question"] = QUESTION
-        record["logical_calls_started"] = 1
-        questions = decompose_question(QUESTION, client)
-        record.update(status="validated", sub_questions=questions)
-        for name, triples, scores in (
-            ("sufficient", [AUTHOR, BIRTH], [0.95, 0.95]),
-            ("insufficient", [AUTHOR], [0.95]),
-            ("empty", [], []),
-        ):
+    if suite in ("single", "multihop", "all"):
+        questions = (QUESTION,)
+        if suite != "multihop":
+            record = begin_case(report, "single.decomposition")
+            record["question"] = QUESTION
+            record["logical_calls_started"] = 1
+            questions = decompose_question(QUESTION, client)
+            record.update(status="validated", sub_questions=questions)
+        for name, triples, scores in SINGLE_PATH_CASES:
             memory_round(client, report, f"single.{name}", QuestionMemory(QUESTION),
                          triples, scores, questions)
 
-    if suite in ("multi", "all"):
+    if suite in ("multi", "multihop", "all"):
         first = memory_round(
             client, report, "multi.partial", QuestionMemory(QUESTION),
             [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.7, 0.95], (QUESTION,),
@@ -375,6 +461,15 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
             [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.95, 0.95],
             second.response.subsequent_question,
         )
+        report["multihop_observations"] = {
+            "natural_distractor_rejection": DISTRACTOR in third.state.rejected_triplets,
+            "rejected_distractor_filtering": "observed" if any(
+                r.get("distractor_rejection", {}).get("filtering") == "observed"
+                for r in report["results"]
+            ) else "not_observed",
+        }
+        if suite == "multihop":
+            return
         independent = memory_round(
             client, report, "multi.independent",
             QuestionMemory("Who wrote The Copper Harbor?"),
@@ -450,7 +545,7 @@ def main(argv: list[str] | None = None) -> int:
         human review and the final GPT-4o-mini gate, even when exit status is zero.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=(*CASES, "all"), default="all")
+    parser.add_argument("--suite", choices=(*CASES, "multihop", "all"), default="all")
     parser.add_argument(
         "--prompt-variant", default="evidence_decision",
         choices=("evidence_decision", "retrieval_questions", "paper", "answer_ranking"),
@@ -458,6 +553,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list-cases", action="store_true",
                         help="Print expectations and call counts without loading .env or using API.")
     args = parser.parse_args(argv)
+    if args.suite == "multihop" and args.prompt_variant != "evidence_decision":
+        parser.error("multihop requires the default evidence_decision protocol")
     report = {
         "suite": args.suite, "prompt_variant": args.prompt_variant,
         "plan": case_plan(args.suite, args.prompt_variant), "results": [],

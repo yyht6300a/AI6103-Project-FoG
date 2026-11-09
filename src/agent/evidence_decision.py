@@ -14,10 +14,17 @@ from src.agent.validation_error import MemoryValidationError
 CASES = ("true", "false", "not_conditional")
 DECISION_INSTRUCTIONS = """Extract the original question's condition and branch requirements.
 Return only the specified JSON. Do not evaluate the condition yourself.
-Wrap the extraction in description. Its kind is conditional_equals for a
-supported equality condition, nonconditional only when the ORIGINAL QUESTION
-has no branch condition, or unsupported with a verbatim quote of the unsupported
-requirement. Question type is independent of graph values and missing evidence.
+Wrap the extraction in description. Choose exactly one of four kinds from the
+ORIGINAL QUESTION before filling fields: conditional_equals for a supported
+equality branch condition; nonconditional_path for a nonconditional two-hop
+dependency; nonconditional for independent one-hop requirements only; unsupported
+with a verbatim quote for requirements outside these supported forms.
+Finding an entity and then asking its attribute is a dependency: ALWAYS use
+nonconditional_path even when the graph already names the intermediate entity.
+For example, "Where is the headquarters of the company that owns Aurora Tower?"
+uses root_entity Aurora Tower and ordered outgoing steps owned_by, headquarters.
+Do not represent that dependency as independent nonconditional entity groups.
+Question type is independent of graph values and missing evidence.
 A false or unknown condition is still conditional_equals. Quote the original
 branch-determining condition in condition_quote. An instruction to ask first
 when evidence is missing is an answering prerequisite, not the branch condition.
@@ -29,7 +36,8 @@ name (if absent, describe the required relation). operator is eq. uniqueness_quo
 is the exact original-question passage explicitly establishing a single value,
 or empty if absent.
 The comparison value is a query constraint, NEVER an observed fact.
-For each branch supply requirements: groups with entity and fact_queries.
+Only for conditional_equals and nonconditional, the following grouped one-hop
+binding instructions apply. For each branch supply requirements: groups with entity and fact_queries.
 entity is the known entity whose attribute or relation the question asks about,
 not the retrieved answer endpoint. Generate that entity only once per group.
 Each query belongs to its group's entity and has only relation and binding.

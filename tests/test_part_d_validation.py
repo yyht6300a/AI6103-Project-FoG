@@ -28,6 +28,56 @@ class PartDValidationTests(unittest.TestCase):
     loads the user's dotenv or writes to the shared usage CSV.
     """
 
+    def test_selected_case_and_dependencies(self):
+        """Execute only the chosen transaction and reject missing prior rounds.
+
+        Invalid selection must fail before configuration or a paid client loads.
+        """
+        plan = validation.case_plan("multihop", cases=["single.sufficient"])
+        report = {"plan": plan, "results": []}
+        client = Mock(spec=LLMClient)
+        client.complete.side_effect = self.path_envelopes()[:2]
+        validation.run_cases(client, report, "multihop")
+        self.assertEqual(client.complete.call_count, 2)
+        self.assertEqual(len(report["results"]), 1)
+        with patch.object(validation, "load_llm_config") as load:
+            with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
+                validation.main(["--suite", "multihop", "--case", "multi.recovery"])
+            load.assert_not_called()
+        self.assertEqual(len(validation.case_plan("conditional", cases=[
+            "conditional.silver_full", "conditional.bronze_full"])), 2)
+
+    def test_failed_extraction_projection_is_bounded_and_atomic(self):
+        """Preserve useful fake-gap fields without retaining failed raw text.
+
+        The real public entry must still fail once and preserve the old state.
+        Unknown strings and malformed content cannot leak through the projection.
+        """
+        from src.agent.memory_state import QuestionMemory
+        extraction = completion()
+        extraction["choices"][0]["message"]["content"] = json.dumps({"description": {
+            "kind": "nonconditional", "branch": {"requirements": [{
+                "entity": validation.AUTHOR[0], "fact_queries": [{
+                    "relation": "written_by", "binding": {
+                        "kind": "missing", "direction": "outgoing"}}]}]}}})
+        client = Mock(spec=LLMClient)
+        client.complete.return_value = extraction
+        state = QuestionMemory(validation.QUESTION)
+        report = {"plan": validation.case_plan("multihop", cases=["single.sufficient"]), "results": []}
+        with self.assertRaises(ValueError):
+            validation.memory_round(client, report, "single.sufficient", state,
+                                    [validation.AUTHOR, validation.BIRTH], [0.95, 0.95], ())
+        record = report["results"][0]
+        self.assertTrue(record["old_state_unchanged"])
+        self.assertEqual(client.complete.call_count, 1)
+        self.assertEqual(record["failed_extraction"]["status"], "validated_projection")
+        self.assertEqual(record["failed_extraction"]["hits"][0]["graph_ids"], [1])
+        for text in ("secret-key", '{"description":{"kind":"secret-key"}}'):
+            extraction["choices"][0]["message"]["content"] = text
+            result = validation.extraction_projection({"completion": extraction}, state, {validation.AUTHOR})
+            self.assertEqual(result, {"status": "unavailable"})
+            self.assertNotIn("secret-key", json.dumps(result))
+
     def path_envelopes(self, keep_distractor: bool = False) -> list:
         """Build six valid path transactions for real public-parser replay.
 

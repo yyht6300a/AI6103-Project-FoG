@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.agent.validation_error import failure_diagnostics
+from src.agent.evidence_decision import decode_description
 from src.agent.llm_client import LLMClient
 from src.agent.llm_config import load_llm_config
 from src.agent.memory_management import manage_memory
@@ -106,7 +107,7 @@ CASES = {
 }
 
 
-def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dict]:
+def case_plan(suite: str, prompt_variant: str = "evidence_decision", cases=None) -> list[dict]:
     """List the fixed calls and expectations without loading private settings.
 
     Args:
@@ -115,6 +116,7 @@ def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dic
             Conditional full graphs/chains are separate from the original
             thirteen-case all.
         prompt_variant: Default decision pipeline or explicit comparison variant.
+        cases: Optional exact case identifiers; dependency chains must be complete.
 
     Returns:
         Ordered cases with per-case logical request limits. Every memory round
@@ -124,12 +126,31 @@ def case_plan(suite: str, prompt_variant: str = "evidence_decision") -> list[dic
     groups = (("single", "multi", "removal", "ranking") if suite == "all"
               else ("single", "multi") if suite == "multihop" else (suite,))
     memory_limit = 3 if prompt_variant == "evidence_decision" else 2
-    return [{"case": f"{group}.{name}", "expected": expected,
+    plan = [{"case": f"{group}.{name}", "expected": expected,
              "logical_call_limit": 1 if (group == "single" and name == "decomposition")
                  or (group == "reference_diagnostic" and name != "named_author")
                  else 2 if group == "clarification_diagnostic" else memory_limit}
             for group in groups for name, expected in CASES[group]
             if suite != "multihop" or f"{group}.{name}" in PATH_CASE_NAMES]
+    if cases is None:
+        return plan
+    selected = set(cases)
+    available = {item["case"] for item in plan}
+    if not selected <= available:
+        raise ValueError("Case must belong to selected suite")
+    chains = [ [f"{group}.{stage}" for stage in stages] for group, stages in (
+        ("multi", ("partial", "recovery", "exclusion_probe")),
+        ("removal", ("unresolved", "resolved", "exclusion_probe")),
+        *(("conditional", tuple(f"{branch}_{s}" for s in ("unknown", "resolved", "probe")))
+          for branch in ("silver", "bronze")),
+    )]
+    for chain in chains:
+        for index, name in enumerate(chain):
+            if name in selected and not set(chain[:index]) <= selected:
+                raise ValueError("Select preceding dependency rounds too")
+    if suite not in ("multihop", "conditional"):
+        raise ValueError("Case selection supports multihop and conditional suites only")
+    return [item for item in plan if item["case"] in selected]
 
 
 def snapshot(state: QuestionMemory) -> dict:
@@ -211,6 +232,63 @@ class CountingClient:
         return completion
 
 
+def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> dict:
+    """Keep bounded, validated fixture fields after a failed extraction.
+
+    Args:
+        call: First captured completion; raw text never enters the report.
+        state: Original question used by the production description decoder.
+        submitted: Controlled graph, also used to annotate exact endpoint hits.
+
+    Returns:
+        A safe description and matching graph IDs, or a fixed unavailable marker.
+        Strings must belong to the fixture vocabulary or original question.
+    """
+    unavailable = {"status": "unavailable"}
+    try:
+        content = call["completion"]["choices"][0]["message"]["content"]
+        if not isinstance(content, str) or len(content) > 12000:
+            return unavailable
+        payload = json.loads(content)
+        decode_description(payload, state.original_question)
+        description = payload["description"]
+        vocabulary = {part for row in submitted for part in row} | {
+            "nonconditional_path", "nonconditional", "conditional_equals", "unsupported",
+            "observed", "missing", "outgoing", "incoming", "eq", "written_by",
+            "born_in", "author", "authored_by", "birthplace", "place_of_birth", "",
+        }
+        def bounded(value):
+            """Check nested values against public fixture strings and size bounds.
+
+            Args:
+                value: Decoded schema-validated JSON subtree.
+
+            Returns:
+                Whether every string is safe to retain in the private report.
+            """
+            if isinstance(value, str):
+                return len(value) <= 512 and (value in vocabulary or value in state.original_question)
+            if isinstance(value, dict):
+                return len(value) <= 16 and all(bounded(v) for v in value.values())
+            if isinstance(value, list):
+                return len(value) <= 32 and all(bounded(v) for v in value)
+            return type(value) is int and 0 <= value < len(submitted)
+        if not bounded(description):
+            return unavailable
+        hits = []
+        branches = description.get("branches", {"branch": description.get("branch", {})})
+        for branch, body in branches.items():
+            for group in body.get("requirements", []):
+                for query in group["fact_queries"]:
+                    hits.append({"branch": branch, "entity": group["entity"],
+                                 "relation": query["relation"], "graph_ids": [
+                                     i for i, row in enumerate(sorted(submitted))
+                                     if row[1] == query["relation"] and group["entity"] in (row[0], row[2])]})
+        return {"status": "validated_projection", "description": description, "hits": hits}
+    except (KeyError, IndexError, TypeError, ValueError):
+        return unavailable
+
+
 def memory_round(
     client: LLMClient, report: dict, name: str, state: QuestionMemory,
     triples: list, scores: list, queries: tuple | list,
@@ -256,6 +334,8 @@ def memory_round(
         record.update(status="error", error_type=type(error).__name__,
                       **failure_diagnostics(error),
                       state_after=snapshot(state), old_state_unchanged=snapshot(state) == before)
+        if name in PATH_CASE_NAMES and counted.calls and prompt_variant == "evidence_decision":
+            record["failed_extraction"] = extraction_projection(counted.calls[0], state, submitted)
         raise
 
     selected = result.state.memory_triplets
@@ -377,6 +457,8 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
             publisher = (PUBLISHER[0], PUBLISHER[1], value)
             prior = None
             for stage in ("full", "unknown", "resolved", "probe"):
+                if f"conditional.{branch}_{stage}" not in {item["case"] for item in report["plan"]}:
+                    continue
                 state = (QuestionMemory(BRANCH_QUESTION) if stage in ("full", "unknown")
                          else prior.state)
                 triples = ([BIRTH, OTHER_BIRTH] if stage == "unknown" else [publisher]
@@ -443,19 +525,27 @@ def run_cases(client: LLMClient, report: dict, suite: str) -> None:
             questions = decompose_question(QUESTION, client)
             record.update(status="validated", sub_questions=questions)
         for name, triples, scores in SINGLE_PATH_CASES:
+            if f"single.{name}" not in {item["case"] for item in report["plan"]}:
+                continue
             memory_round(client, report, f"single.{name}", QuestionMemory(QUESTION),
                          triples, scores, questions)
 
     if suite in ("multi", "multihop", "all"):
+        if "multi.partial" not in {item["case"] for item in report["plan"]}:
+            return
         first = memory_round(
             client, report, "multi.partial", QuestionMemory(QUESTION),
             [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.7, 0.95], (QUESTION,),
         )
+        if "multi.recovery" not in {item["case"] for item in report["plan"]}:
+            return
         second = memory_round(
             client, report, "multi.recovery", first.state,
             [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.95, 0.95],
             first.response.subsequent_question,
         )
+        if "multi.exclusion_probe" not in {item["case"] for item in report["plan"]}:
+            return
         third = memory_round(
             client, report, "multi.exclusion_probe", second.state,
             [AUTHOR, BIRTH, DISTRACTOR], [0.95, 0.95, 0.95],
@@ -552,12 +642,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--list-cases", action="store_true",
                         help="Print expectations and call counts without loading .env or using API.")
+    parser.add_argument("--case", action="append", help="Exact case ID; repeat to select dependencies.")
     args = parser.parse_args(argv)
     if args.suite == "multihop" and args.prompt_variant != "evidence_decision":
         parser.error("multihop requires the default evidence_decision protocol")
+    try:
+        plan = case_plan(args.suite, args.prompt_variant, args.case)
+    except ValueError as error:
+        parser.error(str(error))
     report = {
         "suite": args.suite, "prompt_variant": args.prompt_variant,
-        "plan": case_plan(args.suite, args.prompt_variant), "results": [],
+        "plan": plan, "results": [],
         "semantic_review": "pending", "status": "not_started",
         "usage_csv": "logs/llm_usage.csv",
     }

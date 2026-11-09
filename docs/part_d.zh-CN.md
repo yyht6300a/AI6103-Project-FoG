@@ -353,6 +353,12 @@ DISTRACTOR = ("The Copper Harbor", "written_by", "Nolan Reed")
 
    **第 4 步补充归因与处置方案**
 
+   > 2026/11/09 执行结果：已修正首阶段提示的四类路由，明确两跳依赖即使已知中间实体也必须使用 `nonconditional_path`，并加入不同实体示例；未修改 schema、求值器或发布契约。同一验收入口新增可重复的 `--case`，支持 `multihop`／`conditional` 的既有用例、保留原顺序，遗漏前置依赖时在加载配置前失败。受控两跳首阶段业务失败时保存经生产解码、字段词汇和长度限制的投影及精确命中编号；无效／未知文本只记 `unavailable`，不保存原始失败回复。新增单例执行、依赖拦截、假缺口投影及敏感文本排除测试，完整离线 $131$ 项通过；字符扫描通过。免费预览 `--suite multihop --case single.sufficient --list-cases` 确认仅一例，最多 $3$ 次逻辑调用／$9$ 次 HTTP。
+   >
+   > 仅复验 `single.sufficient`，使用 `gpt-4o-mini-2024-07-18`／OpenAI，仍在首阶段触发 `evidence_decision / decision_conflict`，立即停止。私有报告 `tmp/tmp_part_d_validation_20261109T122246762856Z.json` 的投影确认本次实际错误：`kind=conditional_equals`；把书的 `written_by=Mira Vale` 当作条件，把整句原题当作 `condition_quote`；`true` 分支引用编号 $0$ 的出生事实，`false` 分支却把同一人的 `born_in` 标为 `missing/outgoing`，完整图编号 $0$ 精确命中，触发假缺口校验。此证据只说明本次回复，不能还原上一次历史失败。未执行最终选择、排序或后五例，旧空快照及拒绝集合不变。共享账本仅新增 $1$ 次成功 HTTP，输入 $1395$、输出 $135$ tokens，调用计数相符，无重试；私有 `.env` SHA-256 前后相同。
+   >
+   > 不能推进第 5 步。下一项仍是第 6 步的首阶段修复：明确关系依赖／定语从句不是分支条件，`conditional_equals` 必须有原题显式真假分支，禁止从图中关系构造条件；保留已有两跳路由和严格校验。补充本次实际错误结构的免费回归后，只再次复验首例，新增预算单独列明；通过后才运行剩余五例及条件完整图冒烟。不改求值器，不自动把旧结构转换成路径，不重复相同提示调用。TODO 2.3.5 独立交付验收保持待办。
+
    2026/11/09：本次重新核对失败报告、账本及实际代码，并用 `tmp/tmp_step4_conflict_attribution.py` 免费验证触发边界；未读取 `.env`、调用 API 或修改生产代码。以下进一步收窄上方执行记录中的不确定性，并给出待实施方案；不表示已找回历史回复或修复已通过。
 
    **已经确定的失败链**

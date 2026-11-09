@@ -695,7 +695,7 @@ Mira 出生边在 resolved 轮被提交但未被选中，因此按提交并集�
 - 抽取阶段请求与保存请求只在 `DECISION_INSTRUCTIONS` 前缀不同，`Original question` 之后的题目与编号图逐字一致；选择／排序阶段请求逐字一致；每事务仍为 $2$ 次逻辑调用。
 - 定向测试：`test_evidence_decision.py` $27$ 项、`test_part_d_validation.py` $29$ 项（原 $25$ 项加新增 $4$ 项）全部通过；最终修改树全套 $153$ 项通过（原 $149$ 项加 $4$ 项）。
 - 字符扫描无 emoji、零宽／双向控制符与 BOM；`ast.parse` 通过；`git diff --check` 无空白错误；免费预览 `python scripts/validate_part_d.py --suite conditional --list-cases` 输出 $8$ 个用例与逻辑调用上限 $24$，未加载配置。
-- 私有基线与重放脚本显式阻断 socket、生产配置、dotenv 与真实客户端，守卫计数全为 $0$。两份真实报告、人工审阅记录、$572$ 行账本摘要及其余生产模块摘要不变；改动文件恰为 `src/agent/evidence_decision.py`、`scripts/validate_part_d.py` 与 `tests/test_part_d_validation.py`。
+- 重放脚本显式阻断 socket、生产配置、dotenv 与真实客户端，守卫计数全为 $0$；基线脚本只读取文件并计算摘要，不导入客户端或配置。两份真实报告、人工审阅记录、$572$ 行账本摘要及其余生产模块摘要不变；改动文件恰为 `src/agent/evidence_decision.py`、`scripts/validate_part_d.py` 与 `tests/test_part_d_validation.py`。
 
 本轮仍未知：新提示措辞对真实抽取的效果、模型内部原因、Silver 链结果，以及门槛在其它合法别名下的误拒概率。离线通过只证明契约与夹具门槛，不构成业务验收；TODO 2.3.5、2.3.6 与 2.4 保持开放。下一轮如需有界复验，须另行取得明确授权：先 Bronze 三轮，通过后 Silver 三轮；每链正常 $6$ 次逻辑调用，上限 $9$ 逻辑／$27$ HTTP，两链合计 $12$／$18$／$54$；首个自动或人工语义失败即停，不重跑 ranking、不重采样、不循环改提示。私有基线为 `tmp_dsh/tmp_missing_direction_baseline_20261109T184334452821Z.json`，重放脚本为 `tmp_dsh/tmp_missing_direction_replay.py`，结果为 `tmp_dsh/tmp_missing_direction_replay_20261109T185142580179Z.json`。
 

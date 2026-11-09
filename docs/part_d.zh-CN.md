@@ -487,6 +487,32 @@ branch to answer, and do not ask again for the known publisher.
 
 实际返回均为 `gpt-4o-mini-2024-07-18`；$18$ 次事务各一次成功 HTTP 请求，无传输重试、业务重试、输出修复或多答案排序。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $18$ 行，输入 $10044$、输出 $1215$ tokens。私有入口为 `tmp/tmp_evidence_condition.py`，运行命令为项目 Python 执行该文件；完整指令、请求、原始成功 HTTP 回复、提交图、前后状态及审计保存在 `tmp/tmp_evidence_condition_20261109T040052050573Z.json`。全部 $18$ 次事务免费精确重放通过，核对提示词、有效输出及快照，CSV 返回模型和逐次用量与原始回复一致；全部 $100$ 项离线回归通过。生产实现、严格解析器、永久拒绝规则和私有 OpenAI 配置均未变。
 
+#### 出版社、回答人物与出生地隔离诊断
+
+2026/11/09 执行上一轮安排的 $18$ 次独立 MSM 事务。在 `Silver Press`、`Bronze Press` 两种完整图上，分别询问出版社、条件下应回答谁的出生地、对应具名人物的出生城市，各重复 $3$ 次。每次从空记忆和空拒绝集合开始；两图均包含相同的两条出生地事实，仅出版社不同。通过公开 `manage_memory`，保持默认 `retrieval_questions`、私有字符串数组类型说明、$0.95$ 分数及严格阈值 $0.7$；未添加条件判断或保留增强。出版社问题为 `Who published The Glass Orchard?`，出生地问题为 `In which city was Mira Vale born?` 或 `In which city was Nolan Reed born?`。人物问题逐字如下，两图使用同一问题：
+
+```text
+The Glass Orchard has exactly one publisher. If it was published by Silver Press, we need Mira Vale's birthplace; otherwise, we need Nolan Reed's birthplace. Whose birthplace should we answer with? Return only the person's name as the answer. If the publisher is unknown, ask for the publisher before answering.
+```
+
+| 小问题 | Silver 图，独立重复 $3$ 次 | Bronze 图，独立重复 $3$ 次 |
+| --- | --- | --- |
+| 出版社抽取 | $3/3$ 只保留出版社事实，回答 `Silver Press`，不追问 | $3/3$ 只保留出版社事实，回答 `Bronze Press`，不追问 |
+| 条件下应回答的人物 | $0/3$ 符合预期；均保留三条，却回答 `Linden City` 而非 `Mira Vale`，不追问 | $0/3$ 符合预期；均保留三条、不作答，继续询问已给出的出版社，而非回答 `Nolan Reed` |
+| 具名人物出生城市 | $3/3$ 只保留 Mira 出生地，回答 `Linden City`，不追问 | $3/3$ 只保留 Nolan 出生地，回答 `Cedar City`，不追问 |
+
+全部 $18/18$ 通过严格解析及状态检查，旧快照保持不变；原始 HTTP 回复、有效输出、选择及追问已逐项审阅。出版社与城市抽取合计 $12/12$ 符合预期，条件人物问题 $0/6$。Silver 返回的城市属于图中实体且有事实支持，因此可以通过实体校验，却不满足人物名回答要求；这不直接等于分支选择错误。Bronze 在直接事实问题中正确抽取出版社和城市，在条件人物问题中仍重复询问出版社，说明本轮故障仍集中于条件问法下的回答决策，不能据此推断其内部比较步骤。人物问题虽然明确要求人物名，但仍包含两处出生地目标及未知时先询问的说明，措辞影响尚未隔离，不能把其失败完全归因于逻辑能力。
+
+人物组全部保留三条，没有新增拒绝。事实组各只选择直接相关的一条，将其余两条永久拒绝：共 $12$ 个独立事务、$24$ 个问题内拒绝项。这些省略与各自的事实小问题相符，不是完整条件题中的必要证据漏选，也不是旧记忆移除；拒绝集合彼此隔离，没有传递给其他小问题。本轮未执行拒绝后重输、连续轮次或恢复，不能据此关闭证据漏选或正确旧记忆移除问题。生产实现、严格解析器、永久拒绝规则和私有 OpenAI 配置均未变，TODO 2.3.5 保持待办。
+
+新的下一步：先隔离人物问题的目标措辞，固定本轮两种完整图、类型说明、分数、阈值和独立空状态，比较本轮人物问题与以下不含出生地或未知时追问说明的纯人物选择问题，每种图每版独立重复 $3$ 次，交替运行，共 $12$ 次 MSM 事务。只改原问题措辞，不增加提示词增强，不改图、不注入正确分支；预期 Silver 仅回答 `Mira Vale`，Bronze 仅回答 `Nolan Reed`，均不追问。逐项记录人物名、错误类型的答案、空答案、重复追问、选择和拒绝；通过条件仍是正确人物名且无追问，不能将图内任意实体视为正确。若纯人物版两图均通过，再准备与完整城市条件题配对的显式出版社相等比较；若仍失败，先在同一人物选择问题下隔离“否则”与显式“不等于 Silver”两种表述，保留失败证据。该下一步尚未执行；暂不推广增强、进行连续移除或解除屏蔽。按默认多答案排序，保守最多 $24$ 次逻辑调用，当前配置最多 $72$ 次 HTTP 尝试，实际用量单独记录。
+
+```text
+The Glass Orchard has exactly one publisher. Which person is selected by this rule: choose Mira Vale if The Glass Orchard was published by Silver Press; otherwise choose Nolan Reed? Answer with only the selected person's name.
+```
+
+实际模型均为 `gpt-4o-mini-2024-07-18`，$18$ 次事务各一次成功 HTTP 请求，无传输或业务重试、输出修复或多答案排序。新增 [`logs/llm_usage.csv`](../logs/llm_usage.csv) 共 $18$ 行，输入 $9141$、输出 $890$ tokens，已逐条核对返回模型和用量。运行命令为项目 Python 执行私有入口 `tmp/tmp_evidence_probes.py`；完整问题、预期、请求、原始成功 HTTP 回复、提交图、前后状态及审计保存在 `tmp/tmp_evidence_probes_20261109T040910813692Z.json`。全部 $18$ 次事务精确免费重放通过，提示词、有效输出及快照与原运行一致；全部 $100$ 项离线回归通过。本次下一步已完成，独立诊断关卡未通过，仅交付诊断记录和用量。
+
 ### 尚未验证模型能正确移除旧记忆
 
 问题：原用例确实移除了旧记忆，但连必要证据也一起删除，不能算正确移除；澄清条件后的复测又保留了全部证据。离线状态转换测试通过，不等于 GPT 已正确判断哪些旧证据不再有用。

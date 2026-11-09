@@ -32,6 +32,11 @@ preserve the available evidence for all possible targets. If the condition is
 resolved (or not_conditional) and missing_relations is empty, answer the original
 question and ask no further questions. Otherwise ask only for missing relations.
 subsequent_question must be an array of strings, never objects.
+For nonconditional_path, required_triplets includes every reachable prefix,
+including incomplete paths. Select all of them. Any missing_relations forbids
+answers even if another path is complete. With no gaps, answer only with terminal
+answer_candidates, never intermediate entities or disconnected endpoints. Ask
+only the rendered allowed queries for currently reachable missing relations.
 Targets from the question do not bypass the existing selected-entity answer
 constraint. Return only the existing three output fields.
 """

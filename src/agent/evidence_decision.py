@@ -44,13 +44,21 @@ one-hop fact even when absent from the graph. Use exact graph relation names
 when present. Never supply predicted values or select evidence. Both conditional
 branches must have nonempty requirements, each with nonempty fact_queries.
 Multiple entities and multiple relations per entity are allowed, including
-incoming relations and entities with no observed facts. Multi-hop, aggregation and complex
-requirements are unsupported: use the unsupported description variant.
+incoming relations and entities with no observed facts.
+For a nonconditional two-hop linear question use nonconditional_path instead:
+{kind: nonconditional_path, root_entity: exact entity from the original question,
+ steps: [{relation: exact relation, direction: outgoing or incoming},
+         {relation: exact relation, direction: outgoing or incoming}]}.
+Extract both ordered steps even if the graph is empty. Never fill intermediate
+entities, predicted answers or evidence IDs. Code follows all actual connections
+from the root. Do not flatten a dependent path into independent entity groups.
+Other path lengths, conditional paths, aggregation and complex requirements
+are unsupported: use the unsupported description variant.
 Code will query the COMPLETE graph for condition facts and select the branch.
 """
 
 # Generation and local decoding independently enforce the same tagged union.
-# Keep the downstream evaluator unchanged after decoding the wire protocol.
+# Paths have a separate evaluator; existing branch bindings retain their contract.
 
 
 STRING = {"type": "string"}
@@ -88,6 +96,15 @@ CONDITION_SCHEMA = {**CONDITION_SCHEMA,
 CONDITION_SCHEMA["properties"].update(
     operator={"type": "string", "enum": ["eq"]}, condition_quote=STRING)
 DESCRIPTION_VARIANTS = [
+    {"type": "object", "additionalProperties": False,
+     "required": ["kind", "root_entity", "steps"], "properties": {
+         "kind": {"type": "string", "enum": ["nonconditional_path"]},
+         "root_entity": {"type": "string", "minLength": 1},
+         "steps": {"type": "array", "minItems": 2, "maxItems": 2, "items": {
+             "type": "object", "additionalProperties": False,
+             "required": ["relation", "direction"], "properties": {
+                 "relation": {"type": "string", "minLength": 1},
+                 "direction": {"type": "string", "enum": ["outgoing", "incoming"]}}}}}},
     {"type": "object", "additionalProperties": False,
      "required": ["kind", "condition", "branches"], "properties": {
          "kind": {"type": "string", "enum": ["conditional_equals"]},
@@ -128,6 +145,19 @@ def decode_description(record, question):
         raise MemoryValidationError("decision_fields")
     kind = item.get("kind")
     empty = {"targets": [], "fact_queries": []}
+    if kind == "nonconditional_path":
+        if (set(item) != {"kind", "root_entity", "steps"}
+                or not isinstance(item["root_entity"], str)
+                or not item["root_entity"].strip()
+                or item["root_entity"] not in question
+                or not isinstance(item["steps"], list) or len(item["steps"]) != 2):
+            raise MemoryValidationError("decision_path")
+        for step in item["steps"]:
+            if (not isinstance(step, dict) or set(step) != {"relation", "direction"}
+                    or not isinstance(step["relation"], str) or not step["relation"].strip()
+                    or step["direction"] not in ("outgoing", "incoming")):
+                raise MemoryValidationError("decision_path")
+        return item
     if kind == "conditional_equals" and set(item) == {"kind", "condition", "branches"}:
         condition = item["condition"]
         if (not isinstance(condition, dict) or set(condition) != set(CONDITION_SCHEMA["required"])
@@ -232,6 +262,46 @@ def resolve_query(query, graph):
     return {"target": target, "relation": relation, "direction": direction}
 
 
+def derive_path_decision(description, graph):
+    """Follow exactly two declared steps and protect every reachable prefix.
+
+    Args:
+        description: Locally validated path with a question-grounded root.
+        graph: Complete eligible triples, sorted with exact string identities.
+
+    Returns:
+        Decision containing reachable terminal candidates and resolvable gaps.
+        A gap on any candidate blocks answering even if another path completes.
+
+    Raises:
+        MemoryValidationError: A reachable self-loop or reverse-only conflict.
+    """
+    frontier = {description["root_entity"]}
+    required, missing, matches = set(), [], []
+    for step in description["steps"]:
+        index = 0 if step["direction"] == "outgoing" else 2
+        following = set()
+        for target in sorted(frontier):
+            query = {"target": target, **step}
+            facts = [t for t in graph if t[index] == target and t[1] == step["relation"]]
+            if any(t[0] == t[2] for t in facts):
+                raise MemoryValidationError("decision_path_conflict")
+            if not facts:
+                if any(t[2 - index] == target and t[1] == step["relation"] for t in graph):
+                    raise MemoryValidationError("decision_path_conflict")
+                missing.append(query)
+            required.update(facts)
+            following.update(t[2 - index] for t in facts)
+            matches.append({"case": "not_conditional", **query, "triplets": facts})
+        frontier = following
+    return {"description_kind": "nonconditional_path", "path": description,
+            "condition_status": "not_conditional", "condition_triplets": [],
+            "answer_targets": sorted(frontier), "answer_candidates": sorted(frontier),
+            "required_triplets": sorted(required), "missing_relations": missing,
+            "query_matches": matches,
+            "targets_by_case": {"true": [], "false": [], "not_conditional": sorted(frontier)}}
+
+
 def derive_decision(description, question, submitted):
     """Validate extraction and derive requirements from actual graph values.
 
@@ -249,6 +319,8 @@ def derive_decision(description, question, submitted):
     """
     description = decode_description(description, question)
     graph = sorted(_freeze_triplets(submitted))
+    if description.get("kind") == "nonconditional_path":
+        return derive_path_decision(description, graph)
     if not isinstance(description, dict) or set(description) != {"condition", "branches"}:
         raise MemoryValidationError("decision_fields")
     condition = description["condition"]
@@ -414,6 +486,11 @@ def validate_decision_response(decision, response):
         raise MemoryValidationError("decision_required_omitted")
     if decision["condition_status"] == "unknown" and response.predict_answer:
         raise MemoryValidationError("decision_unknown_answer")
+    if decision.get("description_kind") == "nonconditional_path":
+        if decision["missing_relations"] and response.predict_answer:
+            raise MemoryValidationError("decision_path_incomplete")
+        if any(answer not in decision["answer_candidates"] for answer in response.predict_answer):
+            raise MemoryValidationError("decision_path_answer")
     if decision["missing_relations"]:
         allowed = missing_relation_queries(decision["missing_relations"])
         questions = response.subsequent_question

@@ -58,8 +58,9 @@ def _manage_memory_once(
             loading YAML must pass its potential_threshold explicitly.
         prompt_variant: Default two-stage ``evidence_decision``, ``paper``
             baseline, or single-selection ``retrieval_questions``/``answer_ranking``.
-            The default supports one-hop requirements and single-relation equality
-            conditions; an unsupported extraction fails without fallback.
+            The default supports one-hop requirements, single-relation equality
+            conditions and nonconditional two-hop paths; unsupported extraction
+            fails without fallback.
 
     Returns:
         New state and structured output after complete validation. All input

@@ -678,6 +678,27 @@ Mira 出生边在 resolved 轮被提交但未被选中，因此按提交并集�
 
 尚未知：提示措辞与模型内部原因、该夹具以外的缺失方向分布、Silver 链结果，以及新增提取门槛在合法别名下的误拒概率。以上均不影响“方向失败成立、当前输出正确、需澄清提示并补条件覆盖”这一结论，但也不构成业务验收通过。
 
+##### 方案执行结果与离线门槛
+
+2026/11/10，按上节最小方案完成离线实施。真实 API 调用为 $0$；未读取 `.env`、未加载生产配置、未创建真实客户端、未执行 smoke 或付费 suite，未增写用量账本。
+
+生产提示只在 `DECISION_INSTRUCTIONS` 的缺失绑定说明后追加文本：`target` 指组实体而不是检索到的答案值；缺失方向描述组实体在所求事实中的角色，须先由原题确定所求事实再选 head 或 tail，不得由答案位置、图顺序、关系拼写或命中数量决定；并给出两个不含夹具人物、关系或答案的通用示例（询问某人的出生地该人为 head，即 outgoing；询问某人创作了哪部作品该人为 tail，即 incoming）。四类枚举、条件字段、observed 方向由代码派生、两跳 `{kind: missing}` 无方向、incident 检索与 `once per branch` 分组规则均未改；schema、decoder、求值器、发布校验、候选派生、排序算法与公开接口均未改。新 `src/agent/evidence_decision.py` 的 SHA-256 为 `9c2772285f3f91da38849c5b1efd2633838c419a7946a261a21e7403842ae0d9`。
+
+运行器在 `check_two_hop` 之后新增条件首阶段抽取门槛 `check_conditional_extraction`，在 `run_cases` 的条件分支并入现有 `checks` 字典。门槛用 `safe_payload(record["stages"][0])` 独立解码，不复制生产求值逻辑、不修改或合并回复，检查四项：`conditional_kind` 要求 `conditional_equals`；`conditional_condition` 要求主体为 `The Glass Orchard`、比较值为原题逐字约束 `Silver Press`（提交图出版社事实值按 silver／bronze 分支不同）、条件关系允许 `publisher` 或 `published_by`；`conditional_true_branch`／`conditional_false_branch` 要求每分支恰一个实体组和一个查询，实体分别为 `BIRTH[0]`／`OTHER_BIRTH[0]`、关系属于 `BIRTH_RELATIONS`；对应出生事实在 `submitted` 中时绑定必须是 `observed` 且每个编号精确指向该事实，不在时必须是 `{"kind": "missing", "direction": "outgoing"}`。期望由夹具常量与 `submitted` 计算，未激活与激活分支使用同一规则；失败走现有 `controlled_check_failure` 与 `RuntimeError("Conditional acceptance expectation failed")` 路径并置 `controlled_validated=false`，保留成功路径的 `stages` 供人工审阅，不新增请求、重试或业务恢复。该门槛只证明本夹具，不宣称改善真实抽取。新 `scripts/validate_part_d.py` 的 SHA-256 为 `7baee1fdca080a24348e9b9ad410af4243e7344d30b51e1802b1aeca07104c10`。
+
+正式测试在 `tests/test_part_d_validation.py` 新增 $4$ 项（新文件 SHA-256 `78779ada829d93a789f77be217680712177048784f8c073068d680be9853768a`），固定：三轮正常路径通过且每轮 $2$ 次逻辑调用、合计 $6$ 次；probe 未激活 true 分支 `incoming` 被拒绝，状态 `controlled_check_failure`，`controlled_validated=false`，保留 `stages` 且旧状态不变；`birthplace` 别名与合法 `observed` 被接受、反向城市为 head 的同类绑定被拒；`publisher` 与 `published_by` 均被接受；门槛只读，重跑不改变 `stages`、`selected_triplets`、`predict_answer` 或 `state_after`。未放宽任何既有断言。
+
+离线门槛结果如下。
+
+- 保存的 Bronze 三轮真实回复经维护运行器重放：unknown、resolved 仍为 `validated`；probe 在新门槛下按预期 `controlled_check_failure`，`conditional_true_branch=false`，答案、记忆、提交图与状态仍与保存报告一致。该失败是已知缺陷的预期拒绝，不记为回归。
+- 保存的 ranking 两例经 $6$ 次重放全部通过，`controlled_checks`、输出与状态同保存报告一致。
+- 抽取阶段请求与保存请求只在 `DECISION_INSTRUCTIONS` 前缀不同，`Original question` 之后的题目与编号图逐字一致；选择／排序阶段请求逐字一致；每事务仍为 $2$ 次逻辑调用。
+- 定向测试：`test_evidence_decision.py` $27$ 项、`test_part_d_validation.py` $29$ 项（原 $25$ 项加新增 $4$ 项）全部通过；最终修改树全套 $153$ 项通过（原 $149$ 项加 $4$ 项）。
+- 字符扫描无 emoji、零宽／双向控制符与 BOM；`ast.parse` 通过；`git diff --check` 无空白错误；免费预览 `python scripts/validate_part_d.py --suite conditional --list-cases` 输出 $8$ 个用例与逻辑调用上限 $24$，未加载配置。
+- 私有基线与重放脚本显式阻断 socket、生产配置、dotenv 与真实客户端，守卫计数全为 $0$。两份真实报告、人工审阅记录、$572$ 行账本摘要及其余生产模块摘要不变；改动文件恰为 `src/agent/evidence_decision.py`、`scripts/validate_part_d.py` 与 `tests/test_part_d_validation.py`。
+
+本轮仍未知：新提示措辞对真实抽取的效果、模型内部原因、Silver 链结果，以及门槛在其它合法别名下的误拒概率。离线通过只证明契约与夹具门槛，不构成业务验收；TODO 2.3.5、2.3.6 与 2.4 保持开放。下一轮如需有界复验，须另行取得明确授权：先 Bronze 三轮，通过后 Silver 三轮；每链正常 $6$ 次逻辑调用，上限 $9$ 逻辑／$27$ HTTP，两链合计 $12$／$18$／$54$；首个自动或人工语义失败即停，不重跑 ranking、不重采样、不循环改提示。私有基线为 `tmp_dsh/tmp_missing_direction_baseline_20261109T184334452821Z.json`，重放脚本为 `tmp_dsh/tmp_missing_direction_replay.py`，结果为 `tmp_dsh/tmp_missing_direction_replay_20261109T185142580179Z.json`。
+
 #### 2026/11/10 最小修复执行与有界验收
 
 已实现默认两阶段协议全用例失败投影，覆盖安全抽取、生产求值派生字段、最终选择一致性及排序多重集。信封先检查拒绝／截断；JSON 沿用生产重复字段与非标准常量拒绝规则；词表、键、深度、数组、字符串和整数有界，安全越界编号保留原值并标注。整个投影调用兜底后原异常原样重抛，不复制生产失败的原始 `stages`。增加请求开始／收到完成回复计数、阶段进度、本地校验标记、白名单函数抛出行及实际源码 SHA-256 指纹；指纹涵盖未提交工作树，不将 HEAD 冒充运行版本。成功生产事务仍保留合法回复供人工审阅，受控语义门槛失败另行标记。

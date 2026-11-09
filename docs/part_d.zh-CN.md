@@ -652,6 +652,34 @@ All existing evidence, entity, and output constraints still apply.
 >
 > 可以推进第 3 步：按上述固定候选对 Silver、Bronze 原完整图各运行一次，不重跑基线。本轮未发起付费请求，未修改私有配置或新增真实用量；本次只确认结构、阶段一致性及事务失败行为，不能证明决策语义正确，也未验证真实模型保留与移除证据。本问题和 TODO 2.3.5 继续开放，候选仍须显式选择，不推广为默认流程。
 
+> 2026/11/09 执行第 3 步，Silver 首个完整题事务未通过语义门槛，已按任一失败即停的规则结束本批，未执行 Bronze，也未进入第 4 步。通过公开 `manage_memory(..., prompt_variant="evidence_decision")` 运行冻结候选，逐字使用 `BRANCH_QUESTION`，提交两条出生地与 Silver 出版社的完整图，全部分数为 $0.95$、严格阈值为 $0.7$，从独立空状态开始；沿用已有字符串数组说明，未追加提示、重跑基线、修复输出或发起业务重试。
+>
+> 失败定位于证据决策的回答对象语义：`condition_status` 正确为 `true`，条件证据和必留集合正确包含 Silver 出版社及 Mira Vale 出生地，`missing_relations` 为空；但 `answer_targets` 同时列出 `Mira Vale` 和 `Nolan Reed`，没有按已确定的成立分支收敛到 `Mira Vale`。这是第 3 步“决策记录须正确确定回答对象”的语义失败，不是结构解析或发布前一致性校验异常，也不能因最终答案正确而记作候选通过。证据决策的原始回复正文如下：
+>
+> ```json
+> {
+>   "condition_status": "true",
+>   "condition_triplets": [["The Glass Orchard", "published_by", "Silver Press"]],
+>   "answer_targets": ["Mira Vale", "Nolan Reed"],
+>   "required_triplets": [["Mira Vale", "born_in", "Linden City"], ["The Glass Orchard", "published_by", "Silver Press"]],
+>   "missing_relations": []
+> }
+> ```
+>
+> 最终作答阶段通过生产严格解析和阶段一致性检查，原始回复正文如下；最终记忆为所选两条证据，未选中的 Nolan Reed 出生地按既定规则进入永久拒绝，展开排除集合为全部三条提交证据，必要证据未被拒绝，输入空快照保持不变。本次仅观察到 Silver 单轮作答和状态规则通过，不证明真实跨轮旧记忆移除或 Bronze 作答已经修复。
+>
+> ```json
+> {
+>   "selected_triplets": [["Mira Vale", "born_in", "Linden City"], ["The Glass Orchard", "published_by", "Silver Press"]],
+>   "predict_answer": ["Linden City"],
+>   "subsequent_question": []
+> }
+> ```
+>
+> 本批实际只启动 $1$ 次 MSM 事务、$2$ 次逻辑调用及 $2$ 次成功 HTTP 请求，均返回 `gpt-4o-mini-2024-07-18`，无传输重试，无排序请求。证据决策输入／输出为 $334/84$ tokens，最终作答为 $674/53$ tokens，合计 $1008/137$ tokens；[`logs/llm_usage.csv`](../logs/llm_usage.csv) 新增两行，始于 2026/11/09 14:13:58（UTC+08:00），返回模型、用量和请求 ID 已逐条核对。私有入口为 `tmp/tmp_evidence_decision_step3.py`，完整原问题、分阶段请求及未经改写的回复、预期与实际输出、前后快照和语义检查保存在 `tmp/tmp_evidence_decision_step3_20261109T061358161308Z.json`；新增事务的免费精确请求重放通过。生产代码、共享默认值及私有 OpenAI 配置均未修改。
+>
+> 不能推进第 4 步，也不推广候选。本方案按第 5 步停止；待解决问题是条件已确定时 `answer_targets` 仍包含不适用分支对象，Bronze 和两条真实跨轮链尚未验收。下一次工作须针对该证据决策阶段提出代码修改，或单独评估允许的推理模型；不得用同一冻结候选反复付费重试或追加小问题、措辞对照。本问题和 TODO 2.3.5 继续开放。
+
 ### 尚未验证模型能正确移除旧记忆
 
 问题：原用例确实移除了旧记忆，但连必要证据也一起删除，不能算正确移除；澄清条件后的复测又保留了全部证据。离线状态转换测试通过，不等于 GPT 已正确判断哪些旧证据不再有用。

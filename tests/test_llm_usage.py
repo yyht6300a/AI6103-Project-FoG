@@ -78,17 +78,20 @@ class LLMUsageTests(unittest.TestCase):
         Both attempts retain the schema and receive independent usage rows.
         """
         from src.agent.evidence_decision import DECISION_RESPONSE_FORMAT
-        success = self.response(body={"choices": []})
-        with patch("requests.adapters.HTTPAdapter.send") as send:
-            send.side_effect = [requests.Timeout(), success]
-            self.client.complete([], response_format=DECISION_RESPONSE_FORMAT)
-        self.assertEqual(send.call_count, 2)
-        for call in send.call_args_list:
-            body = json.loads(call.args[0].body)
-            self.assertEqual(body["response_format"], DECISION_RESPONSE_FORMAT)
-            self.assertEqual(set(body), {"model", "messages", "response_format"})
-        self.assertEqual([row["status"] for row in self.rows()], ["error", "success"])
-        self.assertEqual(sleep.call_count, 1)
+        from src.agent.memory_response import MEMORY_RESPONSE_FORMAT
+        for contract in (DECISION_RESPONSE_FORMAT, MEMORY_RESPONSE_FORMAT):
+            with self.subTest(contract=contract["json_schema"]["name"]):
+                success = self.response(body={"choices": []})
+                with patch("requests.adapters.HTTPAdapter.send") as send:
+                    send.side_effect = [requests.Timeout(), success]
+                    self.client.complete([], response_format=contract)
+                self.assertEqual(send.call_count, 2)
+                for call in send.call_args_list:
+                    body = json.loads(call.args[0].body)
+                    self.assertEqual(body["response_format"], contract)
+                    self.assertEqual(set(body), {"model", "messages", "response_format"})
+        self.assertEqual([row["status"] for row in self.rows()], ["error", "success"] * 2)
+        self.assertEqual(sleep.call_count, 2)
 
     @patch("src.agent.llm_client.time.sleep")
     def test_retries_and_success_are_separate_rows(self, sleep) -> None:

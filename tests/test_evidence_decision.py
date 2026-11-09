@@ -11,6 +11,7 @@ from unittest.mock import Mock
 from src.agent.evidence_decision import derive_decision
 from src.agent.memory_management import manage_memory
 from src.agent.memory_state import QuestionMemory
+from src.agent.memory_response import MEMORY_RESPONSE_FORMAT
 from src.agent.validation_error import MemoryValidationError
 from test_memory_update import completion
 
@@ -78,6 +79,40 @@ class EvidenceDecisionTests(unittest.TestCase):
 
     Caller snapshots must remain unchanged after every failed stage.
     """
+
+    def test_final_schema_and_strict_failure_boundary(self):
+        """Constrain final generation without repairing invalid model content.
+
+        The reproduced fenced final reply must still fail atomically even when
+        it contains the correct evidence. Other variants keep their request body.
+        """
+        state = QuestionMemory(QUESTION, [LEFT])
+        for final, valid in ((completion([FACT, RIGHT], [RIGHT[2]]), True),
+                             (completion([FACT], [FACT[2]]), False)):
+            client = Mock()
+            client.complete.side_effect = [envelope(description()), final]
+            if not valid:
+                with self.assertRaises(MemoryValidationError):
+                    manage_memory(state, GRAPH, [0.95] * 3, client,
+                                  prompt_variant="evidence_decision")
+            else:
+                manage_memory(state, GRAPH, [0.95] * 3, client,
+                              prompt_variant="evidence_decision")
+            self.assertEqual(client.complete.call_args_list[1].kwargs,
+                             {"response_format": MEMORY_RESPONSE_FORMAT})
+        fenced = completion([FACT, RIGHT], [RIGHT[2]])
+        body = fenced["choices"][0]["message"]["content"]
+        fenced["choices"][0]["message"]["content"] = '```json\n' + body + '\n```'
+        client.complete.side_effect = [envelope(description()), fenced]
+        with self.assertRaises(MemoryValidationError) as caught:
+            manage_memory(state, GRAPH, [0.95] * 3, client, prompt_variant="evidence_decision")
+        self.assertEqual(caught.exception.code, "invalid_json")
+        self.assertEqual(state, QuestionMemory(QUESTION, [LEFT]))
+        for variant in ("paper", "retrieval_questions", "answer_ranking"):
+            client = Mock()
+            client.complete.return_value = completion([FACT, RIGHT], [RIGHT[2]])
+            manage_memory(state, GRAPH, [0.95] * 3, client, prompt_variant=variant)
+            self.assertEqual(client.complete.call_args.kwargs, {})
 
     def test_query_matching_and_object_specific_gaps(self):
         """Resolve exact directional facts without collecting unrelated neighbors.

@@ -12,7 +12,7 @@ from src.agent.llm_client import LLMClient
 from src.agent.memory_prompt import build_memory_prompt
 from src.agent.memory_prompt import build_decision_memory_prompt
 from src.agent.evidence_decision import request_evidence_decision, validate_decision_response
-from src.agent.memory_response import MemoryResponse, parse_memory_response
+from src.agent.memory_response import MEMORY_RESPONSE_FORMAT, MemoryResponse, parse_memory_response
 from src.agent.memory_state import QuestionMemory, _freeze_triplets
 
 
@@ -36,6 +36,7 @@ def update_memory(
             or opt-in ``answer_ranking``. ``evidence_decision`` adds a separate
             decision request before final selection; other variants use one.
             The candidate rejects stage contradictions before building a snapshot.
+            Its final selection also requests strict structured JSON output.
 
     Returns:
         New snapshot and validated structured response. The new evidence set is
@@ -74,7 +75,9 @@ def update_memory(
         prompt = build_memory_prompt(
             state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
         )
-    completion = client.complete([{"role": "user", "content": prompt}])
+    options = ({"response_format": MEMORY_RESPONSE_FORMAT}
+               if prompt_variant == "evidence_decision" else {})
+    completion = client.complete([{"role": "user", "content": prompt}], **options)
     try:
         choice = completion["choices"][0]
         message = choice["message"]

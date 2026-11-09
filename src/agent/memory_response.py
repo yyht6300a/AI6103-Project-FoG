@@ -14,6 +14,25 @@ from src.agent.memory_state import _freeze_triplets
 from src.agent.potential_subgraph import Triple
 
 
+MEMORY_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "memory_response", "strict": True,
+        "schema": {
+            "type": "object", "additionalProperties": False,
+            "required": ["selected_triplets", "predict_answer", "subsequent_question"],
+            "properties": {
+                "selected_triplets": {"type": "array", "items": {
+                    "type": "array", "items": {"type": "string"}}},
+                "predict_answer": {"type": "array", "items": {"type": "string"}},
+                "subsequent_question": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+}
+# Literal membership, triple length and decision consistency remain parser gates.
+
+
 @dataclass(frozen=True)
 class MemoryResponse:
     """Carry the three output fields as immutable, ordered values.

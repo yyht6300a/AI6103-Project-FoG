@@ -2,7 +2,7 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-This document describes the implemented Member D modules. The default pipeline extracts requirements, evaluates them in code, selects evidence and answers, validates before publication, and ranks multiple answers independently. The public entry point is `manage_memory`, which defaults to `prompt_variant="evidence_decision"`. Setup and environment preparation are in the [README](../README.md#llm-configuration). Member D acceptance uses controlled retrieval and scoring inputs with real LLM calls; Member E owns C/E pipeline integration, actual retrieval and overall run behavior, and that integration is not a prerequisite for accepting these modules.
+This document describes the implemented Member D modules. The default pipeline extracts the original question's information requirements, evaluates them in code, selects evidence and answers, validates before publication, and ranks multiple answers independently. The public entry point is `manage_memory`, which defaults to `prompt_variant="evidence_decision"`. Setup and environment preparation are in the [README](../README.md#llm-configuration). Member D acceptance uses controlled retrieval and scoring inputs with real LLM calls; Member E owns C/E pipeline integration, actual retrieval and overall run behavior, and that integration is not a prerequisite for accepting these modules.
 
 ## Primary deliverables
 
@@ -48,7 +48,7 @@ A question snapshot (`QuestionMemory`) contains the verbatim original question `
 
 `prompt_variant` values:
 
-- `"evidence_decision"` (default): runs a structured requirement extraction first, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks, or no snapshot is published.
+- `"evidence_decision"` (default): first extracts the original question's information requirements (entities, relations and conditions to look up) under a strict JSON Schema, then code validates the question type, conditions and fact endpoints and derives required evidence, answer candidates and fixed queries. Final selection must pass decision-consistency checks, or no snapshot is published.
 - `"paper"`: uses only the original Figure 8 prompt for a single selection, with no requirement-extraction or retrieval-wording addition; multiple answers are still ranked separately after selection.
 - `"retrieval_questions"`: adds retrieval-question instructions to the Figure 8 prompt, requiring follow-up questions to target a knowledge-graph retriever, anchor named entities and ask only for missing relations; it remains a single selection.
 - `"answer_ranking"`: adds both retrieval-question and answer-ranking instructions, asking the single selection stage to order candidates by evidential support; the separate ranking stage still runs for multiple answers.
@@ -131,11 +131,11 @@ The original question must be a nonblank string and is stored verbatim. Memory a
 
 ## Conditional evidence decision and memory publication
 
-[`evidence_decision.py`](../src/agent/evidence_decision.py) implements requirement extraction and deterministic evaluation for the default pipeline. The first stage always receives the original question and the full union of historical memory and eligible new evidence; the model never prunes the graph first.
+[`evidence_decision.py`](../src/agent/evidence_decision.py) implements information-requirement extraction and deterministic evaluation for the default pipeline. The first stage always receives the original question and the full union of historical memory and eligible new evidence; the model never prunes the graph first.
 
-### Requirement extraction and endpoint binding
+### Information-requirement extraction and endpoint binding
 
-The first stage uses strict structured output whose `description.kind` is `conditional_equals`, `nonconditional`, `nonconditional_path` or `unsupported`. The original question decides the type: only an explicit equality condition with true and false requirements uses `conditional_equals`; several named objects queried separately for attributes, or one object queried for several independent relations, use `nonconditional`; locating an entity and then asking for its attribute is a dependency and uses `nonconditional_path` even when the graph already names the intermediate entity. An equality condition describes the subject, relation, operator `eq`, comparison value, the condition quote from the original question and an optional single-value quote. The comparison value is only a constraint, never an observed fact; the model cannot invent a condition from the graph or infer single-valuedness from a definite article.
+The first stage extracts the original question's information requirements under a strict JSON Schema; `description.kind` is `conditional_equals`, `nonconditional`, `nonconditional_path` or `unsupported`. The original question decides the type: only an explicit equality condition with true and false requirements uses `conditional_equals`; several named objects queried separately for attributes, or one object queried for several independent relations, use `nonconditional`; locating an entity and then asking for its attribute is a dependency and uses `nonconditional_path` even when the graph already names the intermediate entity. An equality condition describes the subject, relation, operator `eq`, comparison value, the condition quote from the original question and an optional single-value quote. The comparison value is only a constraint, never an observed fact; the model cannot invent a condition from the graph or infer single-valuedness from a definite article.
 
 Each one-hop branch is organized as `requirements: [{entity, fact_queries: [{relation, binding}]}]`. `entity` is the known object whose attribute the question asks about, not the retrieved answer endpoint; each query inherits its group's entity instead of repeating an object field. Duplicate entity groups within one branch are rejected, so related multiple relations belong in one group. A conditional question supplies nonempty `true` and `false` branches; a nonconditional one-hop question supplies a single `branch`.
 

@@ -11,7 +11,7 @@ from src.agent.validation_error import MemoryValidationError
 from src.agent.llm_client import LLMClient
 from src.agent.memory_prompt import build_memory_prompt
 from src.agent.memory_prompt import build_decision_memory_prompt
-from src.agent.evidence_decision import request_evidence_decision
+from src.agent.evidence_decision import request_evidence_decision, validate_decision_response
 from src.agent.memory_response import MemoryResponse, parse_memory_response
 from src.agent.memory_state import QuestionMemory, _freeze_triplets
 
@@ -35,6 +35,7 @@ def update_memory(
         prompt_variant: Default ``retrieval_questions``, unchanged ``paper``,
             or opt-in ``answer_ranking``. ``evidence_decision`` adds a separate
             decision request before final selection; other variants use one.
+            The candidate rejects stage contradictions before building a snapshot.
 
     Returns:
         New snapshot and validated structured response. The new evidence set is
@@ -85,6 +86,8 @@ def update_memory(
     except (KeyError, IndexError, TypeError, AttributeError):
         raise MemoryValidationError("completion_envelope") from None
     result = parse_memory_response(content, state.memory_triplets, potential)
+    if prompt_variant == "evidence_decision":
+        validate_decision_response(decision, result)
     # User-approved omission criterion: only evidence actually submitted counts.
     selected = frozenset(result.selected_triplets)
     rejected = state.rejected_triplets | ((state.memory_triplets | potential) - selected)

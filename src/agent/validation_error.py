@@ -29,6 +29,17 @@ class MemoryValidationError(ValueError):
 
 
 ERROR_STAGES = {
+    "decision_completion": "evidence_decision",
+    "decision_fields": "evidence_decision",
+    "decision_status": "evidence_decision",
+    "decision_triplets": "evidence_decision",
+    "decision_membership": "evidence_decision",
+    "decision_strings": "evidence_decision",
+    "decision_condition_retention": "evidence_decision",
+    "decision_required_omitted": "decision_consistency",
+    "decision_unknown_answer": "decision_consistency",
+    "decision_answer_required": "decision_consistency",
+    "decision_unnecessary_questions": "decision_consistency",
     "content_type": "content",
     "duplicate_fields": "json",
     "nonstandard_json": "json",

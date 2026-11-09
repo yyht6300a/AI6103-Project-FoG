@@ -64,4 +64,3 @@ class GapQueryTests(unittest.TestCase):
                     manage_memory(state, [RIGHT], [0.95], client, prompt_variant='evidence_decision')
             self.assertEqual(state, QuestionMemory(QUESTION, [LEFT], [('Other', 'r', 'Value')]))
             self.assertEqual(client.complete.call_count, 2)
-

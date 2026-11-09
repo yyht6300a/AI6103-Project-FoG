@@ -7,8 +7,9 @@ max_rounds: 4
 llm:
   provider: openai
   model_name: gpt-4o-mini
-  base_url: ""
-  api_key: ""
+  base_url: https://api.openai.com/v1
+  timeout: 60
+  max_retries: 2
 
 embedding:
   model_name: Qwen/Qwen3-Embedding-4B

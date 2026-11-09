@@ -4,6 +4,49 @@
 
 This document describes the implemented Member D modules. The default pipeline extracts requirements, evaluates them in code, selects evidence and answers, validates before publication, and ranks multiple answers independently. The public entry point is `manage_memory`, which defaults to `prompt_variant="evidence_decision"`. Setup and environment preparation are in the [README](../README.md#llm-configuration). Member D acceptance uses controlled retrieval and scoring inputs with real LLM calls; Member E owns C/E pipeline integration, actual retrieval and overall run behavior, and that integration is not a prerequisite for accepting these modules.
 
+## Primary deliverables
+
+### `decompose_question`
+
+Break the original question into a set of independently retrievable sub-questions. The default prompt makes each sub-question repeat known entity names or relational descriptions of unresolved entities without assuming earlier answers; the returned order follows the model output.
+
+Inputs:
+
+| Variable | Type | Meaning |
+| --- | --- | --- |
+| `question` | `str` | Nonblank original question, inserted verbatim without rewriting. |
+| `client` | `LLMClient` | Caller-owned LLM client that the caller closes. |
+| `prompt_variant` | `str` | Keyword-only; defaults to `"explicit_references"`, while `"paper"` uses the original paper prompt. |
+
+Outputs:
+
+| Variable | Type | Meaning |
+| --- | --- | --- |
+| `sub_questions` | `list[str]` | Ordered sub-question list with literal strings for separate retrieval. |
+
+### `manage_memory`
+
+Complete one memory-update round for an independent question run: filter the potential subgraph, update memory and answer through the LLM, then rank multiple answers separately. It returns a publishable frozen result only after the whole call succeeds.
+
+Inputs:
+
+| Variable | Type | Meaning |
+| --- | --- | --- |
+| `state` | `QuestionMemory` | Immutable snapshot of the current question run, created per independent question. |
+| `triples` | `Sequence[Sequence[str]]` | Expanded triples from member C, each row containing three nonblank strings. |
+| `scores` | `Sequence[Real]` | Finite refined scores positionally aligned with `triples`. |
+| `client` | `LLMClient` | Caller-owned LLM client that the caller closes. |
+| `potential_threshold` | `Real` | Strict cutoff for the potential subgraph, default `0.7`; a YAML-loaded value must be passed explicitly. |
+| `prompt_variant` | `str` | Keyword-only; defaults to `"evidence_decision"`, while other values are comparisons. |
+
+Outputs:
+
+| Variable | Type | Meaning |
+| --- | --- | --- |
+| `result` | `MSMResult` | Frozen result, published only after the whole call succeeds. |
+| `result.state` | `QuestionMemory` | New snapshot produced by this round. |
+| `result.response` | `MemoryResponse` | Validated structured output with selected triples, ranked answers and next-round sub-questions. |
+
 ## Current default architecture
 
 ```mermaid

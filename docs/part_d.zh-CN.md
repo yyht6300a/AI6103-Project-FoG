@@ -2,7 +2,50 @@
 
 [English](part_d.md) | [简体中文](part_d.zh-CN.md)
 
-本文说明当前实现的成员 D 模块。默认流程为需求抽取、代码求值、证据选择与作答、发布前校验，以及多答案独立排序。公开入口是 `manage_memory`，默认使用 `prompt_variant="evidence_decision"`。配置与环境准备见 [README](../README.zn-CN.md#llm-配置)。成员 D 使用受控检索和打分输入配合真实 LLM 验收模块；成员 E 负责 C/E 流水线集成、实际检索和整体运行效果，集成不作为成员 D 模块验收的前置条件。
+本文说明当前成员 D 实现的模块。默认流程为需求抽取、代码求值、证据选择与作答、发布前校验，以及多答案独立排序。
+
+## 主要交付产物
+
+### `decompose_question`
+
+把原问题分解为一组可独立检索的子问题。默认提示要求每个子问题写全已知实体或未知实体的关系描述，不假定前一问已得到答案；返回顺序与模型输出一致。
+
+输入：
+
+| 变量名 | 类型 | 含义 |
+| --- | --- | --- |
+| `question` | `str` | 非空原问题，逐字传入，不做改写。 |
+| `client` | `LLMClient` | 调用方持有并负责关闭的 LLM 客户端。 |
+| `prompt_variant` | `str` | 仅关键字参数，默认 `"explicit_references"`；`"paper"` 使用论文原版提示。 |
+
+输出：
+
+| 变量名 | 类型 | 含义 |
+| --- | --- | --- |
+| `sub_questions` | `list[str]` | 有序子问题列表，字符串原样保留，供调用方分别检索。 |
+
+### `manage_memory`
+
+完成一次独立问题运行中的一轮记忆更新：筛选潜力子图、调用 LLM 更新记忆并作答，多答案时再独立排序。仅整体成功后返回可发布的冻结结果。
+
+输入：
+
+| 变量名 | 类型 | 含义 |
+| --- | --- | --- |
+| `state` | `QuestionMemory` | 当前问题运行的不可变快照，每个独立问题新建。 |
+| `triples` | `Sequence[Sequence[str]]` | 成员 C 提供的扩展三元组，每行三个非空字符串。 |
+| `scores` | `Sequence[Real]` | 与 `triples` 位置对齐的有限精炼分数。 |
+| `client` | `LLMClient` | 调用方持有并负责关闭的 LLM 客户端。 |
+| `potential_threshold` | `Real` | 潜力子图的严格阈值，默认 `0.7`；从 YAML 读取时须显式传入。 |
+| `prompt_variant` | `str` | 仅关键字参数，默认 `"evidence_decision"`；其他值用于对照。 |
+
+输出：
+
+| 变量名 | 类型 | 含义 |
+| --- | --- | --- |
+| `result` | `MSMResult` | 冻结结果，仅在整体成功后发布。 |
+| `result.state` | `QuestionMemory` | 本轮更新后的新快照。 |
+| `result.response` | `MemoryResponse` | 校验后的结构化输出，含选中三元组、排序答案与下一轮子问题。 |
 
 ## 当前默认架构
 

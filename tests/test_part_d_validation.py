@@ -157,9 +157,9 @@ class PartDValidationTests(unittest.TestCase):
                         validation.memory_round(*args)
                     record = report["results"][0]
                     self.assertEqual(client.complete.call_count, 1)
-                    self.assertEqual(record["error_code"], "decision_path_conflict")
+                    self.assertEqual(record["error_code"], "decision_path")
                     self.assertEqual(record["failure_stage"], "evidence_decision")
-                    self.assertEqual(record["failed_extraction"]["description"], description["description"])
+                    self.assertNotIn("description", record["failed_extraction"])
                 else:
                     # The fixed acceptance fixture expects the original birth edge;
                     # reverse only that fixture gate, keeping production validation.
@@ -178,9 +178,8 @@ class PartDValidationTests(unittest.TestCase):
     def test_missing_direction_counterfactual(self):
         """Distinguish missing-edge semantics at the controlled acceptance gate.
 
-        Both directions are structurally valid without a birth fact. Synthetic
-        final replies follow each derived query; only outgoing satisfies the
-        question fixture. No failed candidate is inherited by another round.
+        Legacy directional missing bindings are rejected before selection.
+        Neither old direction can publish a candidate or reach a later round.
         """
         for direction in ("incoming", "outgoing"):
             with self.subTest(direction=direction):
@@ -199,13 +198,9 @@ class PartDValidationTests(unittest.TestCase):
                 args = (client, report, "multi.partial", state,
                         [validation.AUTHOR, validation.BIRTH, validation.DISTRACTOR],
                         [0.95, 0.7, 0.95], ())
-                if direction == "incoming":
-                    with self.assertRaises(RuntimeError):
-                        validation.memory_round(*args)
-                    self.assertFalse(report["results"][0]["controlled_checks"]["reachable_query"])
-                else:
+                with self.assertRaises(ValueError):
                     validation.memory_round(*args)
-                self.assertEqual(client.complete.call_count, 2)
+                self.assertEqual(client.complete.call_count, 1)
                 self.assertEqual(validation.snapshot(state), before)
                 self.assertNotIn(validation.BIRTH, report["results"][0]["submitted"])
 
@@ -231,7 +226,7 @@ class PartDValidationTests(unittest.TestCase):
             target, relation = ((validation.AUTHOR[0], "written_by") if index == 2
                                 else (validation.BIRTH[0], "born_in"))
             questions = [] if complete else [
-                f'Which entity does "{target}" connect to through relation "{relation}"?']
+                f'Find triples involving "{target}" with relation "{relation}".']
             graph = ([] if index == 2 else [validation.AUTHOR, validation.BIRTH]
                      if complete else [validation.AUTHOR])
             if index == 3 or (keep_distractor and index >= 4):
@@ -241,7 +236,7 @@ class PartDValidationTests(unittest.TestCase):
                 "kind": "nonconditional_path", "root_entity": validation.AUTHOR[0],
                 "steps": [{"relation": edge[1], "binding": (
                     {"kind": "observed", "evidence_ids": [sorted(graph).index(edge)]}
-                    if edge in graph else {"kind": "missing", "direction": "outgoing"})}
+                    if edge in graph else {"kind": "missing"})}
                     for edge in (validation.AUTHOR, validation.BIRTH)]}})
             envelopes.extend([extraction, completion(
                 selected, [validation.BIRTH[2]] if complete else [], questions)])

@@ -70,13 +70,9 @@ For a nonconditional two-hop linear question use nonconditional_path instead:
 {kind: nonconditional_path, root_entity: exact entity from the original question,
  steps: [{relation: exact relation, binding: observed or missing binding},
          {relation: exact relation, binding: observed or missing binding}]}.
-Start with root_entity as the current node. At EACH step, direction is relative
-to that step's currently reachable node: outgoing means it is the triple's head;
-incoming means it is the triple's tail. Move to the other endpoint, then determine
-the next step's direction relative to that new node. With evidence present, use
-the exact relation and current endpoint, not passive wording, question word order
-or the final answer's position. With evidence absent, describe the relation and
-direction required by the original question; never invent intermediate entities.
+Start with root_entity as the current node. With observed facts, code derives
+this step's direction from endpoints and moves to the other endpoint.
+Never invent intermediate entities or guess a missing edge's direction.
 For example, given Helios Ltd -> owns -> Aurora Tower and
 Helios Ltd -> headquarters -> Northport, asking for the headquarters of the
 company owning Aurora Tower uses root Aurora Tower and steps
@@ -88,17 +84,9 @@ entities or predicted answers. For each observed step use binding
 Reference exact-relation edges connected to the current reachable frontier.
 Code derives direction from endpoint roles and follows ALL matching edges.
 Only when no frontier entity has that relation in either direction use
-{kind: missing, direction: outgoing or incoming}. Choose a missing step's direction
-by placing the roles required by the original question into hypothetical relation
-slots: (CURRENT, relation, NEXT) means outgoing; (NEXT, relation, CURRENT) means
-incoming. CURRENT is this step's frontier role and NEXT is the unknown target role.
-These slots describe a retrieval requirement, not an observed fact or invented
-entity. For the same absent predicate located_in: given a laboratory, finding its
-country uses (CURRENT laboratory, located_in, NEXT country), outgoing; given a
-country, finding laboratories there uses (NEXT laboratory, located_in, CURRENT
-country), incoming. Passive question wording, the answer's position in the question,
-and the previous step's direction do not determine this step's direction.
-Observed edges still use evidence_ids only; do not guess their direction.
+{kind: missing}, with no direction or evidence_ids. Code requests incident
+relation facts involving the frontier entity; direction is deferred until facts
+arrive and can be referenced with observed evidence_ids.
 If an earlier step is missing,
 keep subsequent steps as missing requirements without inventing an entity or
 referencing disconnected facts. Code follows all actual connections
@@ -146,6 +134,11 @@ CONDITION_SCHEMA = {**CONDITION_SCHEMA,
     "properties": {key: value for key, value in CONDITION_SCHEMA["properties"].items() if key != "kind"}}
 CONDITION_SCHEMA["properties"].update(
     operator={"type": "string", "enum": ["eq"]}, condition_quote=STRING)
+PATH_BINDING_SCHEMA = {"anyOf": [
+    BRANCH_SCHEMA["properties"]["requirements"]["items"]["properties"]["fact_queries"]["items"]["properties"]["binding"]["anyOf"][0],
+    {"type": "object", "additionalProperties": False, "required": ["kind"],
+     "properties": {"kind": {"type": "string", "enum": ["missing"]}}},
+]}
 DESCRIPTION_VARIANTS = [
     {"type": "object", "additionalProperties": False,
      "required": ["kind", "root_entity", "steps"], "properties": {
@@ -155,7 +148,7 @@ DESCRIPTION_VARIANTS = [
              "type": "object", "additionalProperties": False,
              "required": ["relation", "binding"], "properties": {
                  "relation": {"type": "string", "minLength": 1},
-                 "binding": BRANCH_SCHEMA["properties"]["requirements"]["items"]["properties"]["fact_queries"]["items"]["properties"]["binding"]}}}}},
+                 "binding": PATH_BINDING_SCHEMA}}}}},
     {"type": "object", "additionalProperties": False,
      "required": ["kind", "condition", "branches"], "properties": {
          "kind": {"type": "string", "enum": ["conditional_equals"]},
@@ -214,9 +207,7 @@ def decode_description(record, question):
                      and isinstance(binding["evidence_ids"], list)
                      and binding["evidence_ids"]
                      and all(type(i) is int and i >= 0 for i in binding["evidence_ids"]))
-                    or (set(binding) == {"kind", "direction"}
-                        and binding["kind"] == "missing"
-                        and binding["direction"] in ("outgoing", "incoming"))):
+                    or (set(binding) == {"kind"} and binding["kind"] == "missing")):
                 raise MemoryValidationError("decision_path")
         return item
     if kind == "conditional_equals" and set(item) == {"kind", "condition", "branches"}:
@@ -360,10 +351,15 @@ def derive_path_decision(description, graph):
                 raise MemoryValidationError("decision_path_conflict")
             direction = roles.pop()
         else:
-            direction = binding["direction"]
             if any(t[1] == step["relation"] and (t[0] in frontier or t[2] in frontier)
                    for t in graph):
                 raise MemoryValidationError("decision_path_conflict")
+            for target in sorted(frontier):
+                gap = {"target": target, "relation": step["relation"], "scope": "incident"}
+                missing.append(gap)
+                matches.append({"case": "not_conditional", **gap, "triplets": []})
+            frontier = set()
+            continue
         index = 0 if direction == "outgoing" else 2
         following = set()
         for target in sorted(frontier):
@@ -526,7 +522,7 @@ def missing_relation_queries(missing):
     """Render stable open-value retrieval questions from derived gaps.
 
     Args:
-        missing: Validated target, relation and direction records from evaluation.
+        missing: Validated target, relation and direction or incident scope records from evaluation.
 
     Returns:
         Ordered unique question strings, safely quoting literal graph names.
@@ -535,7 +531,9 @@ def missing_relation_queries(missing):
     for gap in missing:
         target = json.dumps(gap["target"], ensure_ascii=False)
         relation = json.dumps(gap["relation"], ensure_ascii=False)
-        query = (f"Which entity does {target} connect to through relation {relation}?"
+        query = (f"Find triples involving {target} with relation {relation}."
+                 if gap.get("scope") == "incident" else
+                 f"Which entity does {target} connect to through relation {relation}?"
                  if gap["direction"] == "outgoing" else
                  f"Which entity connects to {target} through relation {relation}?")
         if query not in queries:

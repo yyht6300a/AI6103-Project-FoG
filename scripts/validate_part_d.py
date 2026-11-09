@@ -254,7 +254,7 @@ def extraction_projection(call: dict, state: QuestionMemory, submitted: set) -> 
         description = payload["description"]
         vocabulary = {part for row in submitted for part in row} | {
             "nonconditional_path", "nonconditional", "conditional_equals", "unsupported",
-            "observed", "missing", "outgoing", "incoming", "eq", "written_by",
+            "incident", "observed", "missing", "outgoing", "incoming", "eq", "written_by",
             "born_in", "author", "authored_by", "birthplace", "place_of_birth", "",
         }
         def bounded(value):
@@ -383,7 +383,7 @@ def check_two_hop(record: dict) -> None:
     submitted = set(map(tuple, record["submitted"]))
     after_rejected = set(map(tuple, record["state_after"]["rejected"]))
     target, relations = (AUTHOR[0], AUTHOR_RELATIONS) if empty else (BIRTH[0], BIRTH_RELATIONS)
-    allowed = {f'Which entity does "{target}" connect to through relation "{relation}"?'
+    allowed = {f'Find triples involving "{target}" with relation "{relation}".'
                for relation in relations}
     questions = record["subsequent_question"]
     checks = {
@@ -424,7 +424,10 @@ def check_two_hop(record: dict) -> None:
                 "\nAllowed retrieval questions:", 1)[0])
             checks["derived_path"] = all(active.get(key) == json.loads(json.dumps(derived[key]))
                 for key in ("query_matches", "missing_relations", "required_triplets", "answer_candidates"))
-            checks["derived_directions"] = all(q["direction"] == "outgoing"
+            checks["derived_directions"] = all(
+                (q.get("direction") == "outgoing" and "scope" not in q)
+                if q["triplets"] or "direction" in q else
+                (q.get("scope") == "incident" and "direction" not in q)
                 for q in derived["query_matches"])
         first_prompt = stages[0]["messages"][0]["content"]
         numbered = json.loads(first_prompt.split("\nNumbered knowledge: ", 1)[1])

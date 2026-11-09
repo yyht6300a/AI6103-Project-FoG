@@ -470,8 +470,8 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
     birth = ("Mira Vale", "born_in", "Linden City")
     distractor = ("The Copper Harbor", "written_by", "Nolan Reed")
     orphan_birth = ("Nolan Reed", "born_in", "Harbor City")
-    author_query = 'Which entity does "The Glass Orchard" connect to through relation "written_by"?'
-    birth_query = 'Which entity does "Mira Vale" connect to through relation "born_in"?'
+    author_query = 'Find triples involving "The Glass Orchard" with relation "written_by".'
+    birth_query = 'Find triples involving "Mira Vale" with relation "born_in".'
 
     def extraction(self, graph=()):
         """Build a fresh two-hop response without binding an intermediate name.
@@ -488,7 +488,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
             "steps": [{"relation": relation, "binding": (
                 {"kind": "observed", "evidence_ids": [sorted(graph).index(edge)]}
                 if edge in graph and self.author in graph else
-                {"kind": "missing", "direction": "outgoing"})}
+                {"kind": "missing"})}
                 for relation, edge in (("written_by", self.author), ("born_in", self.birth))]}}
 
     def run_round(self, state, graph, scores, selected, answers, questions,
@@ -546,6 +546,27 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         self.assertIsNot(result.state, state)
         return result
 
+    def test_incident_gap_resolves_from_either_endpoint(self):
+        """Defer missing direction until a real edge establishes endpoint roles.
+
+        The same predicate can resolve through either endpoint. False missing
+        declarations fail even when the only observed fact is reversed.
+        """
+        from src.agent.evidence_decision import derive_decision
+        partial = self.extraction([self.author])
+        gap = derive_decision(partial, self.question, [self.author])["missing_relations"]
+        self.assertEqual(gap, [{"target": self.author[2], "relation": "born_in", "scope": "incident"}])
+        for edge in (self.birth, self.birth[::-1]):
+            graph = sorted([self.author, edge])
+            with self.assertRaises(MemoryValidationError):
+                derive_decision(partial, self.question, graph)
+            observed = self.extraction(graph)
+            observed["description"]["steps"][1]["binding"] = {
+                "kind": "observed", "evidence_ids": [graph.index(edge)]}
+            resolved = derive_decision(observed, self.question, graph)
+            self.assertEqual(resolved["answer_candidates"], [self.birth[2]])
+            self.assertEqual(resolved["missing_relations"], [])
+
     def test_single_sufficient_insufficient_and_empty(self):
         """Cover each single-round fixture with exact path and query assertions.
 
@@ -555,9 +576,9 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         for name, graph, answers, questions, gaps, candidates in (
             ("single.sufficient", [self.author, self.birth], [self.birth[2]], [], [], [self.birth[2]]),
             ("single.insufficient", [self.author], [], [self.birth_query],
-             [{"target": self.author[2], "relation": "born_in", "direction": "outgoing"}], []),
+             [{"target": self.author[2], "relation": "born_in", "scope": "incident"}], []),
             ("single.empty", [], [], [self.author_query],
-             [{"target": self.author[0], "relation": "written_by", "direction": "outgoing"}], []),
+             [{"target": self.author[0], "relation": "written_by", "scope": "incident"}], []),
         ):
             with self.subTest(case=name):
                 self.run_round(QuestionMemory(self.question), graph, [0.95] * len(graph),
@@ -574,7 +595,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         partial = self.run_round(
             initial, graph, [0.95, 0.7, 0.95], [self.author], [], [self.birth_query],
             [self.author, self.distractor], [self.author],
-            [{"target": self.author[2], "relation": "born_in", "direction": "outgoing"}], [])
+            [{"target": self.author[2], "relation": "born_in", "scope": "incident"}], [])
         self.assertNotIn(self.birth, partial.state.excluded_triplets)
         self.assertEqual(partial.state.filter_expansion_triplets(graph), [self.birth])
         self.assertEqual(partial.state.rejected_triplets, {self.distractor})
@@ -613,7 +634,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
         self.run_round(QuestionMemory(self.question), [self.birth], [0.95], [], [],
                        [self.author_query], [self.birth], [],
                        [{"target": self.author[0], "relation": "written_by",
-                         "direction": "outgoing"}], [])
+                         "scope": "incident"}], [])
 
     def test_disconnected_birth_does_not_join_the_correct_path(self):
         """Keep the reachable city as the only terminal beside unrelated births.
@@ -703,7 +724,7 @@ class TwoHopDefaultEntryTests(unittest.TestCase):
                         {"kind": "observed", "evidence_ids": [99]},
                         {"kind": "observed", "evidence_ids": [graph.index(self.birth)]},
                         {"kind": "observed", "evidence_ids": [graph.index(self.orphan_birth)]},
-                        {"kind": "missing", "direction": "outgoing"}):
+                        {"kind": "missing"}):
             record = self.extraction(graph)
             record["description"]["steps"][0]["binding"] = binding
             with self.assertRaises(MemoryValidationError):

@@ -8,7 +8,7 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from src.agent.evidence_decision import derive_decision
+from src.agent.evidence_decision import derive_decision, resolve_query
 from src.agent.memory_management import manage_memory
 from src.agent.memory_state import QuestionMemory
 from src.agent.memory_response import MEMORY_RESPONSE_FORMAT
@@ -41,15 +41,26 @@ def description(value="Expected", unique=True):
                 "false": {"targets": [RIGHT[0]], "fact_queries": [{"target": RIGHT[0], "relation": "born_in", "direction": "outgoing"}]}}}
 
 
-def wire(record):
+def wire(record, graph=GRAPH):
     """Encode a test fixture in the new tagged protocol.
 
     Args:
         record: Internal fixture with condition and three branch slots.
+        graph: Complete request-local graph used to bind fixture facts.
 
     Returns:
         Wire description retaining any deliberately malformed branch values.
     """
+    record = copy.deepcopy(record)
+    for branch in record.get("branches", {}).values():
+        for query in branch.get("fact_queries", []):
+            if "direction" in query:
+                direction = query.pop("direction")
+                index = 0 if direction == "outgoing" else 2
+                ids = [i for i, t in enumerate(sorted(graph))
+                       if t[index] == query["target"] and t[1] == query["relation"]]
+                query["binding"] = ({"kind": "observed", "evidence_ids": ids}
+                                    if ids else {"kind": "missing", "direction": direction})
     if "condition" not in record:
         return record
     if record["condition"]["kind"] == "none":
@@ -60,17 +71,18 @@ def wire(record):
                             "branches": record["branches"]}}
 
 
-def envelope(record):
+def envelope(record, graph=GRAPH):
     """Serialize one extraction in a normal completion envelope.
 
     Args:
         record: Untrusted extraction object used by the test.
+        graph: Complete request-local graph defining stable evidence IDs.
 
     Returns:
         Completion with an untouched JSON body.
     """
     result = completion()
-    result["choices"][0]["message"]["content"] = json.dumps(wire(record))
+    result["choices"][0]["message"]["content"] = json.dumps(wire(record, graph))
     return result
 
 
@@ -79,6 +91,44 @@ class EvidenceDecisionTests(unittest.TestCase):
 
     Caller snapshots must remain unchanged after every failed stage.
     """
+
+    def test_endpoint_bindings_and_false_missing_are_atomic(self):
+        """Resolve endpoints while rejecting false gaps before final generation.
+
+        Invalid IDs, mismatched endpoints, self loops and mixed roles must leave
+        nonempty memory and existing permanent rejections intact.
+        """
+        query = {"target": LEFT[0], "relation": "born_in"}
+        incoming = ("Town", "born_in", LEFT[0])
+        for graph, direction in (([LEFT], "outgoing"), ([incoming], "incoming")):
+            self.assertEqual(resolve_query({**query, "binding": {
+                "kind": "observed", "evidence_ids": [0]}}, graph)["direction"], direction)
+        self.assertEqual(resolve_query({**query, "binding": {
+            "kind": "missing", "direction": "incoming"}}, [])["direction"], "incoming")
+        bad_bindings = [
+            ({"kind": "observed", "evidence_ids": ids}, GRAPH)
+            for ids in ([], [-1], [True], [99], [0], [2])]
+        bad_bindings += [({"kind": "missing", "direction": d}, GRAPH)
+                         for d in ("incoming", "outgoing")]
+        bad_bindings += [({"kind": "observed", "evidence_ids": [0]},
+                         [(LEFT[0], "born_in", LEFT[0])]),
+                        ({"kind": "observed", "evidence_ids": [0, 1]},
+                         sorted([LEFT, incoming]))]
+        for binding, graph in bad_bindings:
+            with self.assertRaises(MemoryValidationError):
+                resolve_query({**query, "binding": binding}, graph)
+        for binding in ({"kind": "missing", "direction": "incoming"},
+                        {"kind": "observed", "evidence_ids": [99]}):
+            record = wire(description())
+            record["description"]["branches"]["false"]["fact_queries"][0]["binding"] = binding
+            state = QuestionMemory(QUESTION, [LEFT], [("Old", "edge", "Rejected")])
+            client = Mock()
+            client.complete.return_value = envelope(record)
+            with self.assertRaises(MemoryValidationError):
+                manage_memory(state, GRAPH, [0.95] * 3, client,
+                              prompt_variant="evidence_decision")
+            self.assertEqual(client.complete.call_count, 1)
+            self.assertEqual(state, QuestionMemory(QUESTION, [LEFT], [("Old", "edge", "Rejected")]))
 
     def test_final_schema_and_strict_failure_boundary(self):
         """Constrain final generation without repairing invalid model content.
@@ -123,14 +173,14 @@ class EvidenceDecisionTests(unittest.TestCase):
         record = description(unique=False)
         extra = (LEFT[0], "born_in", "Town C")
         unrelated = (LEFT[0], "lives_in", "Town D")
-        result = derive_decision(wire(record), QUESTION, [FACT, LEFT, extra, unrelated])
+        result = derive_decision(wire(record, [FACT, LEFT, extra, unrelated]), QUESTION, [FACT, LEFT, extra, unrelated])
         self.assertEqual(set(result["required_triplets"]), {FACT, LEFT, extra})
         gaps = result["missing_relations"]
         self.assertIn({"target": RIGHT[0], "relation": "born_in", "direction": "outgoing"}, gaps)
         self.assertFalse(any(q["target"] == LEFT[0] for q in gaps))
         record["branches"]["true"]["fact_queries"][0]["direction"] = "incoming"
         incoming = ("Town E", "born_in", LEFT[0])
-        result = derive_decision(wire(record), QUESTION, [incoming])
+        result = derive_decision(wire(record, [incoming]), QUESTION, [incoming])
         self.assertEqual(result["required_triplets"], [incoming])
 
     def test_uncovered_target_and_final_path_omission(self):
@@ -195,7 +245,7 @@ class EvidenceDecisionTests(unittest.TestCase):
             if expected == "unknown":
                 self.assertEqual(set(result["required_triplets"]), set(GRAPH))
         record = description()
-        result = derive_decision(wire(record), QUESTION, [])
+        result = derive_decision(wire(record, []), QUESTION, [])
         self.assertEqual(result["condition_status"], "unknown")
         self.assertEqual(result["required_triplets"], [])
         self.assertEqual({q["target"] for q in result["missing_relations"]}, {"Book", "Person A", "Person B"})
@@ -318,7 +368,7 @@ class EvidenceDecisionTests(unittest.TestCase):
             ([LEFT, RIGHT], "unknown", [LEFT, RIGHT], [], ["Who publishes Book?"]),
         ):
             client = Mock()
-            client.complete.side_effect = [envelope(record), completion(selected, answers, questions)]
+            client.complete.side_effect = [envelope(record, graph), completion(selected, answers, questions)]
             result = manage_memory(QuestionMemory(QUESTION), graph, [0.95] * len(graph),
                                    client, prompt_variant="evidence_decision")
             prompt = client.complete.call_args_list[1].args[0][0]["content"]

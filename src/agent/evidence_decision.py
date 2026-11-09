@@ -30,14 +30,19 @@ is the exact original-question passage explicitly establishing a single value,
 or empty if absent.
 The comparison value is a query constraint, NEVER an observed fact.
 For each branch supply targets (entity names, not questions or predicted answers)
-and fact_queries. Each query has target, relation, direction (outgoing means
-target is head; incoming means target is tail). Describe every target's required
+and fact_queries. Each query has target, relation and binding. For observed facts,
+binding is {kind: observed, evidence_ids: [integer IDs from Numbered knowledge]}.
+Reference facts with the exact relation and target endpoint; code derives direction.
+For absent facts binding is {kind: missing, direction: outgoing or incoming}.
+Outgoing means target is head; incoming means target is tail. A missing declaration
+is invalid if either direction has the exact target/relation in the graph.
+Describe every target's required
 one-hop fact even when absent from the graph. Use exact graph relation names
 when present. Never supply predicted values or select evidence. Both conditional
 branches must have nonempty targets and queries. The nonconditional branch also
 requires nonempty targets and queries. Every target needs a query, and every
 query target must belong to its branch. Multi-hop, aggregation and complex
-requirements are unsupported: use direction unsupported to fail explicitly.
+requirements are unsupported: use the unsupported description variant.
 Code will query the COMPLETE graph for condition facts and select the branch.
 """
 
@@ -58,9 +63,17 @@ BRANCH_SCHEMA = {
     "required": ["targets", "fact_queries"],
     "properties": {"targets": STRINGS, "fact_queries": {
         "type": "array", "items": {"type": "object", "additionalProperties": False,
-        "required": ["target", "relation", "direction"],
-        "properties": {"target": STRING, "relation": STRING, "direction": {
-            "type": "string", "enum": ["outgoing", "incoming", "unsupported"]}}}}},
+        "required": ["target", "relation", "binding"],
+        "properties": {"target": STRING, "relation": STRING, "binding": {"anyOf": [
+            {"type": "object", "additionalProperties": False,
+             "required": ["kind", "evidence_ids"], "properties": {
+                 "kind": {"type": "string", "enum": ["observed"]},
+                 "evidence_ids": {"type": "array", "items": {"type": "integer"}}}},
+            {"type": "object", "additionalProperties": False,
+             "required": ["kind", "direction"], "properties": {
+                 "kind": {"type": "string", "enum": ["missing"]},
+                 "direction": {"type": "string", "enum": ["incoming", "outgoing"]}}}
+        ]}}}}},
 }
 CONDITION_SCHEMA = {**CONDITION_SCHEMA,
     "required": [key for key in CONDITION_SCHEMA["required"] if key != "kind"] + ["condition_quote"],
@@ -131,6 +144,56 @@ def decode_description(record, question):
     raise MemoryValidationError("decision_fields")
 
 
+def resolve_query(query, graph):
+    """Validate a request-local binding and derive its directional query.
+
+    Args:
+        query: Untrusted target, relation and observed/missing binding.
+        graph: Sorted complete submitted triples defining integer IDs.
+
+    Returns:
+        Target, relation and validated direction for full-graph matching.
+
+    Raises:
+        MemoryValidationError: Invalid binding, ambiguous role or false gap.
+    """
+    if (not isinstance(query, dict) or set(query) != {"target", "relation", "binding"}
+            or any(not isinstance(query[k], str) or not query[k].strip()
+                   for k in ("target", "relation"))):
+        raise MemoryValidationError("decision_queries")
+    binding = query["binding"]
+    if not isinstance(binding, dict):
+        raise MemoryValidationError("decision_queries")
+    target, relation = query["target"], query["relation"]
+    hits = {direction: [t for t in graph if t[index] == target and t[1] == relation]
+            for direction, index in (("outgoing", 0), ("incoming", 2))}
+    if binding.get("kind") == "observed" and set(binding) == {"kind", "evidence_ids"}:
+        ids = binding["evidence_ids"]
+        if (not isinstance(ids, list) or not ids or
+                any(type(i) is not int or not 0 <= i < len(graph) for i in ids)):
+            raise MemoryValidationError("decision_evidence_id")
+        roles = set()
+        for i in ids:
+            triple = graph[i]
+            endpoints = {d for d, index in (("outgoing", 0), ("incoming", 2))
+                         if triple[index] == target and triple[1] == relation}
+            if len(endpoints) != 1:
+                raise MemoryValidationError("decision_queries")
+            roles.update(endpoints)
+        if len(roles) != 1:
+            raise MemoryValidationError("decision_queries")
+        direction = roles.pop()
+    elif (binding.get("kind") == "missing" and set(binding) == {"kind", "direction"}
+          and binding["direction"] in ("outgoing", "incoming")):
+        direction = binding["direction"]
+        # Reverse hits are a conservative conflict, not permission to flip direction.
+        if any(hits.values()):
+            raise MemoryValidationError("decision_conflict")
+    else:
+        raise MemoryValidationError("decision_queries")
+    return {"target": target, "relation": relation, "direction": direction}
+
+
 def derive_decision(description, question, submitted):
     """Validate extraction and derive requirements from actual graph values.
 
@@ -199,14 +262,13 @@ def derive_decision(description, question, submitted):
             raise MemoryValidationError("decision_queries")
         if not inactive and (not branch["targets"] or not queries):
             raise MemoryValidationError("decision_queries")
-        for query in queries:
-            if (not isinstance(query, dict) or set(query) != {"target", "relation", "direction"}
-                    or any(not isinstance(v, str) or not v.strip() for v in query.values())
-                    or query["direction"] not in ("incoming", "outgoing")
-                    or query["target"] not in branch["targets"]):
+        resolved = [resolve_query(query, graph) for query in queries]
+        for query in resolved:
+            if query["target"] not in branch["targets"]:
                 raise MemoryValidationError("decision_queries")
-        if set(branch["targets"]) != {query["target"] for query in queries}:
+        if set(branch["targets"]) != {query["target"] for query in resolved}:
             raise MemoryValidationError("decision_query_coverage")
+        branches[case] = {**branch, "fact_queries": resolved}
     active = ("true", "false") if status == "unknown" else (status,)
     required = set(actual)
     targets, missing, matches = [], [], []

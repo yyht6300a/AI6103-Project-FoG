@@ -36,9 +36,9 @@ def description(value="Expected", unique=True):
                           "operator": "eq", "value": value,
                           "uniqueness_quote": "Book has exactly one publisher." if unique else ""},
             "branches": {
-                "true": {"targets": [LEFT[0]], "evidence_ids": [GRAPH.index(LEFT)], "missing_relations": []},
-                "false": {"targets": [RIGHT[0]], "evidence_ids": [GRAPH.index(RIGHT)], "missing_relations": []},
-                "not_conditional": {"targets": [], "evidence_ids": [], "missing_relations": []}}}
+                "true": {"targets": [LEFT[0]], "fact_queries": [{"target": LEFT[0], "relation": "born_in", "direction": "outgoing"}]},
+                "false": {"targets": [RIGHT[0]], "fact_queries": [{"target": RIGHT[0], "relation": "born_in", "direction": "outgoing"}]},
+                "not_conditional": {"targets": [], "fact_queries": []}}}
 
 
 def envelope(record):
@@ -61,6 +61,44 @@ class EvidenceDecisionTests(unittest.TestCase):
     Caller snapshots must remain unchanged after every failed stage.
     """
 
+    def test_query_matching_and_object_specific_gaps(self):
+        """Resolve exact directional facts without collecting unrelated neighbors.
+
+        Multiple matches are retained; absent objects retain separate gaps even
+        when another object has facts for the same relation.
+        """
+        record = description(unique=False)
+        extra = (LEFT[0], "born_in", "Town C")
+        unrelated = (LEFT[0], "lives_in", "Town D")
+        result = derive_decision(record, QUESTION, [FACT, LEFT, extra, unrelated])
+        self.assertEqual(set(result["required_triplets"]), {FACT, LEFT, extra})
+        gaps = result["missing_relations"]
+        self.assertIn({"target": RIGHT[0], "relation": "born_in", "direction": "outgoing"}, gaps)
+        self.assertFalse(any(q["target"] == LEFT[0] for q in gaps))
+        record["branches"]["true"]["fact_queries"][0]["direction"] = "incoming"
+        incoming = ("Town E", "born_in", LEFT[0])
+        result = derive_decision(record, QUESTION, [incoming])
+        self.assertEqual(result["required_triplets"], [incoming])
+
+    def test_uncovered_target_and_final_path_omission(self):
+        """Reject incomplete requests and omitted answer evidence atomically.
+
+        The final response cannot permanently reject a fact found by a query.
+        """
+        record = description()
+        record["branches"]["false"]["targets"].append(LEFT[0])
+        client = Mock()
+        client.complete.return_value = envelope(record)
+        state = QuestionMemory(QUESTION, [LEFT])
+        with self.assertRaises(MemoryValidationError):
+            manage_memory(state, GRAPH, [0.95] * 3, client, prompt_variant="evidence_decision")
+        self.assertEqual(client.complete.call_count, 1)
+        client.complete.side_effect = [envelope(description()), completion([FACT], [FACT[2]])]
+        with self.assertRaises(MemoryValidationError) as caught:
+            manage_memory(state, GRAPH, [0.95] * 3, client, prompt_variant="evidence_decision")
+        self.assertEqual(caught.exception.code, "decision_required_omitted")
+        self.assertEqual(state, QuestionMemory(QUESTION, [LEFT]))
+
     def test_nonconditional_ranking_and_unknown_answer_gate(self):
         """Retain nonconditional multi-target sorting and unknown-condition gates.
 
@@ -71,9 +109,9 @@ class EvidenceDecisionTests(unittest.TestCase):
         record["condition"] = dict.fromkeys(record["condition"], "")
         record["condition"]["kind"] = "none"
         for branch in record["branches"].values():
-            branch.update(targets=[], evidence_ids=[], missing_relations=[])
+            branch.update(targets=[], fact_queries=[])
         record["branches"]["not_conditional"].update(
-            targets=[LEFT[0], RIGHT[0]], evidence_ids=[GRAPH.index(LEFT), GRAPH.index(RIGHT)])
+            targets=[LEFT[0], RIGHT[0]], fact_queries=[q for b in description()["branches"].values() for q in b["fact_queries"]])
         client = Mock()
         client.complete.side_effect = [envelope(record),
             completion([LEFT, RIGHT], [LEFT[2], RIGHT[2]]),
@@ -103,12 +141,10 @@ class EvidenceDecisionTests(unittest.TestCase):
             if expected == "unknown":
                 self.assertEqual(set(result["required_triplets"]), set(GRAPH))
         record = description()
-        for branch in record["branches"].values():
-            branch["evidence_ids"] = []
         result = derive_decision(record, QUESTION, [])
         self.assertEqual(result["condition_status"], "unknown")
         self.assertEqual(result["required_triplets"], [])
-        self.assertEqual(result["missing_relations"], ["publisher"])
+        self.assertEqual({q["target"] for q in result["missing_relations"]}, {"Book", "Person A", "Person B"})
 
     def test_invalid_extraction_is_atomic(self):
         """Reject invalid IDs, unsupported predicates and single-value conflicts.
@@ -116,9 +152,9 @@ class EvidenceDecisionTests(unittest.TestCase):
         No failure may initiate final selection or publish rejection state.
         """
         cases = []
-        for bad in (-1, 3, True, "0"):
+        for bad in ([], [{"target": "Other", "relation": "born_in", "direction": "outgoing"}], [{"target": RIGHT[0], "relation": "born_in", "direction": "unsupported"}]):
             record = description()
-            record["branches"]["false"]["evidence_ids"] = [bad]
+            record["branches"]["false"]["fact_queries"] = bad
             cases.append((record, GRAPH))
         for key, value in (("operator", "ne"), ("kind", "unsupported"),
                            ("uniqueness_quote", "invented premise")):
@@ -127,7 +163,7 @@ class EvidenceDecisionTests(unittest.TestCase):
             cases.append((record, GRAPH))
         record = description()
         record["branches"]["not_conditional"]["targets"] = ["Book"]
-        cases.extend([(record, GRAPH), (description(), []),
+        cases.extend([(record, GRAPH),
                       (description(), GRAPH + [("Book", "publisher", "Expected")])])
         for record, graph in cases:
             client = Mock()
@@ -144,7 +180,6 @@ class EvidenceDecisionTests(unittest.TestCase):
         Final omissions become permanent rejection under the existing rule.
         """
         record = description()
-        record["branches"]["false"]["missing_relations"] = ["publisher"]
         client = Mock()
         client.complete.side_effect = [envelope(record), completion([FACT, RIGHT], [RIGHT[2]])]
         state = QuestionMemory(QUESTION, [LEFT])
@@ -172,7 +207,7 @@ class EvidenceDecisionTests(unittest.TestCase):
             target = reply["choices"][0] if key == "finish_reason" else reply["choices"][0]["message"]
             target[key] = value
             cases.append([reply])
-        cases.extend([[first, completion([RIGHT], [RIGHT[2]])],
+        cases.extend([[first, completion([FACT], [FACT[2]])],
                       [first, completion([FACT, RIGHT], ["External"])],
                       [first, completion([FACT, RIGHT], questions=["What?"])],
                       [first, completion([FACT, RIGHT], [RIGHT[2]], ["What?"])],

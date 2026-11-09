@@ -21,13 +21,15 @@ name (if absent, describe the required relation). operator is eq. uniqueness_quo
 is the exact original-question passage explicitly establishing a single value,
 or empty if absent. For none, all other condition strings must be empty.
 The comparison value is a query constraint, NEVER an observed fact.
-For each branch supply targets (entity names whose facts are queried, not question
-sentences or predicted answers), evidence_ids (integer IDs from this request's
-numbered full graph), and missing_relations (relation names of missing answer-path
-facts). Identify both conditional branches regardless of observed values. For a
-conditional question not_conditional must have three empty arrays; for none the
-true and false branches must have three empty arrays. Targets may lack facts.
-Reference only available answer paths with evidence_ids. Do not invent facts.
+For each branch supply targets (entity names, not questions or predicted answers)
+and fact_queries. Each query has target, relation, direction (outgoing means
+target is head; incoming means target is tail). Describe every target's required
+one-hop fact even when absent from the graph. Use exact graph relation names
+when present. Never supply predicted values or select evidence. Both conditional
+branches must have nonempty targets and queries; not_conditional must be empty.
+For none, only not_conditional is active. Every target needs a query, and every
+query target must belong to its branch. Multi-hop, aggregation and complex
+requirements are unsupported: use direction unsupported to fail explicitly.
 Code will query the COMPLETE graph for condition facts and select the branch.
 """
 
@@ -42,9 +44,12 @@ CONDITION_SCHEMA = {
 }
 BRANCH_SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["targets", "evidence_ids", "missing_relations"],
-    "properties": {"targets": STRINGS, "missing_relations": STRINGS,
-                   "evidence_ids": {"type": "array", "items": {"type": "integer"}}},
+    "required": ["targets", "fact_queries"],
+    "properties": {"targets": STRINGS, "fact_queries": {
+        "type": "array", "items": {"type": "object", "additionalProperties": False,
+        "required": ["target", "relation", "direction"],
+        "properties": {"target": STRING, "relation": STRING, "direction": {
+            "type": "string", "enum": ["outgoing", "incoming", "unsupported"]}}}}},
 }
 DECISION_RESPONSE_FORMAT = {"type": "json_schema", "json_schema": {
     "name": "evidence_description", "strict": True,
@@ -70,7 +75,7 @@ def derive_decision(description, question, submitted):
 
     Raises:
         MemoryValidationError: Malformed extraction, unsupported condition,
-            invalid evidence reference or conflicting single-value facts.
+            invalid fact query or conflicting single-value facts.
     """
     graph = sorted(_freeze_triplets(submitted))
     if not isinstance(description, dict) or set(description) != {"condition", "branches"}:
@@ -113,34 +118,49 @@ def derive_decision(description, question, submitted):
     for case, branch in branches.items():
         if not isinstance(branch, dict) or set(branch) != set(BRANCH_SCHEMA["required"]):
             raise MemoryValidationError("decision_fields")
-        for field in ("targets", "missing_relations"):
-            _string_array(branch[field], "decision_strings")
+        _string_array(branch["targets"], "decision_strings")
         if any(value not in question and value not in components for value in branch["targets"]):
             raise MemoryValidationError("decision_target_membership")
-        ids = branch["evidence_ids"]
-        if not isinstance(ids, list) or any(type(i) is not int or not 0 <= i < len(graph) for i in ids):
-            raise MemoryValidationError("decision_evidence_id")
         inactive = case != "not_conditional" if kind == "none" else case == "not_conditional"
         if inactive and any(branch.values()):
             raise MemoryValidationError("decision_targets")
+        queries = branch["fact_queries"]
+        if not isinstance(queries, list):
+            raise MemoryValidationError("decision_queries")
+        if not inactive and (not branch["targets"] or not queries):
+            raise MemoryValidationError("decision_queries")
+        for query in queries:
+            if (not isinstance(query, dict) or set(query) != {"target", "relation", "direction"}
+                    or any(not isinstance(v, str) or not v.strip() for v in query.values())
+                    or query["direction"] not in ("incoming", "outgoing")
+                    or query["target"] not in branch["targets"]):
+                raise MemoryValidationError("decision_queries")
+        if set(branch["targets"]) != {query["target"] for query in queries}:
+            raise MemoryValidationError("decision_query_coverage")
     active = ("true", "false") if status == "unknown" else (status,)
     required = set(actual)
-    targets, missing = [], []
+    targets, missing, matches = [], [], []
     for case in active:
         branch = branches[case]
-        required.update(graph[i] for i in branch["evidence_ids"])
         targets.extend(branch["targets"])
-        missing.extend(branch["missing_relations"])
-    # Only a missing condition relation is synthesized; known condition facts
-    # remove that gap without altering unrelated answer-path requirements.
+        for query in branch["fact_queries"]:
+            index = 0 if query["direction"] == "outgoing" else 2
+            facts = [triple for triple in graph if triple[index] == query["target"]
+                     and triple[1] == query["relation"]]
+            matches.append({"case": case, **query, "triplets": facts})
+            required.update(facts)
+            if not facts:
+                missing.append(dict(query))
+    # Keep condition uncertainty separate from object-specific answer gaps.
+    # A known publisher must not erase another target's missing publisher fact.
     if kind == "equals":
-        missing = [value for value in missing if value != condition["relation"]]
         if status == "unknown":
-            missing.append(condition["relation"])
+            missing.append({"target": condition["subject"], "relation": condition["relation"],
+                            "direction": "outgoing", "reason": "condition_unknown"})
     return {"condition_status": status, "condition_triplets": actual,
             "answer_targets": list(dict.fromkeys(targets)),
             "required_triplets": sorted(required),
-            "missing_relations": list(dict.fromkeys(missing)),
+            "missing_relations": missing, "query_matches": matches,
             "targets_by_case": {case: branches[case]["targets"] for case in CASES}}
 
 

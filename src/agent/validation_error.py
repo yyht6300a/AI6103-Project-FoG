@@ -29,6 +29,8 @@ class MemoryValidationError(ValueError):
 
 
 ERROR_STAGES = {
+    "decision_queries": "evidence_decision",
+    "decision_query_coverage": "evidence_decision",
     "decision_condition": "evidence_decision",
     "decision_conflict": "evidence_decision",
     "decision_unsupported": "evidence_decision",

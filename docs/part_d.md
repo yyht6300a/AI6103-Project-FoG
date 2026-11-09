@@ -16,7 +16,12 @@ Inputs:
 | --- | --- | --- |
 | `question` | `str` | Nonblank original question, inserted verbatim without rewriting. |
 | `client` | `LLMClient` | Caller-owned LLM client that the caller closes. |
-| `prompt_variant` | `str` | Keyword-only; defaults to `"explicit_references"`, while `"paper"` uses the original paper prompt. |
+| `prompt_variant` | `str` | Keyword-only; defaults to `"explicit_references"`; see the value list below. |
+
+`prompt_variant` values:
+
+- `"explicit_references"` (default): inserts an independent-retrieval section into the Figure 7 template, requiring each sub-question to be retrievable on its own by repeating known entity names or relational descriptions of unresolved entities without assuming an earlier answer.
+- `"paper"`: keeps only the original Figure 7 instructions (numbering from $1$) without that section, for paper reproduction and comparison.
 
 Outputs:
 
@@ -84,7 +89,7 @@ The timestamp records the attempt start in UTC with an offset. Model and token c
 
 ## Initial question decomposition
 
-[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial sub-questions from FoG §3.1 and Figure 7. `decompose_question(question, client, *, prompt_variant="explicit_references")` requires each sub-question to be independently retrievable by default: repeat known entity names or relational descriptions of unresolved entities, do not assume earlier answers, and do not invent names. Explicit `prompt_variant="paper"` retains the paper wording with instruction numbering starting at $1$. The ordered question list is returned for the caller to retrieve separately.
+[`question_decomposition.py`](../src/agent/question_decomposition.py) implements the initial sub-questions from FoG §3.1 and Figure 7. `decompose_question(question, client, *, prompt_variant="explicit_references")` requires each sub-question to be independently retrievable by default: repeat known entity names or relational descriptions of unresolved entities, do not assume earlier answers, and do not invent names. Prompt variants are listed under [Primary deliverables](#primary-deliverables). The ordered question list is returned for the caller to retrieve separately.
 
 `build_decomposition_prompt` and `parse_sub_questions` work offline without API calls. The question must be a nonblank string and is inserted verbatim. A completed, nonrefused reply must be only a nonempty JSON array of nonblank strings; code fences, prose, malformed JSON and nonstring items fail, while strings, order and duplicates are preserved. Figure 7 sets no sub-question count limit. Invalid input or output raises `ValueError` without disclosing text and adds no extra request or substitute question.
 

@@ -16,7 +16,12 @@
 | --- | --- | --- |
 | `question` | `str` | 非空原问题，逐字传入，不做改写。 |
 | `client` | `LLMClient` | 调用方持有并负责关闭的 LLM 客户端。 |
-| `prompt_variant` | `str` | 仅关键字参数，默认 `"explicit_references"`；`"paper"` 使用论文原版提示。 |
+| `prompt_variant` | `str` | 仅关键字参数，默认 `"explicit_references"`；可选值及含义见下方列表。 |
+
+`prompt_variant` 的可选值：
+
+- `"explicit_references"`（默认）：在论文图 7 模板中插入独立检索增强段，要求每个子问题脱离其他子问题也能独立检索，写全已知实体名或未知实体的关系描述，且不假定前一问已得到答案。
+- `"paper"`：只保留论文图 7 的原始指令（编号从 $1$ 开始），不插入增强段，用于复现论文基线与对照。
 
 输出：
 
@@ -84,7 +89,7 @@ flowchart TD
 
 ## 初始问题分解
 
-[`question_decomposition.py`](../src/agent/question_decomposition.py) 实现 FoG 第 3.1 节和图 7 的初始子问题。`decompose_question(question, client, *, prompt_variant="explicit_references")` 默认要求每个子问题可独立检索：写全已知实体名或未知实体的关系描述，不假定前一问已得到答案，不编造实体名。显式 `prompt_variant="paper"` 保留论文原版措辞，指令编号从 $1$ 开始。返回有序问题列表，供调用方分别检索。
+[`question_decomposition.py`](../src/agent/question_decomposition.py) 实现 FoG 第 3.1 节和图 7 的初始子问题。`decompose_question(question, client, *, prompt_variant="explicit_references")` 默认要求每个子问题可独立检索：写全已知实体名或未知实体的关系描述，不假定前一问已得到答案，不编造实体名。提示变体的取值见[主要交付产物](#主要交付产物)。返回有序问题列表，供调用方分别检索。
 
 `build_decomposition_prompt` 与 `parse_sub_questions` 可离线使用，不调用 API。问题必须为非空白字符串并逐字插入。完成且未拒答的回复必须是仅含非空白字符串的非空 JSON 数组；代码围栏、说明文字、非法 JSON 和非字符串项均失败，字符串、顺序和重复项原样保留。图 7 未限制子问题数量。非法输入或输出抛出 `ValueError`，消息不包含原文，也不触发额外请求或替代问题。
 

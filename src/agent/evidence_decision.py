@@ -482,6 +482,10 @@ def derive_decision(description, question, submitted):
                             "direction": "outgoing", "reason": "condition_unknown"})
     return {"condition_status": status, "condition_triplets": actual,
             "answer_targets": list(dict.fromkeys(targets)),
+            "answer_candidates": sorted({
+                triple[2 if match["direction"] == "outgoing" else 0]
+                for match in matches for triple in match["triplets"]
+            }) if status != "unknown" else [],
             "required_triplets": sorted(required),
             "missing_relations": missing, "query_matches": matches,
             "targets_by_case": {case: branches[case]["targets"] for case in CASES}}
@@ -574,6 +578,8 @@ def validate_decision_response(decision, response):
             raise MemoryValidationError("decision_path_incomplete")
         if any(answer not in decision["answer_candidates"] for answer in response.predict_answer):
             raise MemoryValidationError("decision_path_answer")
+    elif any(answer not in decision["answer_candidates"] for answer in response.predict_answer):
+        raise MemoryValidationError("decision_answer_candidate")
     if decision["missing_relations"]:
         allowed = missing_relation_queries(decision["missing_relations"])
         questions = response.subsequent_question

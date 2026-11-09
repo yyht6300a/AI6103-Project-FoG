@@ -442,6 +442,29 @@ class PartDValidationTests(unittest.TestCase):
         self.assertEqual(report["results"][4]["state_before"]["memory"], [])
         self.assertEqual(report["results"][5]["state_before"]["rejected"], [])
 
+        # The Bronze probe must reject a selected subject before returning state.
+        from src.agent.memory_management import manage_memory
+        from src.agent.validation_error import MemoryValidationError
+
+        probe = report["results"][-1]
+        before = probe["state_before"]
+        state = validation.QuestionMemory(before["question"], before["memory"], before["rejected"])
+        snapshot = validation.snapshot(state)
+        for answer in (validation.OTHER_BIRTH[0], validation.OTHER_BIRTH[2]):
+            client = Mock(spec=LLMClient)
+            client.complete.side_effect = [envelopes[-2], completion(
+                probe["state_after"]["memory"], [answer], [])]
+            if answer == validation.OTHER_BIRTH[0]:
+                with self.assertRaises(MemoryValidationError) as caught:
+                    manage_memory(state, probe["triples"], probe["scores"], client)
+                self.assertEqual(caught.exception.code, "decision_answer_candidate")
+                self.assertEqual(caught.exception.stage, "decision_consistency")
+            else:
+                result = manage_memory(state, probe["triples"], probe["scores"], client)
+                self.assertEqual(result.response.predict_answer, (answer,))
+            self.assertEqual(client.complete.call_count, 2)
+            self.assertEqual(validation.snapshot(state), snapshot)
+
         # A structurally valid full-graph answer retaining the irrelevant branch
         # must fail the controlled gate before an unknown-condition chain starts.
         client = Mock(spec=LLMClient)

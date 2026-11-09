@@ -32,6 +32,10 @@ preserve the available evidence for all possible targets. If the condition is
 resolved (or not_conditional) and missing_relations is empty, answer the original
 question and ask no further questions. Otherwise ask only for missing relations.
 subsequent_question must be an array of strings, never objects.
+For one-hop and conditional requirements, answer_targets are known entities
+whose attributes are requested, not answer values to copy. Choose predict_answer
+only from the code-derived answer_candidates, using the original question and
+selected evidence. Condition-only facts do not supply answer candidates.
 For nonconditional_path, required_triplets includes every reachable prefix,
 including incomplete paths. Select all of them. Any missing_relations forbids
 answers even if another path is complete. With no gaps, answer only with terminal

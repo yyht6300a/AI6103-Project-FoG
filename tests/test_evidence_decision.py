@@ -97,6 +97,53 @@ class EvidenceDecisionTests(unittest.TestCase):
     Caller snapshots must remain unchanged after every failed stage.
     """
 
+    def test_conditional_endpoint_guard_and_correct_answer(self):
+        """Reject subject and condition endpoints before publishing a snapshot.
+
+        Both truth branches accept their requested city in two calls; unknown
+        conditions expose no answer candidates and preserve existing guards.
+        """
+        for value, fact in (("Expected", RIGHT), ("Actual", LEFT)):
+            record = wire(description(value))
+            decision = derive_decision(record, QUESTION, GRAPH)
+            self.assertEqual(decision["answer_candidates"], [fact[2]])
+            for answer in (fact[0], FACT[0], FACT[2], fact[2]):
+                client = Mock()
+                client.complete.side_effect = [envelope(description(value)),
+                                              completion(GRAPH, [answer], [])]
+                state = QuestionMemory(QUESTION, [FACT])
+                before = copy.deepcopy(state)
+                if answer == fact[2]:
+                    result = manage_memory(state, GRAPH, [0.95] * 3, client)
+                    self.assertEqual(result.response.predict_answer, (answer,))
+                else:
+                    with self.assertRaises(MemoryValidationError) as caught:
+                        manage_memory(state, GRAPH, [0.95] * 3, client)
+                    self.assertEqual(caught.exception.code, "decision_answer_candidate")
+                    self.assertEqual(caught.exception.stage, "decision_consistency")
+                self.assertEqual(client.complete.call_count, 2)
+                self.assertEqual(state, before)
+        unknown = derive_decision(wire(description(unique=False)), QUESTION, GRAPH)
+        self.assertEqual(unknown["answer_candidates"], [])
+
+    def test_directional_candidates_scan_all_matches_and_requirements(self):
+        """Collect opposite endpoints across independent requests without extras.
+
+        Referencing one observed fact still scans every exact relation match.
+        Incoming facts, multiple relations and stable deduplication share this rule.
+        """
+        graph = sorted([("A", "r", "B"), ("A", "r", "C"),
+                        ("D", "s", "A"), ("X", "noise", "Y")])
+        queries = [{"target": "A", "relation": relation, "direction": direction}
+                   for relation, direction in (("r", "outgoing"), ("s", "incoming"))]
+        record = description()
+        record["condition"]["kind"] = "none"
+        record["branches"] = {"not_conditional": {"targets": ["A"], "fact_queries": queries}}
+        encoded = wire(record, graph)
+        encoded["description"]["branch"]["requirements"][0]["fact_queries"][0]["binding"]["evidence_ids"] = [0]
+        decision = derive_decision(encoded, "Find facts of A", graph)
+        self.assertEqual(decision["answer_candidates"], ["B", "C", "D"])
+
     def test_default_matches_explicit_decision_and_update_entry(self):
         """Exercise both public defaults through the real decision parser.
 

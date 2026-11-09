@@ -249,6 +249,8 @@ python scripts/validate_part_d.py --suite all
 
 ## 当前验收状态与剩余事项
 
+本节记录 2026/11/09 的验收状态与历史失败。缺失方向提示后的最新有界真实结果见[有界真实验收结果](#20261110-缺失方向提示后的有界真实验收结果)；其余历史结论按原样保留。
+
 2026/11/09，当前默认架构已完成采用。GPT-4o 的两张完整条件图和两条三轮链已通过受控验收，覆盖未知时保留候选路径、条件确定后的正确答案、只移除无关旧证据和高分重输后的永久过滤。两条链共 $6$ 次事务、$12$ 次 HTTP 尝试，无失败、重试或排序请求，实际模型均为 `gpt-4o-2024-08-06`。这些结果支持关闭本轮条件证据保留、作答与旧记忆移除排查。
 
 当前两跳协议及验收入口已通过全部 $136$ 项离线回归。GPT-4o-mini/OpenAI 的六个受控两跳场景均通过自动门槛及原始抽取人工审阅：完整图只答终跳城市，部分图保留作者并只查出生关系，空图只查书的作者；三轮链真实继承快照及查询，阈值隐藏事实未提交且未拒绝，恢复后接通完整路径，自然拒绝及后续两轮过滤均已观察到。私有报告为 `tmp/tmp_part_d_validation_20261109T152528273320Z.json` 和 `tmp/tmp_part_d_validation_20261109T152612446031Z.json`。
@@ -821,3 +823,24 @@ unequal 完成三阶段，但抽取在 confirmed／possible 之外增加第二�
 任何阶段失败均先保存原异常、阶段进度、安全投影和实际 HTTP 增量，停止后续付费工作。抽取仍误分时利用新抽取固定回归，只修分类；抽取正确而派生错误才修绑定／求值；派生正确却漏答／错答才修最终选择；完整候选进入排序却顺序错误才修排序。不凭错误码跨层修改，不因投影不可用就原样再采样。HTTP 成功但应用拒绝仍按原账本记成功，不增业务重试。HTTP 上限是沿用传输重试预算的保守值，遇到应用校验失败不会消费余下上限；两例正常应恰为 $6$ 次完成，跳过排序或少一次调用不能算节省预算后的通过。
 
 **本次交付状态**：免费诊断与可执行方案已完成，生产修复、运行器加固和新真实验收均未实施。TODO 2.3.5 继续开放；2.3.6 历史核账与 2.4 模块交付仍按[既有剩余依赖](#用量核对与最终交付的剩余依赖)推进，不等待 C/E 集成，不以本次文档提交宣称模块修复完成。
+
+#### 2026/11/10 缺失方向提示后的有界真实验收结果
+
+2026/11/10，按[方案执行结果与离线门槛](#方案执行结果与离线门槛)登记的预算执行 Bronze→Silver 有界真实验收。运行修订为 `57407f4b14f1c92a0a58e9a7fd036e3150c7b31d`，初始工作区干净，生产、运行器与测试均未修改；运行器 SHA-256 为 `7baee1fdca080a24348e9b9ad410af4243e7344d30b51e1802b1aeca07104c10`，`src/agent/evidence_decision.py` 为 `9c2772285f3f91da38849c5b1efd2633838c419a7946a261a21e7403842ae0d9`，均与离线实施记录一致。生产配置加载器确认有效模型 `gpt-4o-mini`、端点 `https://api.openai.com/v1`、私有 key 非空、timeout 为 $60$ 秒、最多额外重试 $2$ 次；未打印或上传私有配置，未执行 smoke，并先免费预览 `--suite conditional --list-cases`，得到 $8$ 个用例与逻辑调用上限 $24$。
+
+| 命令参数（入口均为 `scripts/validate_part_d.py`） | 自动结果 | 逻辑／HTTP | 输入／输出 tokens |
+| --- | --- | --- | --- |
+| `--suite conditional --case conditional.bronze_unknown --case conditional.bronze_resolved --case conditional.bronze_probe` | unknown、resolved 各通过 $9$ 项受控检查；probe 首阶段以 `MemoryValidationError`／`decision_queries` 失败 | $5/5$ | $8530/534$ |
+| Silver 对应三轮命令 | 按首个自动失败停止，未执行 | $0/0$ | 无新增用量 |
+
+Bronze 前两轮通过自动门槛与原始回复人工审阅。unknown 精确抽取 `conditional_equals`，条件主体、关系与值合法，以编号 $0/1$ 绑定 Mira Vale 与 Nolan Reed 的出生事实，保留两条证据、无答案且只查询出版社；resolved 在提交出版社事实后求值为 `false`，只回答 `Cedar City`，保留 Nolan 出生与 Bronze 出版社证据，移除并永久拒绝 Mira 出生事实。两轮的 `conditional_kind`、`conditional_condition`、`conditional_true_branch`、`conditional_false_branch` 均为真。
+
+probe 轮在第 $1$ 次逻辑调用后失败。安全投影显示抽取仍为 `conditional_equals`，条件字段合法；false 分支以 `observed` 编号 $0$ 绑定 Nolan 的出生事实，正确；true 分支却把 Mira Vale 的 `born_in` 也声明为 `observed` 编号 $0$。该轮提交图只有 `[0] Nolan Reed → born_in → Cedar City` 与 `[1] The Glass Orchard → published_by → Bronze Press`，编号 $0$ 没有 Mira 端点，[`resolve_query`](../src/agent/evidence_decision.py) 因此在第 $325$ 行以 `decision_queries` 拒绝，异常在 `derive_decision` 第 $480$ 行抛出。阶段进度为抽取已开始、已收到回复、事务未通过，最终选择与排序未开始；旧快照、Mira 出生事实的永久拒绝与过滤集合均保持不变，没有产生答案、候选或记忆发布。
+
+本次形状与上一轮人工失败（true 分支 `missing/incoming`）不同：这里是复用他人编号的 `observed` 绑定，生产解码在派生前即拒绝，因此不进入候选、输出或记忆。该差异说明模型在该轮没有按新提示声明缺失方向，但单样本不能推断提示措辞的因果效果，也不能据此断言模型内部原因。按停止规则，Bronze 自动失败后未执行 Silver、未重采样、未修改提示或门槛；Silver 链仍从未执行。
+
+共新增 $5$ 次逻辑调用与 $5$ 次 HTTP，全部 `success`，返回模型均为 `gpt-4o-mini-2024-07-18`，无重试或未计划调用；输入 $8530$、输出 $534$ tokens。账本由 $572$ 行增至 $577$ 行，旧 $572$ 行字节前缀 SHA-256 `66b885c1896323e49c1dd36fae5a85b94affd1cf85b60edecee4387562b7e6fb` 不变；前 $4$ 个已保留阶段的 usage 与新增第 $1$ 至第 $4$ 行逐项相等，第 $5$ 行为失败抽取调用（$2186$ 输入、$140$ 输出）。HEAD、$18$ 个生产模块摘要、运行器、两份定向测试、两份模块文档、两份历史真实报告与私有审阅记录在运行前后一致；新报告自身源码指纹与基线相等。
+
+私有报告为 `tmp/tmp_part_d_validation_20261109T185956130602Z.json`（机器 UTC 文件名，对应本地 2026/11/10），运行前基线为 `tmp_dsh/tmp_bounded_recheck_baseline_20261109T185920245056Z.json`，核账脚本为 `tmp_dsh/tmp_bounded_recheck_accounting.py`，配置探针为 `tmp_dsh/tmp_delivery_gate_check.py`。`tmp/` 对命令进程只读，写入报告需要一次执行边界批准；未修改 ACL、所有权或认证。
+
+**判定**：Bronze 未通过业务验收，失败点是 probe 首阶段抽取绑定；ranking 不重跑、保留其独立通过记录，Silver 未执行。TODO 2.3.5、2.3.6 与 2.4 保持开放。下一步先免费归因 probe 为何以 `observed` 复用 Nolan 的编号而不声明 `missing/outgoing`，再评估提示或契约的最小修改；任何生产修复或再次付费复验都需要新的有界授权，不得消耗本轮预算、循环改提示、修补该回复或放宽解码。

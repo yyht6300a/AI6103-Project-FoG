@@ -1,0 +1,268 @@
+{
+  "generated_by": "scripts/prepare_dataset.py",
+  "limit": null,
+  "seconds": 2270.22,
+  "reports": [
+    {
+      "dataset": "cwq",
+      "split": "train",
+      "raw_file": "data\\raw\\qa\\ComplexWebQuestions_train.json",
+      "n_questions": 27639,
+      "subgraph_sampled": 1500,
+      "qa_file": "data\\processed\\cwq\\qa_train.jsonl.gz",
+      "gold_file": "data\\processed\\cwq\\gold_train.jsonl.gz",
+      "qa_bytes": 4926591,
+      "stats": {
+        "n": 27639,
+        "counters": {
+          "split": {
+            "train": 1
+          },
+          "source_method": {
+            "linking": 27639
+          },
+          "source_in_kg": {
+            "True": 27639
+          },
+          "gold_matched": {
+            "True": 22073,
+            "False": 5566
+          },
+          "gold_match_method": {
+            "exact": 20775,
+            "none": 5566,
+            "relaxed_order": 1298
+          }
+        },
+        "means": {
+          "gold_n_triples": 1.5958,
+          "gold_n_constraints": 0.0,
+          "n_answers": 2.1932,
+          "answers_in_kg_frac": 0.9967
+        },
+        "histograms": {}
+      },
+      "subgraph": {
+        "n": 1237,
+        "counters": {
+          "truncated": {
+            "True": 1069,
+            "False": 168
+          }
+        },
+        "means": {
+          "n_nodes": 17426.8561,
+          "n_edges": 36409.0453,
+          "n_lateral_edges": 22040.7712,
+          "n_gold_edges": 1.8294,
+          "rel_filtered_edges_bfs": 49088.0542,
+          "gold_recall_in_subgraph": 0.9162,
+          "layer_nodes_0": 1.0,
+          "layer_nodes_1": 496.519,
+          "layer_nodes_2": 7508.0251,
+          "layer_nodes_3": 9421.312
+        },
+        "histograms": {}
+      },
+      "config": {
+        "dataset": "cwq",
+        "splits": {
+          "train": "ComplexWebQuestions_train.json",
+          "test": "ComplexWebQuestions_dev.json"
+        },
+        "kg_index": "data\\processed\\kg\\index_all",
+        "out_dir": "data\\processed\\cwq",
+        "format": "cwq",
+        "limit": null,
+        "subgraph": {
+          "hops": 3,
+          "node_degree_max": 20000,
+          "rel_degree_max": 200000,
+          "rel_blocklist": [
+            "common.topic.notable_types",
+            "freebase.valuenotation.",
+            "common.webpage.",
+            "type.object."
+          ],
+          "max_nodes": 20000,
+          "max_edges": 40000,
+          "max_gather": 2000000,
+          "include_gold": true,
+          "keep_lateral": true
+        },
+        "align": {
+          "max_chain_hops": 4,
+          "max_mentions": 8,
+          "allow_shortest_fallback": false,
+          "use_mid2name_check": true,
+          "max_branch": 40,
+          "max_paths": 64
+        },
+        "materialize_subgraphs": 100,
+        "official_test_split": "official_test_no_answer"
+      },
+      "seconds": 1246.25
+    },
+    {
+      "dataset": "cwq",
+      "split": "test",
+      "raw_file": "data\\raw\\qa\\ComplexWebQuestions_dev.json",
+      "n_questions": 3519,
+      "subgraph_sampled": null,
+      "qa_file": "data\\processed\\cwq\\qa_test.jsonl.gz",
+      "gold_file": "data\\processed\\cwq\\gold_test.jsonl.gz",
+      "qa_bytes": 765535,
+      "stats": {
+        "n": 3519,
+        "counters": {
+          "split": {
+            "test": 1
+          },
+          "source_method": {
+            "linking": 3519
+          },
+          "source_in_kg": {
+            "True": 3519
+          },
+          "gold_matched": {
+            "True": 2931,
+            "False": 588
+          },
+          "gold_match_method": {
+            "exact": 2723,
+            "none": 588,
+            "relaxed_order": 208
+          }
+        },
+        "means": {
+          "gold_n_triples": 1.6658,
+          "gold_n_constraints": 0.0,
+          "n_answers": 2.2828,
+          "answers_in_kg_frac": 0.999
+        },
+        "histograms": {}
+      },
+      "subgraph": {
+        "n": 2931,
+        "counters": {
+          "truncated": {
+            "True": 2675,
+            "False": 256
+          }
+        },
+        "means": {
+          "n_nodes": 18308.8987,
+          "n_edges": 37546.7137,
+          "n_lateral_edges": 23151.6534,
+          "n_gold_edges": 1.7335,
+          "rel_filtered_edges_bfs": 61295.4534,
+          "gold_recall_in_subgraph": 0.8929,
+          "layer_nodes_0": 1.0,
+          "layer_nodes_1": 622.5793,
+          "layer_nodes_2": 9133.8359,
+          "layer_nodes_3": 8551.4835
+        },
+        "histograms": {}
+      },
+      "config": {
+        "dataset": "cwq",
+        "splits": {
+          "train": "ComplexWebQuestions_train.json",
+          "test": "ComplexWebQuestions_dev.json"
+        },
+        "kg_index": "data\\processed\\kg\\index_all",
+        "out_dir": "data\\processed\\cwq",
+        "format": "cwq",
+        "limit": null,
+        "subgraph": {
+          "hops": 3,
+          "node_degree_max": 20000,
+          "rel_degree_max": 200000,
+          "rel_blocklist": [
+            "common.topic.notable_types",
+            "freebase.valuenotation.",
+            "common.webpage.",
+            "type.object."
+          ],
+          "max_nodes": 20000,
+          "max_edges": 40000,
+          "max_gather": 2000000,
+          "include_gold": true,
+          "keep_lateral": true
+        },
+        "align": {
+          "max_chain_hops": 4,
+          "max_mentions": 8,
+          "allow_shortest_fallback": false,
+          "use_mid2name_check": true,
+          "max_branch": 40,
+          "max_paths": 64
+        },
+        "materialize_subgraphs": 100,
+        "official_test_split": "official_test_no_answer"
+      },
+      "seconds": 1021.94
+    },
+    {
+      "dataset": "cwq",
+      "split": "official_test_no_answer",
+      "raw_file": "data\\raw\\qa\\ComplexWebQuestions_test.json",
+      "n_questions": 3531,
+      "subgraph_sampled": null,
+      "qa_file": "data\\processed\\cwq\\qa_official_test_no_answer.jsonl.gz",
+      "gold_file": "data\\processed\\cwq\\gold_official_test_no_answer.jsonl.gz",
+      "qa_bytes": 471628,
+      "stats": {
+        "n": 3531,
+        "counters": {
+          "split": {
+            "official_test_no_answer": 1
+          }
+        },
+        "means": {},
+        "histograms": {}
+      },
+      "subgraph": {
+        "n": 0
+      },
+      "config": {
+        "dataset": "cwq",
+        "splits": {
+          "train": "ComplexWebQuestions_train.json",
+          "test": "ComplexWebQuestions_dev.json"
+        },
+        "kg_index": "data\\processed\\kg\\index_all",
+        "out_dir": "data\\processed\\cwq",
+        "format": "cwq",
+        "limit": null,
+        "subgraph": {
+          "hops": 3,
+          "node_degree_max": 20000,
+          "rel_degree_max": 200000,
+          "rel_blocklist": [
+            "common.topic.notable_types",
+            "freebase.valuenotation.",
+            "common.webpage.",
+            "type.object."
+          ],
+          "max_nodes": 20000,
+          "max_edges": 40000,
+          "max_gather": 2000000,
+          "include_gold": true,
+          "keep_lateral": true
+        },
+        "align": {
+          "max_chain_hops": 4,
+          "max_mentions": 8,
+          "allow_shortest_fallback": false,
+          "use_mid2name_check": true,
+          "max_branch": 40,
+          "max_paths": 64
+        },
+        "materialize_subgraphs": 100,
+        "official_test_split": "official_test_no_answer"
+      },
+      "seconds": 0.42
+    }
+  ]
+}

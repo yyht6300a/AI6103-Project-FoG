@@ -1,0 +1,10 @@
+# 成员 A（数据与知识图谱）的依赖
+#
+# 本模块刻意只依赖 numpy：不引入 torch / pandas / datasets，
+# 这样 B/C/D/E 在任何环境里都能先把数据跑出来。
+numpy>=1.24
+
+# 备注：
+# * 单元测试用标准库 unittest，不需要 pytest；
+# * 下载脚本用标准库 urllib，不需要 requests；
+# * 完整流水线用不到 GPU / OpenAI。

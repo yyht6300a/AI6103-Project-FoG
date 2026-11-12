@@ -1,0 +1,32 @@
+{
+  "dataset": "cwq",
+  "format": "cwq",
+  "splits": {
+    "train": "ComplexWebQuestions_train.json",
+    "test": "ComplexWebQuestions_dev.json"
+  },
+  "official_test_split": {
+    "name": "official_test_no_answer",
+    "file": "ComplexWebQuestions_test.json"
+  },
+  "kg_index": "data/processed/kg/index_all",
+  "out_dir": "data/processed/cwq",
+  "subgraph": {
+    "hops": 3,
+    "node_degree_max": 20000,
+    "rel_degree_max": 200000,
+    "max_nodes": 20000,
+    "max_edges": 40000,
+    "keep_lateral": true
+  },
+  "align": {
+    "max_chain_hops": 4,
+    "max_mentions": 8,
+    "allow_shortest_fallback": false,
+    "use_mid2name_check": true
+  },
+  "materialize_subgraphs": 200,
+  "subgraph_sample": {
+    "train": 1500
+  }
+}

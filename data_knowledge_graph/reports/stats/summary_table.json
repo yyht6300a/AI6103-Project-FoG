@@ -1,0 +1,128 @@
+[
+  {
+    "dataset": "webqsp",
+    "split": "test",
+    "n": 1639,
+    "gold_matched": 1523,
+    "gold_matched_pct": 0.9292251372788286,
+    "src_in_kg_pct": 0.9993898718730934,
+    "answers_in_kg": 0.9565,
+    "gold_triples": 1.2807,
+    "match_methods": {
+      "exact": 1509,
+      "none": 116,
+      "relaxed_order": 14
+    },
+    "source_methods": {
+      "annotation": 1575,
+      "linking": 64
+    },
+    "sub_n": 1523,
+    "sub_nodes": 19696.4064,
+    "sub_edges": 35867.6829,
+    "sub_gold_recall": 0.941,
+    "sub_truncated": 1497,
+    "sub_hub_skipped": null,
+    "qa_bytes": 455859,
+    "subgraph_sampled": null
+  },
+  {
+    "dataset": "webqsp",
+    "split": "train",
+    "n": 3098,
+    "gold_matched": 2901,
+    "gold_matched_pct": 0.9364105874757909,
+    "src_in_kg_pct": 0.9993544222078761,
+    "answers_in_kg": 0.962,
+    "gold_triples": 1.3054,
+    "match_methods": {
+      "exact": 2874,
+      "none": 197,
+      "relaxed_order": 27
+    },
+    "source_methods": {
+      "annotation": 2958,
+      "linking": 140
+    },
+    "sub_n": 1114,
+    "sub_nodes": 19747.2783,
+    "sub_edges": 35919.3842,
+    "sub_gold_recall": 0.9311,
+    "sub_truncated": 1100,
+    "sub_hub_skipped": null,
+    "qa_bytes": 835488,
+    "subgraph_sampled": 1200
+  },
+  {
+    "dataset": "cwq",
+    "split": "official_test_no_answer",
+    "n": 3531,
+    "gold_matched": 0,
+    "gold_matched_pct": 0.0,
+    "src_in_kg_pct": 0.0,
+    "answers_in_kg": null,
+    "gold_triples": null,
+    "match_methods": {},
+    "source_methods": {},
+    "sub_n": 0,
+    "sub_nodes": null,
+    "sub_edges": null,
+    "sub_gold_recall": null,
+    "sub_truncated": 0,
+    "sub_hub_skipped": null,
+    "qa_bytes": 471628,
+    "subgraph_sampled": null
+  },
+  {
+    "dataset": "cwq",
+    "split": "test",
+    "n": 3519,
+    "gold_matched": 2931,
+    "gold_matched_pct": 0.8329070758738278,
+    "src_in_kg_pct": 1.0,
+    "answers_in_kg": 0.999,
+    "gold_triples": 1.6658,
+    "match_methods": {
+      "exact": 2723,
+      "none": 588,
+      "relaxed_order": 208
+    },
+    "source_methods": {
+      "linking": 3519
+    },
+    "sub_n": 2931,
+    "sub_nodes": 18308.8987,
+    "sub_edges": 37546.7137,
+    "sub_gold_recall": 0.8929,
+    "sub_truncated": 2675,
+    "sub_hub_skipped": null,
+    "qa_bytes": 765535,
+    "subgraph_sampled": null
+  },
+  {
+    "dataset": "cwq",
+    "split": "train",
+    "n": 27639,
+    "gold_matched": 22073,
+    "gold_matched_pct": 0.7986178950034372,
+    "src_in_kg_pct": 1.0,
+    "answers_in_kg": 0.9967,
+    "gold_triples": 1.5958,
+    "match_methods": {
+      "exact": 20775,
+      "none": 5566,
+      "relaxed_order": 1298
+    },
+    "source_methods": {
+      "linking": 27639
+    },
+    "sub_n": 1237,
+    "sub_nodes": 17426.8561,
+    "sub_edges": 36409.0453,
+    "sub_gold_recall": 0.9162,
+    "sub_truncated": 1069,
+    "sub_hub_skipped": null,
+    "qa_bytes": 4926591,
+    "subgraph_sampled": 1500
+  }
+]

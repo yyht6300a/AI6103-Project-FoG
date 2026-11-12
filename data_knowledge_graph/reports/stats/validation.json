@@ -1,0 +1,43 @@
+{
+  "datasets": {
+    "webqsp": {
+      "test": {
+        "n": 1639,
+        "n_matched": 1523,
+        "n_sub_check": 50,
+        "bad_gold_triples": 0
+      },
+      "train": {
+        "n": 3098,
+        "n_matched": 2901,
+        "n_sub_check": 50,
+        "bad_gold_triples": 0
+      }
+    },
+    "cwq": {
+      "official_test_no_answer": {
+        "n": 3531,
+        "n_matched": 0,
+        "n_sub_check": 0,
+        "bad_gold_triples": 0
+      },
+      "test": {
+        "n": 3519,
+        "n_matched": 2931,
+        "n_sub_check": 50,
+        "bad_gold_triples": 0
+      },
+      "train": {
+        "n": 27639,
+        "n_matched": 22073,
+        "n_sub_check": 50,
+        "bad_gold_triples": 0
+      }
+    }
+  },
+  "checks": 614009,
+  "failures": 0,
+  "warnings": 0,
+  "fail_detail": [],
+  "warn_detail": []
+}

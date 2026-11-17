@@ -1,0 +1,64 @@
+{
+  "dataset": "webqsp",
+  "split": "test",
+  "n_sample": 200,
+  "n_solved": 180,
+  "rows": [
+    {
+      "knob": "max_edges",
+      "value": 10000,
+      "gold_recall_mean": 0.8551,
+      "full_recall_frac": 0.7778,
+      "n_edges_mean": 9227.3,
+      "seconds_mean": 0.2252
+    },
+    {
+      "knob": "max_edges",
+      "value": 20000,
+      "gold_recall_mean": 0.8843,
+      "full_recall_frac": 0.8389,
+      "n_edges_mean": 18402.6,
+      "seconds_mean": 0.2421
+    },
+    {
+      "knob": "max_edges",
+      "value": 40000,
+      "gold_recall_mean": 0.9009,
+      "full_recall_frac": 0.8722,
+      "n_edges_mean": 36523.4,
+      "seconds_mean": 0.2845
+    },
+    {
+      "knob": "max_edges",
+      "value": 80000,
+      "gold_recall_mean": 0.9093,
+      "full_recall_frac": 0.8889,
+      "n_edges_mean": 72039.1,
+      "seconds_mean": 0.3609
+    },
+    {
+      "knob": "node_degree_max",
+      "value": 2000,
+      "gold_recall_mean": 0.8009,
+      "full_recall_frac": 0.7667,
+      "n_edges_mean": 16057.0,
+      "seconds_mean": 0.1864
+    },
+    {
+      "knob": "node_degree_max",
+      "value": 5000,
+      "gold_recall_mean": 0.8843,
+      "full_recall_frac": 0.8389,
+      "n_edges_mean": 18402.6,
+      "seconds_mean": 0.2398
+    },
+    {
+      "knob": "node_degree_max",
+      "value": 10000,
+      "gold_recall_mean": 0.9176,
+      "full_recall_frac": 0.8667,
+      "n_edges_mean": 19180.3,
+      "seconds_mean": 0.2573
+    }
+  ]
+}

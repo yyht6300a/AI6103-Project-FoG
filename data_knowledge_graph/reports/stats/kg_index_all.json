@@ -1,0 +1,142 @@
+{
+  "dataset": "all",
+  "inputs": [
+    "data\\raw\\kg\\webqsp_subgraph.tsv",
+    "data\\raw\\kg\\cwq_subgraph.tsv"
+  ],
+  "output": "data\\processed\\kg\\index_all",
+  "index_bytes": 268584578,
+  "build": {
+    "files": [
+      "C:\\Users\\Lenovo\\Desktop\\NTU\\AI6103 DL\\Project\\data\\raw\\kg\\webqsp_subgraph.tsv",
+      "C:\\Users\\Lenovo\\Desktop\\NTU\\AI6103 DL\\Project\\data\\raw\\kg\\cwq_subgraph.tsv"
+    ],
+    "raw_lines": 10999094,
+    "kept_triples": 8258891,
+    "duplicates": 2740203,
+    "n_entities": 2574875,
+    "n_relations": 7042,
+    "max_degree_out": 2186,
+    "max_degree_in": 134182,
+    "seconds": 48.51,
+    "file_sha256": {
+      "webqsp_subgraph.tsv": "5079fb7448bf6ad60c1a8790d090459f5004227544a7d15e9e5b6789a66e80de",
+      "cwq_subgraph.tsv": "4fe8417091db90990f737cce844a41132c5309ae373df04d11c5a0ebddc6b0e6"
+    }
+  },
+  "summary": {
+    "n_triples": 8258891,
+    "n_entities": 2574875,
+    "n_relations": 7042,
+    "avg_degree_out": 3.207,
+    "top_relations": [
+      {
+        "relation": "common.topic.notable_types",
+        "triples": 387630,
+        "share": 0.0469
+      },
+      {
+        "relation": "freebase.valuenotation.is_reviewed",
+        "triples": 216663,
+        "share": 0.0262
+      },
+      {
+        "relation": "common.topic.notable_for",
+        "triples": 193656,
+        "share": 0.0234
+      },
+      {
+        "relation": "film.performance.film",
+        "triples": 179340,
+        "share": 0.0217
+      },
+      {
+        "relation": "film.film.starring",
+        "triples": 179030,
+        "share": 0.0217
+      },
+      {
+        "relation": "freebase.valuenotation.has_value",
+        "triples": 169288,
+        "share": 0.0205
+      },
+      {
+        "relation": "people.person.profession",
+        "triples": 165674,
+        "share": 0.0201
+      },
+      {
+        "relation": "location.location.containedby",
+        "triples": 151243,
+        "share": 0.0183
+      },
+      {
+        "relation": "people.person.gender",
+        "triples": 145948,
+        "share": 0.0177
+      },
+      {
+        "relation": "media_common.netflix_title.netflix_genres",
+        "triples": 121176,
+        "share": 0.0147
+      },
+      {
+        "relation": "common.topic.webpage",
+        "triples": 120991,
+        "share": 0.0146
+      },
+      {
+        "relation": "common.webpage.topic",
+        "triples": 120555,
+        "share": 0.0146
+      },
+      {
+        "relation": "common.topic.article",
+        "triples": 117513,
+        "share": 0.0142
+      },
+      {
+        "relation": "film.film.genre",
+        "triples": 116157,
+        "share": 0.0141
+      },
+      {
+        "relation": "people.person.nationality",
+        "triples": 106521,
+        "share": 0.0129
+      },
+      {
+        "relation": "location.statistical_region.population",
+        "triples": 99357,
+        "share": 0.012
+      },
+      {
+        "relation": "award.award_nomination.award_nominee",
+        "triples": 78093,
+        "share": 0.0095
+      },
+      {
+        "relation": "award.award_nominee.award_nominations",
+        "triples": 75547,
+        "share": 0.0091
+      },
+      {
+        "relation": "common.topic.image",
+        "triples": 69492,
+        "share": 0.0084
+      },
+      {
+        "relation": "location.location.contains",
+        "triples": 69355,
+        "share": 0.0084
+      }
+    ],
+    "relations_degree_gt_100": 2085,
+    "triples_in_relations_degree_gt_100": 8171950,
+    "relations_degree_gt_1000": 697,
+    "triples_in_relations_degree_gt_1000": 7705940,
+    "relations_degree_gt_10000": 150,
+    "triples_in_relations_degree_gt_10000": 5822287
+  },
+  "seconds_total": 49.22
+}

@@ -1,5 +1,5 @@
 torch>=2.1
-transformers>=4.40
+transformers>=4.51  # Qwen3-Embedding needs >= 4.51
 accelerate>=0.30
 datasets>=2.19
 numpy

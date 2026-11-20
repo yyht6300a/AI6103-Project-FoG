@@ -1,0 +1,138 @@
+{
+  "dataset": "webqsp",
+  "split": "test",
+  "n": 300,
+  "reasons": {
+    "ok": {
+      "n": 280,
+      "pct": 0.9333
+    },
+    "chain_no_answer": {
+      "n": 10,
+      "pct": 0.0333
+    },
+    "answers_not_in_kg": {
+      "n": 8,
+      "pct": 0.0267
+    },
+    "no_answers": {
+      "n": 2,
+      "pct": 0.0067
+    }
+  },
+  "match_methods": {
+    "exact": 279,
+    "none": 17,
+    "relaxed_order": 2
+  },
+  "source_methods": {
+    "annotation": 285,
+    "linking": 13
+  },
+  "source_in_kg_rate": 0.9933,
+  "answers_in_kg_mean": 0.9595,
+  "chain_hops_mean": 1.338,
+  "chain_hops_hist": {
+    "1": 189,
+    "2": 90,
+    "3": 1,
+    "4": 1
+  },
+  "examples_by_reason": {
+    "chain_no_answer": [
+      {
+        "qid": "WebQTest-12",
+        "question": "who is governor of ohio 2011?",
+        "answers": [
+          "John Kasich",
+          "Return J. Meigs, Jr.",
+          "Ted Strickland"
+        ]
+      },
+      {
+        "qid": "WebQTest-31",
+        "question": "where did andy murray started playing tennis?",
+        "answers": [
+          "2005"
+        ]
+      },
+      {
+        "qid": "WebQTest-64",
+        "question": "what other books did charles dickens write?",
+        "answers": [
+          "The Old Curiosity Shop",
+          "Oliver Twist",
+          "The life and adventures of Nicholas Nickleby"
+        ]
+      },
+      {
+        "qid": "WebQTest-95",
+        "question": "what was the title of the book charles darwin wrote?",
+        "answers": [
+          "Charles Darwin's zoology notes & specimen lists from H.M.S. Beagle",
+          "Charles Darwin's letters",
+          "The Voyage of the Beagle"
+        ]
+      },
+      {
+        "qid": "WebQTest-97",
+        "question": "what songs does smokey robinson sing?",
+        "answers": [
+          "The Tears of a Clown",
+          "Shop Around",
+          "You've Really Got a Hold on Me"
+        ]
+      }
+    ],
+    "answers_not_in_kg": [
+      {
+        "qid": "WebQTest-32",
+        "question": "what is the australian dollar called?",
+        "answers": [
+          "AUD"
+        ]
+      },
+      {
+        "qid": "WebQTest-46",
+        "question": "what year did president william henry harrison take office?",
+        "answers": [
+          "1841-03-04"
+        ]
+      },
+      {
+        "qid": "WebQTest-59",
+        "question": "when did annie open?",
+        "answers": [
+          "1976-08-10"
+        ]
+      },
+      {
+        "qid": "WebQTest-155",
+        "question": "what year was george w bush elected?",
+        "answers": [
+          "2000-11-07",
+          "2004-11-02"
+        ]
+      },
+      {
+        "qid": "WebQTest-245",
+        "question": "what year was the first miss america pageant held?",
+        "answers": [
+          "1921-09"
+        ]
+      }
+    ],
+    "no_answers": [
+      {
+        "qid": "WebQTest-238",
+        "question": "who did the chargers draft in 2011?",
+        "answers": []
+      },
+      {
+        "qid": "WebQTest-353",
+        "question": "who does jordan palmer play for?",
+        "answers": []
+      }
+    ]
+  }
+}

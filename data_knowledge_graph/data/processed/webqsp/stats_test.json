@@ -1,0 +1,102 @@
+{
+  "dataset": "webqsp",
+  "split": "test",
+  "raw_file": "data\\raw\\qa\\WebQSP.test.json",
+  "n_questions": 1639,
+  "subgraph_sampled": null,
+  "qa_file": "data\\processed\\webqsp\\qa_test.jsonl.gz",
+  "gold_file": "data\\processed\\webqsp\\gold_test.jsonl.gz",
+  "qa_bytes": 455859,
+  "stats": {
+    "n": 1639,
+    "counters": {
+      "split": {
+        "test": 1
+      },
+      "source_method": {
+        "annotation": 1575,
+        "linking": 64
+      },
+      "source_in_kg": {
+        "True": 1638,
+        "False": 1
+      },
+      "gold_matched": {
+        "True": 1523,
+        "False": 116
+      },
+      "gold_match_method": {
+        "exact": 1509,
+        "none": 116,
+        "relaxed_order": 14
+      }
+    },
+    "means": {
+      "gold_n_triples": 1.2807,
+      "gold_n_constraints": 0.1836,
+      "n_answers": 8.3642,
+      "answers_in_kg_frac": 0.9565
+    },
+    "histograms": {}
+  },
+  "subgraph": {
+    "n": 1523,
+    "counters": {
+      "truncated": {
+        "True": 1497,
+        "False": 26
+      }
+    },
+    "means": {
+      "n_nodes": 19696.4064,
+      "n_edges": 35867.6829,
+      "n_lateral_edges": 21064.1037,
+      "n_gold_edges": 1.3933,
+      "rel_filtered_edges_bfs": 76155.1156,
+      "gold_recall_in_subgraph": 0.941,
+      "layer_nodes_0": 1.0,
+      "layer_nodes_1": 1288.9114,
+      "layer_nodes_2": 11867.1293,
+      "layer_nodes_3": 6539.3657
+    },
+    "histograms": {}
+  },
+  "config": {
+    "dataset": "webqsp",
+    "splits": {
+      "train": "WebQSP.train.json",
+      "test": "WebQSP.test.json"
+    },
+    "kg_index": "data\\processed\\kg\\index_all",
+    "out_dir": "data\\processed\\webqsp",
+    "format": "webqsp",
+    "limit": null,
+    "subgraph": {
+      "hops": 3,
+      "node_degree_max": 20000,
+      "rel_degree_max": 200000,
+      "rel_blocklist": [
+        "common.topic.notable_types",
+        "freebase.valuenotation.",
+        "common.webpage.",
+        "type.object."
+      ],
+      "max_nodes": 20000,
+      "max_edges": 40000,
+      "max_gather": 2000000,
+      "include_gold": true,
+      "keep_lateral": true
+    },
+    "align": {
+      "max_chain_hops": 4,
+      "max_mentions": 8,
+      "allow_shortest_fallback": false,
+      "use_mid2name_check": true,
+      "max_branch": 40,
+      "max_paths": 64
+    },
+    "materialize_subgraphs": 100,
+    "official_test_split": null
+  },
+  "seconds": 573.24
+}

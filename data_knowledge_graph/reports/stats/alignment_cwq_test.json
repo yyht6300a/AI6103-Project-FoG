@@ -1,0 +1,71 @@
+{
+  "dataset": "cwq",
+  "split": "test",
+  "n": 300,
+  "reasons": {
+    "ok": {
+      "n": 257,
+      "pct": 0.8567
+    },
+    "chain_no_answer": {
+      "n": 43,
+      "pct": 0.1433
+    }
+  },
+  "match_methods": {
+    "exact": 249,
+    "none": 43,
+    "relaxed_order": 8
+  },
+  "source_methods": {
+    "linking": 300
+  },
+  "source_in_kg_rate": 1.0,
+  "answers_in_kg_mean": 1.0,
+  "chain_hops_mean": 2.031,
+  "chain_hops_hist": {
+    "1": 74,
+    "2": 114,
+    "3": 56,
+    "4": 13
+  },
+  "examples_by_reason": {
+    "chain_no_answer": [
+      {
+        "qid": "WebQTrn-2873_143c89d70679c3e5257c93d8e2bc4c67",
+        "question": "Where does Hector Camacho live, where the location time zone is UTCâ05:00?",
+        "answers": [
+          "Manhattan"
+        ]
+      },
+      {
+        "qid": "WebQTrn-2505_ac82b6d5645072d4ce73abb6e57a55d5",
+        "question": "What is the mascot of the school where Thomas R. Ford is a grad student?",
+        "answers": [
+          "Vanderbilt University Mr. Commodore"
+        ]
+      },
+      {
+        "qid": "WebQTest-811_22a085e4a873315a9c2e63361cbd9248",
+        "question": "Where is mascot Phillie Phanatic's team's spring training stadium located?",
+        "answers": [
+          "Bright House Field"
+        ]
+      },
+      {
+        "qid": "WebQTest-1011_77a80913f273f84d5431ba5c10f06452",
+        "question": "What Tebetan-speaking country's CO2 emissions per capita were once 1965 metric ton?",
+        "answers": [
+          "China"
+        ]
+      },
+      {
+        "qid": "WebQTrn-408_37e7e25202838c08eca7f37ad587ff95",
+        "question": "What airport is close to Sandals Grande in the country with national anthem Sons and daughters of St. Lucia?",
+        "answers": [
+          "George F. L. Charles Airport"
+        ]
+      }
+    ]
+  }
+}

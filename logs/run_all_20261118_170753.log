@@ -1,0 +1,197 @@
+
+======================================================================
+== �� ����ԭʼ����
+== C:\Users\��Ҧ��̩\AppData\Local\Programs\Python\Python313\python.exe scripts/download_data.py
+======================================================================
+��Ŀ��Ŀ¼: D:\Repo\03-Project\data_knowledge_graph
+����Ŀ¼  : D:\Repo\03-Project\data_knowledge_graph\data\raw
+
+[get ] webqsp_train -> qa/WebQSP.train.json
+    �� https://huggingface.co/datasets/YF0808/CWQ/resolve/main/WebQSP.train.json
+       10.1% 1.0MiB / 9.9MiB  1.2MiB/s
+       30.2% 3.0MiB / 9.9MiB  1.2MiB/s
+       50.4% 5.0MiB / 9.9MiB  1.2MiB/s
+       70.5% 7.0MiB / 9.9MiB  1.2MiB/s
+       90.7% 9.0MiB / 9.9MiB  1.2MiB/s
+    �� webqsp_train 9.9MiB
+[get ] webqsp_test -> qa/WebQSP.test.json
+    �� https://huggingface.co/datasets/YF0808/CWQ/resolve/main/WebQSP.test.json
+       20.4% 1.0MiB / 4.9MiB  395.9KiB/s
+       40.8% 2.0MiB / 4.9MiB  280.2KiB/s
+       81.6% 4.0MiB / 4.9MiB  448.9KiB/s
+    �� webqsp_test 4.9MiB
+[get ] cwq_train -> qa/ComplexWebQuestions_train.json
+    �� https://huggingface.co/datasets/YF0808/CWQ/resolve/main/ComplexWebQuestions_train.json
+        2.4% 1.0MiB / 41.1MiB  1.2MiB/s
+        7.3% 3.0MiB / 41.1MiB  1.2MiB/s
+       12.2% 5.0MiB / 41.1MiB  1.2MiB/s
+       17.0% 7.0MiB / 41.1MiB  1.2MiB/s
+       21.9% 9.0MiB / 41.1MiB  1.1MiB/s
+       24.3% 10.0MiB / 41.1MiB  1.1MiB/s
+       29.2% 12.0MiB / 41.1MiB  993.7KiB/s
+       34.1% 14.0MiB / 41.1MiB  1014.0KiB/s
+       38.9% 16.0MiB / 41.1MiB  1012.6KiB/s
+       43.8% 18.0MiB / 41.1MiB  1.0MiB/s
+       46.2% 19.0MiB / 41.1MiB  1.0MiB/s
+       48.7% 20.0MiB / 41.1MiB  1015.2KiB/s
+       53.5% 22.0MiB / 41.1MiB  1.0MiB/s
+       58.4% 24.0MiB / 41.1MiB  1.0MiB/s
+       63.3% 26.0MiB / 41.1MiB  1.0MiB/s
+       68.1% 28.0MiB / 41.1MiB  1.0MiB/s
+       73.0% 30.0MiB / 41.1MiB  1.0MiB/s
+       75.4% 31.0MiB / 41.1MiB  1.0MiB/s
+       80.3% 33.0MiB / 41.1MiB  1.0MiB/s
+       85.2% 35.0MiB / 41.1MiB  1.0MiB/s
+       90.0% 37.0MiB / 41.1MiB  1.0MiB/s
+       94.9% 39.0MiB / 41.1MiB  1.0MiB/s
+       97.3% 40.0MiB / 41.1MiB  886.0KiB/s
+       99.8% 41.0MiB / 41.1MiB  883.1KiB/s
+    �� cwq_train 41.1MiB
+[get ] cwq_dev -> qa/ComplexWebQuestions_dev.json
+    �� https://huggingface.co/datasets/YF0808/CWQ/resolve/main/ComplexWebQuestions_dev.json
+       18.9% 1.0MiB / 5.3MiB  1.3MiB/s
+       56.8% 3.0MiB / 5.3MiB  1.2MiB/s
+       94.7% 5.0MiB / 5.3MiB  1.2MiB/s
+    �� cwq_dev 5.3MiB
+[get ] cwq_test -> qa/ComplexWebQuestions_test.json
+    �� https://www.dropbox.com/sh/7pkwkrfnwqhsnpo/AABr4ysSy_Tg8Wfxww4i_UWda/ComplexWebQuestions_test.json?dl=1
+       34.1% 1.0MiB / 2.9MiB  1.1MiB/s
+      100.0% 2.9MiB / 2.9MiB  1.1MiB/s
+    �� cwq_test 2.9MiB
+[get ] webqsp_kg -> kg/webqsp_subgraph.tsv
+    �� https://huggingface.co/datasets/camazlucas/Freebase-WebQSP-CWQ-Subgraph/resolve/main/webqsp_subgraph.tsv
+        0.4% 1.0MiB / 248.2MiB  1.2MiB/s
+        1.2% 3.0MiB / 248.2MiB  1.2MiB/s
+        2.0% 5.0MiB / 248.2MiB  1.2MiB/s
+        2.8% 7.0MiB / 248.2MiB  1.2MiB/s
+        3.6% 9.0MiB / 248.2MiB  1.1MiB/s
+        4.4% 11.0MiB / 248.2MiB  1.1MiB/s
+        5.2% 13.0MiB / 248.2MiB  1.1MiB/s
+        6.0% 15.0MiB / 248.2MiB  1.0MiB/s
+        6.4% 16.0MiB / 248.2MiB  903.7KiB/s
+        6.9% 17.0MiB / 248.2MiB  900.3KiB/s
+        7.3% 18.0MiB / 248.2MiB  903.0KiB/s
+        7.7% 19.0MiB / 248.2MiB  895.2KiB/s
+        8.5% 21.0MiB / 248.2MiB  900.0KiB/s
+        8.9% 22.0MiB / 248.2MiB  902.2KiB/s
+        9.7% 24.0MiB / 248.2MiB  915.5KiB/s
+       10.5% 26.0MiB / 248.2MiB  925.5KiB/s
+       11.3% 28.0MiB / 248.2MiB  936.8KiB/s
+       11.7% 29.0MiB / 248.2MiB  881.0KiB/s
+       12.1% 30.0MiB / 248.2MiB  794.0KiB/s
+       12.5% 31.0MiB / 248.2MiB  790.3KiB/s
+       12.9% 32.0MiB / 248.2MiB  789.7KiB/s
+       13.3% 33.0MiB / 248.2MiB  790.0KiB/s
+       13.7% 34.0MiB / 248.2MiB  788.4KiB/s
+       14.1% 35.0MiB / 248.2MiB  787.8KiB/s
+       14.5% 36.0MiB / 248.2MiB  789.7KiB/s
+       15.3% 38.0MiB / 248.2MiB  802.9KiB/s
+       15.7% 39.0MiB / 248.2MiB  802.1KiB/s
+       16.1% 40.0MiB / 248.2MiB  795.7KiB/s
+       16.9% 42.0MiB / 248.2MiB  808.5KiB/s
+       17.7% 44.0MiB / 248.2MiB  820.2KiB/s
+       18.5% 46.0MiB / 248.2MiB  831.2KiB/s
+       19.3% 48.0MiB / 248.2MiB  841.4KiB/s
+       20.1% 50.0MiB / 248.2MiB  851.1KiB/s
+       21.0% 52.0MiB / 248.2MiB  860.0KiB/s
+       21.8% 54.0MiB / 248.2MiB  868.5KiB/s
+       22.6% 56.0MiB / 248.2MiB  875.0KiB/s
+       23.0% 57.0MiB / 248.2MiB  862.2KiB/s
+       23.4% 58.0MiB / 248.2MiB  860.8KiB/s
+       24.2% 60.0MiB / 248.2MiB  869.8KiB/s
+       25.0% 62.0MiB / 248.2MiB  874.8KiB/s
+       25.8% 64.0MiB / 248.2MiB  882.3KiB/s
+       26.2% 65.0MiB / 248.2MiB  881.8KiB/s
+       27.0% 67.0MiB / 248.2MiB  887.3KiB/s
+       27.8% 69.0MiB / 248.2MiB  890.0KiB/s
+       28.6% 71.0MiB / 248.2MiB  895.4KiB/s
+       29.4% 73.0MiB / 248.2MiB  897.6KiB/s
+       29.8% 74.0MiB / 248.2MiB  897.9KiB/s
+       30.6% 76.0MiB / 248.2MiB  900.5KiB/s
+       31.0% 77.0MiB / 248.2MiB  901.9KiB/s
+       31.8% 79.0MiB / 248.2MiB  906.7KiB/s
+       32.2% 80.0MiB / 248.2MiB  905.7KiB/s
+       32.6% 81.0MiB / 248.2MiB  905.8KiB/s
+       33.4% 83.0MiB / 248.2MiB  909.7KiB/s
+       34.3% 85.0MiB / 248.2MiB  912.9KiB/s
+       35.1% 87.0MiB / 248.2MiB  917.8KiB/s
+       35.9% 89.0MiB / 248.2MiB  922.4KiB/s
+       36.7% 91.0MiB / 248.2MiB  926.4KiB/s
+       37.5% 93.0MiB / 248.2MiB  929.9KiB/s
+       38.3% 95.0MiB / 248.2MiB  933.9KiB/s
+       39.1% 97.0MiB / 248.2MiB  938.3KiB/s
+       39.9% 99.0MiB / 248.2MiB  942.1KiB/s
+       40.7% 101.0MiB / 248.2MiB  944.7KiB/s
+       41.5% 103.0MiB / 248.2MiB  948.6KiB/s
+       42.3% 105.0MiB / 248.2MiB  952.6KiB/s
+       43.1% 107.0MiB / 248.2MiB  956.0KiB/s
+       43.9% 109.0MiB / 248.2MiB  958.5KiB/s
+       44.7% 111.0MiB / 248.2MiB  961.8KiB/s
+       45.1% 112.0MiB / 248.2MiB  962.1KiB/s
+       45.9% 114.0MiB / 248.2MiB  965.5KiB/s
+       46.7% 116.0MiB / 248.2MiB  969.2KiB/s
+       47.6% 118.0MiB / 248.2MiB  972.1KiB/s
+       48.0% 119.0MiB / 248.2MiB  972.3KiB/s
+       48.8% 121.0MiB / 248.2MiB  972.6KiB/s
+       49.2% 122.0MiB / 248.2MiB  962.9KiB/s
+       50.0% 124.0MiB / 248.2MiB  965.8KiB/s
+       50.8% 126.0MiB / 248.2MiB  969.0KiB/s
+       51.6% 128.0MiB / 248.2MiB  971.6KiB/s
+       52.4% 130.0MiB / 248.2MiB  974.0KiB/s
+       53.2% 132.0MiB / 248.2MiB  975.2KiB/s
+       54.0% 134.0MiB / 248.2MiB  977.7KiB/s
+       54.8% 136.0MiB / 248.2MiB  980.4KiB/s
+       55.2% 137.0MiB / 248.2MiB  979.6KiB/s
+       56.0% 139.0MiB / 248.2MiB  981.5KiB/s
+       56.8% 141.0MiB / 248.2MiB  984.2KiB/s
+       57.6% 143.0MiB / 248.2MiB  986.5KiB/s
+       58.4% 145.0MiB / 248.2MiB  988.4KiB/s
+       59.2% 147.0MiB / 248.2MiB  990.8KiB/s
+       59.6% 148.0MiB / 248.2MiB  990.8KiB/s
+       60.4% 150.0MiB / 248.2MiB  992.6KiB/s
+       60.8% 151.0MiB / 248.2MiB  988.6KiB/s
+       61.7% 153.0MiB / 248.2MiB  990.6KiB/s
+       62.5% 155.0MiB / 248.2MiB  992.3KiB/s
+       63.3% 157.0MiB / 248.2MiB  993.4KiB/s
+       64.1% 159.0MiB / 248.2MiB  995.5KiB/s
+       64.9% 161.0MiB / 248.2MiB  997.1KiB/s
+       65.7% 163.0MiB / 248.2MiB  998.7KiB/s
+       66.5% 165.0MiB / 248.2MiB  999.7KiB/s
+       67.3% 167.0MiB / 248.2MiB  1001.3KiB/s
+       67.7% 168.0MiB / 248.2MiB  1000.1KiB/s
+       68.1% 169.0MiB / 248.2MiB  998.8KiB/s
+       68.9% 171.0MiB / 248.2MiB  999.8KiB/s
+       69.7% 173.0MiB / 248.2MiB  1001.8KiB/s
+       70.5% 175.0MiB / 248.2MiB  1003.2KiB/s
+       71.3% 177.0MiB / 248.2MiB  1004.1KiB/s
+       72.1% 179.0MiB / 248.2MiB  1004.9KiB/s
+       72.9% 181.0MiB / 248.2MiB  1007.0KiB/s
+       73.7% 183.0MiB / 248.2MiB  1008.6KiB/s
+       74.6% 185.0MiB / 248.2MiB  1010.2KiB/s
+       75.4% 187.0MiB / 248.2MiB  1011.5KiB/s
+       76.2% 189.0MiB / 248.2MiB  1011.7KiB/s
+       77.0% 191.0MiB / 248.2MiB  1012.6KiB/s
+       77.8% 193.0MiB / 248.2MiB  1014.0KiB/s
+       78.6% 195.0MiB / 248.2MiB  1015.4KiB/s
+       79.4% 197.0MiB / 248.2MiB  1016.0KiB/s
+       80.2% 199.0MiB / 248.2MiB  1017.6KiB/s
+       81.0% 201.0MiB / 248.2MiB  1019.0KiB/s
+       81.8% 203.0MiB / 248.2MiB  1020.4KiB/s
+       82.6% 205.0MiB / 248.2MiB  1015.0KiB/s
+       83.0% 206.0MiB / 248.2MiB  997.0KiB/s
+       83.8% 208.0MiB / 248.2MiB  998.2KiB/s
+       84.6% 210.0MiB / 248.2MiB  999.2KiB/s
+       85.4% 212.0MiB / 248.2MiB  1000.6KiB/s
+       86.2% 214.0MiB / 248.2MiB  1001.9KiB/s
+       87.0% 216.0MiB / 248.2MiB  1002.9KiB/s
+       87.8% 218.0MiB / 248.2MiB  1004.4KiB/s
+       88.7% 220.0MiB / 248.2MiB  1005.6KiB/s
+       89.5% 222.0MiB / 248.2MiB  1006.7KiB/s
+       90.3% 224.0MiB / 248.2MiB  1007.8KiB/s
+       91.1% 226.0MiB / 248.2MiB  1009.2KiB/s
+       91.9% 228.0MiB / 248.2MiB  1010.1KiB/s
+       92.7% 230.0MiB / 248.2MiB  1011.2KiB/s
+       93.5% 232.0MiB / 248.2MiB  1012.4KiB/s
+       94.3% 234.0MiB / 248.2MiB  1013.5KiB/s
+       95.1% 236.0MiB / 248.2MiB  1014.7KiB/s
+       95.9% 238.0MiB / 248.2MiB  1015.7KiB/s

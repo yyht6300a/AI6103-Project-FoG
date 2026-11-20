@@ -178,7 +178,8 @@ def train(model, train_examples: List[TrainingExample], store, device: torch.dev
           config: Optional[TrainConfig] = None, eval_examples: Optional[List[TrainingExample]] = None,
           on_epoch_end: Optional[Callable[[int, Dict], None]] = None,
           log: Callable[[str], None] = print, state_provider=None,
-          extra_parameters=()) -> List[Dict]:
+          extra_parameters=(), start_epoch: int = 1,
+          optimizer_state: Optional[dict] = None) -> List[Dict]:
     """Train initial scorer, or accept real FFP states via state_provider(examples, batch).
 
     For joint optimization pass C's trainable parameters as extra_parameters.
@@ -197,10 +198,12 @@ def train(model, train_examples: List[TrainingExample], store, device: torch.dev
     log("training mode: " + ("FFP states supplied" if state_provider else "initial scorer (zero states)"))
     optimizer = torch.optim.AdamW([*model.parameters(), *extra_parameters], lr=cfg.lr, betas=cfg.betas,
                                   weight_decay=cfg.weight_decay)
+    if optimizer_state is not None:
+        optimizer.load_state_dict(optimizer_state)
     history = []
     order = list(range(len(train_examples)))
     n_steps = math.ceil(len(order) / cfg.batch_questions)
-    for epoch in range(1, cfg.epochs + 1):
+    for epoch in range(start_epoch, cfg.epochs + 1):
         model.train()
         rng.shuffle(order)
         t0, total = time.time(), 0.0
@@ -215,7 +218,13 @@ def train(model, train_examples: List[TrainingExample], store, device: torch.dev
                     logits = _score(model, micro, batch, q_sub, mask, state_provider)
                 # Sum triple BCE / original question count, never / micro size.
                 loss = question_bce_loss(logits, labels, batch.q_index, len(chunk))
-                loss.backward()
+                if loss.requires_grad:
+                    loss.backward()
+                else:
+                    # Detached micro-batch: every question in it produced zero/no-grad
+                    # FFP states (e.g. no far-to-near edges), so there is nothing to
+                    # backpropagate in frozen-scorer mode. Skip rather than crash.
+                    log(f"epoch {epoch} step {step + 1}: detached micro-batch, skip backward")
                 total += loss.item()
                 del batch, q_sub, mask, labels, logits, loss
             optimizer.step()
@@ -235,5 +244,5 @@ def train(model, train_examples: List[TrainingExample], store, device: torch.dev
                 f"recall@tau_p {metrics.get('eval_original_tau_p_recall', float('nan')):.3f}")
         history.append(metrics)
         if on_epoch_end is not None:
-            on_epoch_end(epoch, metrics)
+            on_epoch_end(epoch, metrics, optimizer)
     return history

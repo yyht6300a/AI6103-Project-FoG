@@ -131,7 +131,7 @@ def main() -> None:
                             max_triples_per_forward=args.max_triples_per_forward,
                             amp=not args.no_amp, seed=args.seed)
 
-    def on_epoch_end(epoch, metrics):
+    def on_epoch_end(epoch, metrics, optimizer=None):
         model.save(out_dir / f"epoch{epoch}.pt", extra={"dataset": args.dataset, "epoch": epoch,
                                                                  "training_mode": "initial_zero_state",
                                                                  "validation_source": eval_source})

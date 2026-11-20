@@ -19,6 +19,11 @@ data/freebase/
 # Model checkpoints and caches
 checkpoints/
 cache/
+webqsp/
+cwq/
+
+# Local scratch data (top-level only)
+/data/
 
 # Upstream scratch clone (no published source code yet)
 FoG/

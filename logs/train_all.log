@@ -1,0 +1,47 @@
+nohup: ignoring input
+[compute] python=3.12.3 torch=2.8.0+cu128 | gpu=NVIDIA RTX PRO 6000 Blackwell Server Edition vram=95.0GB | cpu_threads=25
+[mode] joint train scorer + FFP (needs more VRAM)
+[ffp] num_layers=2, trainable=78,656,000
+[data] train=2583 questions, eval=289 (12s)
+training mode: FFP states supplied
+epoch 1 step 50/323 loss 11.9705 (1018s)
+epoch 1 step 100/323 loss 11.0932 (1960s)
+epoch 1 step 150/323 loss 11.4008 (2979s)
+epoch 1 step 200/323 loss 11.3960 (3971s)
+epoch 1 step 250/323 loss 11.1253 (4911s)
+epoch 1 step 300/323 loss 10.9320 (5914s)
+epoch 1 step 323/323 loss 10.8402 (6389s)
+epoch 1 eval auc 0.9498 recall@tau_e 0.760 recall@tau_p 0.359
+epoch 2 step 50/323 loss 7.8023 (821s)
+epoch 2 step 100/323 loss 10.1231 (1792s)
+epoch 2 step 150/323 loss 9.7738 (2697s)
+epoch 2 step 200/323 loss 9.6693 (3575s)
+epoch 2 step 250/323 loss 9.8036 (4409s)
+epoch 2 step 300/323 loss 9.7978 (5493s)
+epoch 2 step 323/323 loss 9.6694 (5867s)
+epoch 2 eval auc 0.9527 recall@tau_e 0.772 recall@tau_p 0.407
+epoch 3 step 50/323 loss 10.1931 (973s)
+epoch 3 step 100/323 loss 9.1128 (1769s)
+epoch 3 step 150/323 loss 9.2427 (2711s)
+epoch 3 step 200/323 loss 9.5779 (3660s)
+epoch 3 step 250/323 loss 9.6374 (4608s)
+epoch 3 step 300/323 loss 9.2128 (5504s)
+epoch 3 step 323/323 loss 9.2613 (5947s)
+epoch 3 eval auc 0.9493 recall@tau_e 0.861 recall@tau_p 0.377
+epoch 4 step 50/323 loss 8.8794 (919s)
+epoch 4 step 100/323 loss 9.3326 (1909s)
+epoch 4 step 150/323 loss 9.2439 (2866s)
+epoch 4 step 200/323 loss 9.2651 (3757s)
+epoch 4 step 250/323 loss 9.2513 (4733s)
+epoch 4 step 300/323 loss 8.9815 (5609s)
+epoch 4 step 323/323 loss 8.8632 (5982s)
+epoch 4 eval auc 0.9601 recall@tau_e 0.812 recall@tau_p 0.439
+epoch 5 step 50/323 loss 8.5365 (851s)
+epoch 5 step 100/323 loss 8.5847 (1783s)
+epoch 5 step 150/323 loss 8.1984 (2842s)
+epoch 5 step 200/323 loss 8.2060 (3722s)
+epoch 5 step 250/323 loss 8.1436 (4648s)
+epoch 5 step 300/323 loss 8.0522 (5594s)
+epoch 5 step 323/323 loss 8.3413 (6008s)
+epoch 5 eval auc 0.9565 recall@tau_e 0.826 recall@tau_p 0.431
+done in 32349s -> checkpoints/ffp_webqsp

@@ -1,0 +1,32 @@
+nohup: ignoring input
+===== [1] fixed tau_e=0.1 =====
+test questions: 200 (tau_e=0.1)
+R_evid =0.606
+P_prune=0.964
+H_path =0.568
+questions evaluated: 199 (243s)
+===== [2] depth tau_lo=0.03 tau_hi=0.15 =====
+test questions: 200 (tau_lo=0.03, tau_hi=0.15, beta=None)
+R_evid =0.764
+P_prune=0.960
+H_path =0.739
+questions evaluated: 199 (245s)
+===== [3] depth tau_lo=0.02 tau_hi=0.10 =====
+test questions: 200 (tau_lo=0.02, tau_hi=0.1, beta=None)
+R_evid =0.804
+P_prune=0.949
+H_path =0.784
+questions evaluated: 199 (246s)
+===== [4] degree beta=0.5 =====
+test questions: 200 (tau_lo=None, tau_hi=None, beta=0.5)
+R_evid =0.795
+P_prune=0.579
+H_path =0.749
+questions evaluated: 199 (275s)
+===== [5] degree beta=1.0 =====
+test questions: 200 (tau_lo=None, tau_hi=None, beta=1.0)
+R_evid =0.495
+P_prune=0.723
+H_path =0.447
+questions evaluated: 199 (273s)
+===== SWEEP DONE =====

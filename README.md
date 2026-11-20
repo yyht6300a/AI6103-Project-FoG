@@ -39,8 +39,9 @@
 
 - `cache/`：Embedding 缓存
 - `checkpoints/`：训练得到的模型权重
-- 训练日志
 - 大型 KG 数据集及索引文件
+
+评测与训练日志保留在 `logs/` 目录（文本形式、体积小），随仓库提交以便复现对比。
 
 ## 2. 环境配置与数据准备
 
@@ -360,3 +361,95 @@ python -m unittest discover -s tests -p 'test_b_*.py'
 项目还包含 `experiments/` 目录，用于阈值策略实验、过程记录及评估指标统计。
 
 其他工作模块中的占位代码目前仍然保留，以便后续小组集成；这些占位模块不应被视为已经完成的完整 FoG 功能。
+
+## 7. 成员 C：FSE / FFP 复现进展与实验数据
+
+本节记录成员 C 已完成的前瞻子图展开（FSE）与前瞻反馈传播（FFP）工作，以及截至当前
+的检索层实验结果。端到端 KBQA 的 Hit / Hit@1 / F1 尚未产出，需在成员 D、E 合入后补齐。
+
+### 7.1 本次代码修改
+
+- `src/model/fse.py`：问题引导三元组 batch 构造（`subgraph_to_batch`）、τ_e 剪枝
+  （`fse_expand`）。剪枝支持三种模式：固定阈值、深度调度（近源宽松、远端收紧）、
+  度数归一化（按 frontier 实体的 z-score 截断）。
+- `src/model/ffp.py`：远到近消息传递（论文式 6-8）与 FFP 重打分；侧边（同层）只参与
+  重打分、不参与传播。
+- `src/model/state_provider.py`：训练时的 FFP 状态桥（`FfpStateProvider`），以及
+  `train_with_ffp`（联合优化 scorer + FFP）。
+- `src/model/training.py`：支持 `start_epoch` / `optimizer_state` 断点续训；对完全
+  detached 的 micro-batch 跳过反向（避免零梯度崩溃）。
+- `src/model/infer.py`：`run_fse_ffp` 单题推理编排，默认深度调度 `tau_lo=0.02, tau_hi=0.10`。
+- `src/model/d_adapter.py`：C→D 适配，把 `FseFfpOutput` 转成成员 D 的
+  `build_potential_subgraph(triples, scores, tau_p)` 输入。
+- `scripts/train_ffp.py`：FFP 训练脚本，支持 checkpoint + resume，冻结 scorer 时跳过
+  scorer 权重保存（缩减 checkpoint 体积）。
+- `scripts/eval_ffp_baseline.py`：FFP 开/关基线对比（零状态 vs FFP 状态）。
+- `scripts/eval_retrieval.py`：FSE→FFP 检索层指标（R_evid / P_prune / H_path）。
+
+### 7.2 数据对比
+
+**候选池黄金边召回（数据层，检索上限）**
+
+| 数据集 | 黄金边召回 |
+| --- | --- |
+| WebQSP | 94.1% |
+| CWQ | 89.3% |
+
+**FFP 开/关对比（验证集，边级）**
+
+| 数据集 | no-FFP AUC | with-FFP AUC | no-FFP τ_p 召回 | with-FFP τ_p 召回 |
+| --- | --- | --- | --- | --- |
+| WebQSP | 0.9335 | 0.9601 | 0.203 | 0.439 |
+| CWQ | 0.9613 | 0.9682 | 0.0 | 0.123 |
+
+CWQ 为冻结 scorer、仅训练 FFP 的结果，因此 τ_p 召回从 0 到 0.123 的增益是 FFP 本身的
+贡献；WebQSP 为联合训练，增益包含 scorer 微调。
+
+**检索层指标（测试集，固定 τ_e=0.1）**
+
+| 数据集 | R_evid | P_prune | H_path |
+| --- | --- | --- | --- |
+| WebQSP | 0.606 | 0.964 | 0.568 |
+| CWQ | 0.848 | 0.887 | 0.793 |
+
+**自适应阈值扫描（WebQSP，200 题）**
+
+| 配置 | R_evid | P_prune | H_path |
+| --- | --- | --- | --- |
+| 固定 τ_e=0.1 | 0.606 | 0.964 | 0.568 |
+| 深度调度 0.03/0.15 | 0.764 | 0.960 | 0.739 |
+| 深度调度 0.02/0.10 | 0.804 | 0.949 | 0.784 |
+| 度数归一化 β=0.5 | 0.795 | 0.579 | 0.749 |
+| 度数归一化 β=1.0 | 0.495 | 0.723 | 0.447 |
+
+结论：深度调度把 WebQSP 的 R_evid 从 0.606 提到 0.804、H_path 从 0.568 提到 0.784，
+且噪声剪枝几乎不变（0.949）；度数归一化当前实现效果不佳（β=0.5 噪声剪枝崩到 0.579），
+已记为遗留问题。
+
+### 7.3 过程数据
+
+完整训练与评测日志保留在 `logs/` 目录：
+
+```text
+logs/eval_ffp_baseline_webqsp.log      WebQSP FFP 开/关基线
+logs/eval_ffp_baseline_cwq.log         CWQ FFP 开/关基线
+logs/eval_retrieval_webqsp.log         WebQSP 检索层指标
+logs/eval_retrieval_cwq.log            CWQ 检索层指标
+logs/eval_retrieval_sweep_webqsp.log   WebQSP 自适应阈值扫描
+logs/train_ffp_cwq_light.log           CWQ 冻结 scorer 训练过程
+```
+
+各数据集的每 epoch 边级指标见 `checkpoints/<name>/metrics.jsonl`（权重不提交，见第 4 节）。
+
+### 7.4 C→D 适配
+
+```python
+from src.model.d_adapter import fse_ffp_to_potential, build_potential_from_output
+
+# out = run_fse_ffp(...)
+triples, refined_scores = fse_ffp_to_potential(out, subgraph)
+# 成员 D 合并后可直接：
+# potential = build_potential_from_output(out, subgraph, potential_threshold=0.7)
+```
+
+`refined_scores` 是 FFP 重打分后的概率，成员 D 按 `tau_p=0.7` 筛选 potential 子图。

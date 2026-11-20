@@ -1,0 +1,491 @@
+
+======================================================================
+== ① 下载原始数据
+== C:\Users\杨姚恒泰\AppData\Local\Programs\Python\Python313\python.exe scripts/download_data.py
+======================================================================
+项目根目录: D:\Repo\03-Project\data_knowledge_graph
+数据目录  : D:\Repo\03-Project\data_knowledge_graph\data\raw
+
+[skip] webqsp_train 已存在 (9.9MiB)
+[skip] webqsp_test 已存在 (4.9MiB)
+[skip] cwq_train 已存在 (41.1MiB)
+[skip] cwq_dev 已存在 (5.3MiB)
+[skip] cwq_test 已存在 (2.9MiB)
+[get ] webqsp_kg -> kg/webqsp_subgraph.tsv
+    ← https://huggingface.co/datasets/camazlucas/Freebase-WebQSP-CWQ-Subgraph/resolve/main/webqsp_subgraph.tsv
+       96.7% 240.0MiB / 248.2MiB  1.3MiB/s
+       97.5% 242.0MiB / 248.2MiB  1.2MiB/s
+       98.3% 244.0MiB / 248.2MiB  1.2MiB/s
+       99.1% 246.0MiB / 248.2MiB  1.1MiB/s
+       99.9% 248.0MiB / 248.2MiB  1.2MiB/s
+    √ webqsp_kg 248.2MiB
+[get ] cwq_kg -> kg/cwq_subgraph.tsv
+    ← https://huggingface.co/datasets/camazlucas/Freebase-WebQSP-CWQ-Subgraph/resolve/main/cwq_subgraph.tsv
+        0.4% 2.0MiB / 449.6MiB  1.2MiB/s
+        0.9% 4.0MiB / 449.6MiB  1.2MiB/s
+        1.3% 6.0MiB / 449.6MiB  1.2MiB/s
+        1.8% 8.0MiB / 449.6MiB  1.1MiB/s
+        2.2% 10.0MiB / 449.6MiB  1.1MiB/s
+        2.7% 12.0MiB / 449.6MiB  1.1MiB/s
+        3.1% 14.0MiB / 449.6MiB  1.1MiB/s
+        3.6% 16.0MiB / 449.6MiB  1.1MiB/s
+        4.0% 18.0MiB / 449.6MiB  1.1MiB/s
+        4.4% 20.0MiB / 449.6MiB  1.1MiB/s
+        4.9% 22.0MiB / 449.6MiB  1.1MiB/s
+        5.1% 23.0MiB / 449.6MiB  1.1MiB/s
+        5.6% 25.0MiB / 449.6MiB  1.1MiB/s
+        6.0% 27.0MiB / 449.6MiB  1.1MiB/s
+        6.4% 29.0MiB / 449.6MiB  1.1MiB/s
+        6.7% 30.0MiB / 449.6MiB  974.2KiB/s
+        6.9% 31.0MiB / 449.6MiB  925.0KiB/s
+        7.3% 33.0MiB / 449.6MiB  939.4KiB/s
+        7.8% 35.0MiB / 449.6MiB  950.1KiB/s
+        8.2% 37.0MiB / 449.6MiB  959.9KiB/s
+        8.7% 39.0MiB / 449.6MiB  969.7KiB/s
+        9.1% 41.0MiB / 449.6MiB  977.7KiB/s
+        9.6% 43.0MiB / 449.6MiB  985.3KiB/s
+       10.0% 45.0MiB / 449.6MiB  993.2KiB/s
+       10.5% 47.0MiB / 449.6MiB  998.0KiB/s
+       10.9% 49.0MiB / 449.6MiB  1004.0KiB/s
+       11.3% 51.0MiB / 449.6MiB  1007.7KiB/s
+       11.8% 53.0MiB / 449.6MiB  1014.6KiB/s
+       12.2% 55.0MiB / 449.6MiB  1017.2KiB/s
+       12.7% 57.0MiB / 449.6MiB  1.0MiB/s
+       13.1% 59.0MiB / 449.6MiB  1.0MiB/s
+       13.6% 61.0MiB / 449.6MiB  1.0MiB/s
+       14.0% 63.0MiB / 449.6MiB  1.0MiB/s
+       14.5% 65.0MiB / 449.6MiB  1.0MiB/s
+       14.9% 67.0MiB / 449.6MiB  1.0MiB/s
+       15.3% 69.0MiB / 449.6MiB  1.0MiB/s
+       15.6% 70.0MiB / 449.6MiB  999.6KiB/s
+       15.8% 71.0MiB / 449.6MiB  977.8KiB/s
+       16.2% 73.0MiB / 449.6MiB  981.1KiB/s
+       16.7% 75.0MiB / 449.6MiB  985.4KiB/s
+       17.1% 77.0MiB / 449.6MiB  989.9KiB/s
+       17.6% 79.0MiB / 449.6MiB  994.0KiB/s
+       18.0% 81.0MiB / 449.6MiB  997.5KiB/s
+       18.5% 83.0MiB / 449.6MiB  1001.6KiB/s
+       18.9% 85.0MiB / 449.6MiB  1005.1KiB/s
+       19.3% 87.0MiB / 449.6MiB  1008.1KiB/s
+       19.8% 89.0MiB / 449.6MiB  1011.6KiB/s
+       20.2% 91.0MiB / 449.6MiB  1014.3KiB/s
+       20.7% 93.0MiB / 449.6MiB  1017.0KiB/s
+       21.1% 95.0MiB / 449.6MiB  1019.4KiB/s
+       21.6% 97.0MiB / 449.6MiB  1022.9KiB/s
+       22.0% 99.0MiB / 449.6MiB  1.0MiB/s
+       22.5% 101.0MiB / 449.6MiB  1.0MiB/s
+       22.9% 103.0MiB / 449.6MiB  1.0MiB/s
+       23.1% 104.0MiB / 449.6MiB  1.0MiB/s
+       23.6% 106.0MiB / 449.6MiB  1.0MiB/s
+       24.0% 108.0MiB / 449.6MiB  1.0MiB/s
+       24.5% 110.0MiB / 449.6MiB  1.0MiB/s
+       24.9% 112.0MiB / 449.6MiB  1.0MiB/s
+       25.4% 114.0MiB / 449.6MiB  1.0MiB/s
+       25.8% 116.0MiB / 449.6MiB  1.0MiB/s
+       26.2% 118.0MiB / 449.6MiB  1.0MiB/s
+       26.5% 119.0MiB / 449.6MiB  1.0MiB/s
+       26.9% 121.0MiB / 449.6MiB  1.0MiB/s
+       27.4% 123.0MiB / 449.6MiB  1.0MiB/s
+       27.8% 125.0MiB / 449.6MiB  1.0MiB/s
+       28.2% 127.0MiB / 449.6MiB  1.0MiB/s
+       28.7% 129.0MiB / 449.6MiB  1.0MiB/s
+       29.1% 131.0MiB / 449.6MiB  1.0MiB/s
+       29.6% 133.0MiB / 449.6MiB  1.0MiB/s
+       30.0% 135.0MiB / 449.6MiB  1.0MiB/s
+       30.5% 137.0MiB / 449.6MiB  1.0MiB/s
+       30.9% 139.0MiB / 449.6MiB  1.0MiB/s
+       31.4% 141.0MiB / 449.6MiB  1.0MiB/s
+       31.8% 143.0MiB / 449.6MiB  1.0MiB/s
+       32.2% 145.0MiB / 449.6MiB  1.0MiB/s
+       32.7% 147.0MiB / 449.6MiB  1.0MiB/s
+       33.1% 149.0MiB / 449.6MiB  1.0MiB/s
+       33.6% 151.0MiB / 449.6MiB  1.0MiB/s
+       34.0% 153.0MiB / 449.6MiB  1.0MiB/s
+       34.5% 155.0MiB / 449.6MiB  1.0MiB/s
+       34.9% 157.0MiB / 449.6MiB  1.0MiB/s
+       35.4% 159.0MiB / 449.6MiB  1.0MiB/s
+       35.8% 161.0MiB / 449.6MiB  1.0MiB/s
+       36.3% 163.0MiB / 449.6MiB  1.0MiB/s
+       36.7% 165.0MiB / 449.6MiB  1.1MiB/s
+       37.1% 167.0MiB / 449.6MiB  1.1MiB/s
+       37.6% 169.0MiB / 449.6MiB  1.1MiB/s
+       38.0% 171.0MiB / 449.6MiB  1.1MiB/s
+       38.5% 173.0MiB / 449.6MiB  1.1MiB/s
+       38.9% 175.0MiB / 449.6MiB  1.1MiB/s
+       39.4% 177.0MiB / 449.6MiB  1.1MiB/s
+       39.8% 179.0MiB / 449.6MiB  1.1MiB/s
+       40.3% 181.0MiB / 449.6MiB  1.1MiB/s
+       40.7% 183.0MiB / 449.6MiB  1.1MiB/s
+       41.1% 185.0MiB / 449.6MiB  1.1MiB/s
+       41.6% 187.0MiB / 449.6MiB  1.1MiB/s
+       42.0% 189.0MiB / 449.6MiB  1.1MiB/s
+       42.5% 191.0MiB / 449.6MiB  1.1MiB/s
+       42.7% 192.0MiB / 449.6MiB  1.1MiB/s
+       43.1% 194.0MiB / 449.6MiB  1.1MiB/s
+       43.6% 196.0MiB / 449.6MiB  1.1MiB/s
+       44.0% 198.0MiB / 449.6MiB  1.1MiB/s
+       44.5% 200.0MiB / 449.6MiB  1.1MiB/s
+       44.9% 202.0MiB / 449.6MiB  1.1MiB/s
+       45.4% 204.0MiB / 449.6MiB  1.1MiB/s
+       45.8% 206.0MiB / 449.6MiB  1.1MiB/s
+       46.3% 208.0MiB / 449.6MiB  1.1MiB/s
+       46.7% 210.0MiB / 449.6MiB  1.1MiB/s
+       47.2% 212.0MiB / 449.6MiB  1.1MiB/s
+       47.6% 214.0MiB / 449.6MiB  1.1MiB/s
+       48.0% 216.0MiB / 449.6MiB  1.1MiB/s
+       48.5% 218.0MiB / 449.6MiB  1.1MiB/s
+       48.9% 220.0MiB / 449.6MiB  1.1MiB/s
+       49.4% 222.0MiB / 449.6MiB  1.1MiB/s
+       49.8% 224.0MiB / 449.6MiB  1.1MiB/s
+       50.3% 226.0MiB / 449.6MiB  1.1MiB/s
+       50.7% 228.0MiB / 449.6MiB  1.1MiB/s
+       51.2% 230.0MiB / 449.6MiB  1.1MiB/s
+       51.6% 232.0MiB / 449.6MiB  1.1MiB/s
+       52.0% 234.0MiB / 449.6MiB  1.1MiB/s
+       52.3% 235.0MiB / 449.6MiB  1.1MiB/s
+       52.7% 237.0MiB / 449.6MiB  1.1MiB/s
+       53.2% 239.0MiB / 449.6MiB  1.1MiB/s
+       53.6% 241.0MiB / 449.6MiB  1.1MiB/s
+       53.8% 242.0MiB / 449.6MiB  1.1MiB/s
+       54.3% 244.0MiB / 449.6MiB  1.1MiB/s
+       54.5% 245.0MiB / 449.6MiB  1.1MiB/s
+       54.9% 247.0MiB / 449.6MiB  1.1MiB/s
+       55.4% 249.0MiB / 449.6MiB  1.1MiB/s
+       55.8% 251.0MiB / 449.6MiB  1.1MiB/s
+       56.3% 253.0MiB / 449.6MiB  1.1MiB/s
+       56.7% 255.0MiB / 449.6MiB  1.1MiB/s
+       57.2% 257.0MiB / 449.6MiB  1.1MiB/s
+       57.6% 259.0MiB / 449.6MiB  1.1MiB/s
+       58.0% 261.0MiB / 449.6MiB  1.1MiB/s
+       58.5% 263.0MiB / 449.6MiB  1.1MiB/s
+       58.9% 265.0MiB / 449.6MiB  1.1MiB/s
+       59.4% 267.0MiB / 449.6MiB  1.1MiB/s
+       59.8% 269.0MiB / 449.6MiB  1.1MiB/s
+       60.3% 271.0MiB / 449.6MiB  1.1MiB/s
+       60.7% 273.0MiB / 449.6MiB  1.1MiB/s
+       61.2% 275.0MiB / 449.6MiB  1.1MiB/s
+       61.6% 277.0MiB / 449.6MiB  1.1MiB/s
+       62.1% 279.0MiB / 449.6MiB  1.1MiB/s
+       62.5% 281.0MiB / 449.6MiB  1.1MiB/s
+       62.9% 283.0MiB / 449.6MiB  1.1MiB/s
+       63.4% 285.0MiB / 449.6MiB  1.1MiB/s
+       63.8% 287.0MiB / 449.6MiB  1.1MiB/s
+       64.3% 289.0MiB / 449.6MiB  1.1MiB/s
+       64.7% 291.0MiB / 449.6MiB  1.1MiB/s
+       65.2% 293.0MiB / 449.6MiB  1.1MiB/s
+       65.6% 295.0MiB / 449.6MiB  1.1MiB/s
+       66.1% 297.0MiB / 449.6MiB  1.1MiB/s
+       66.5% 299.0MiB / 449.6MiB  1.1MiB/s
+       66.9% 301.0MiB / 449.6MiB  1.1MiB/s
+       67.4% 303.0MiB / 449.6MiB  1.1MiB/s
+       67.8% 305.0MiB / 449.6MiB  1.1MiB/s
+       68.3% 307.0MiB / 449.6MiB  1.1MiB/s
+       68.7% 309.0MiB / 449.6MiB  1.1MiB/s
+       69.2% 311.0MiB / 449.6MiB  1.1MiB/s
+       69.6% 313.0MiB / 449.6MiB  1.1MiB/s
+       70.1% 315.0MiB / 449.6MiB  1.1MiB/s
+       70.5% 317.0MiB / 449.6MiB  1.1MiB/s
+       70.9% 319.0MiB / 449.6MiB  1.1MiB/s
+       71.4% 321.0MiB / 449.6MiB  1.1MiB/s
+       71.8% 323.0MiB / 449.6MiB  1.1MiB/s
+       72.3% 325.0MiB / 449.6MiB  1.1MiB/s
+       72.5% 326.0MiB / 449.6MiB  1.1MiB/s
+       72.9% 328.0MiB / 449.6MiB  1.1MiB/s
+       73.4% 330.0MiB / 449.6MiB  1.1MiB/s
+       73.8% 332.0MiB / 449.6MiB  1.1MiB/s
+       74.3% 334.0MiB / 449.6MiB  1.1MiB/s
+       74.7% 336.0MiB / 449.6MiB  1.1MiB/s
+       75.2% 338.0MiB / 449.6MiB  1.1MiB/s
+       75.6% 340.0MiB / 449.6MiB  1.1MiB/s
+       76.1% 342.0MiB / 449.6MiB  1.1MiB/s
+       76.5% 344.0MiB / 449.6MiB  1.1MiB/s
+       77.0% 346.0MiB / 449.6MiB  1.1MiB/s
+       77.4% 348.0MiB / 449.6MiB  1.1MiB/s
+       77.8% 350.0MiB / 449.6MiB  1.1MiB/s
+       78.3% 352.0MiB / 449.6MiB  1.1MiB/s
+       78.7% 354.0MiB / 449.6MiB  1.1MiB/s
+       79.2% 356.0MiB / 449.6MiB  1.1MiB/s
+       79.6% 358.0MiB / 449.6MiB  1.1MiB/s
+       80.1% 360.0MiB / 449.6MiB  1.1MiB/s
+       80.5% 362.0MiB / 449.6MiB  1.1MiB/s
+       81.0% 364.0MiB / 449.6MiB  1.1MiB/s
+       81.4% 366.0MiB / 449.6MiB  1.1MiB/s
+       81.8% 368.0MiB / 449.6MiB  1.1MiB/s
+       82.1% 369.0MiB / 449.6MiB  1.1MiB/s
+       82.5% 371.0MiB / 449.6MiB  1.1MiB/s
+       83.0% 373.0MiB / 449.6MiB  1.1MiB/s
+       83.4% 375.0MiB / 449.6MiB  1.1MiB/s
+       83.8% 377.0MiB / 449.6MiB  1.1MiB/s
+       84.3% 379.0MiB / 449.6MiB  1.1MiB/s
+       84.7% 381.0MiB / 449.6MiB  1.1MiB/s
+       85.2% 383.0MiB / 449.6MiB  1.1MiB/s
+       85.6% 385.0MiB / 449.6MiB  1.1MiB/s
+       86.1% 387.0MiB / 449.6MiB  1.1MiB/s
+       86.5% 389.0MiB / 449.6MiB  1.1MiB/s
+       87.0% 391.0MiB / 449.6MiB  1.1MiB/s
+       87.4% 393.0MiB / 449.6MiB  1.1MiB/s
+       87.6% 394.0MiB / 449.6MiB  1.1MiB/s
+       87.9% 395.0MiB / 449.6MiB  1.1MiB/s
+       88.3% 397.0MiB / 449.6MiB  1.1MiB/s
+       88.7% 399.0MiB / 449.6MiB  1.1MiB/s
+       89.0% 400.0MiB / 449.6MiB  1.1MiB/s
+       89.2% 401.0MiB / 449.6MiB  1.1MiB/s
+       89.4% 402.0MiB / 449.6MiB  1.1MiB/s
+       89.6% 403.0MiB / 449.6MiB  1.1MiB/s
+       89.9% 404.0MiB / 449.6MiB  1.1MiB/s
+       90.1% 405.0MiB / 449.6MiB  1.1MiB/s
+       90.3% 406.0MiB / 449.6MiB  1.0MiB/s
+       90.5% 407.0MiB / 449.6MiB  1.0MiB/s
+       90.7% 408.0MiB / 449.6MiB  1.0MiB/s
+       91.0% 409.0MiB / 449.6MiB  1.0MiB/s
+       91.2% 410.0MiB / 449.6MiB  1.0MiB/s
+       91.6% 412.0MiB / 449.6MiB  1.0MiB/s
+       91.9% 413.0MiB / 449.6MiB  1.0MiB/s
+       92.1% 414.0MiB / 449.6MiB  1.0MiB/s
+       92.3% 415.0MiB / 449.6MiB  1.0MiB/s
+       92.5% 416.0MiB / 449.6MiB  1.0MiB/s
+       93.0% 418.0MiB / 449.6MiB  1.0MiB/s
+       93.2% 419.0MiB / 449.6MiB  1.0MiB/s
+       93.4% 420.0MiB / 449.6MiB  1.0MiB/s
+       93.6% 421.0MiB / 449.6MiB  1.0MiB/s
+       93.9% 422.0MiB / 449.6MiB  1.0MiB/s
+       94.1% 423.0MiB / 449.6MiB  1.0MiB/s
+       94.3% 424.0MiB / 449.6MiB  1.0MiB/s
+       94.5% 425.0MiB / 449.6MiB  1.0MiB/s
+       94.7% 426.0MiB / 449.6MiB  1.0MiB/s
+       95.0% 427.0MiB / 449.6MiB  1.0MiB/s
+       95.2% 428.0MiB / 449.6MiB  1.0MiB/s
+       95.4% 429.0MiB / 449.6MiB  1.0MiB/s
+       95.6% 430.0MiB / 449.6MiB  1.0MiB/s
+       95.9% 431.0MiB / 449.6MiB  1.0MiB/s
+       96.1% 432.0MiB / 449.6MiB  1.0MiB/s
+       96.3% 433.0MiB / 449.6MiB  1.0MiB/s
+       96.7% 435.0MiB / 449.6MiB  1.0MiB/s
+       97.0% 436.0MiB / 449.6MiB  1.0MiB/s
+       97.4% 438.0MiB / 449.6MiB  1.0MiB/s
+       97.6% 439.0MiB / 449.6MiB  1.0MiB/s
+       98.1% 441.0MiB / 449.6MiB  1.0MiB/s
+       98.3% 442.0MiB / 449.6MiB  1.0MiB/s
+       98.7% 444.0MiB / 449.6MiB  1.0MiB/s
+       99.0% 445.0MiB / 449.6MiB  1.0MiB/s
+       99.2% 446.0MiB / 449.6MiB  1.0MiB/s
+       99.4% 447.0MiB / 449.6MiB  1.0MiB/s
+       99.6% 448.0MiB / 449.6MiB  1.0MiB/s
+       99.9% 449.0MiB / 449.6MiB  1.0MiB/s
+    √ cwq_kg 449.6MiB
+
+== 校验 ==
+  [√] webqsp_train       9.9MiB  OK, 3098 questions
+  [√] webqsp_test        4.9MiB  OK, 1639 questions
+  [√] cwq_train         41.1MiB  OK, 27639 questions
+  [√] cwq_dev            5.3MiB  OK, 3519 questions
+  [√] cwq_test           2.9MiB  OK, 3531 questions
+  [√] webqsp_kg        248.2MiB  OK, >= 200000 triples (前 200000 行)
+  [√] cwq_kg           449.6MiB  OK, >= 200000 triples (前 200000 行)
+-- ① 下载原始数据 结束，退出码 0，用时 456.8s
+
+======================================================================
+== ② 构建 KG 索引
+== C:\Users\杨姚恒泰\AppData\Local\Programs\Python\Python313\python.exe scripts/build_kg_index.py
+======================================================================
+[   0.00s] 索引构建开始：2 个输入 -> data\processed\kg\index_all
+[   0.00s]   input: data\raw\kg\webqsp_subgraph.tsv (248.2MiB)
+[   0.00s]   input: data\raw\kg\cwq_subgraph.tsv (449.6MiB)
+[   0.00s]   计算 sha256 webqsp_subgraph.tsv ...
+[   0.26s]   计算 sha256 cwq_subgraph.tsv ...
+[   0.70s]   读入 webqsp_subgraph.tsv ...
+[   4.33s]     已读 646,823 实体 / 1,000,000 行
+[   8.40s]     已读 957,709 实体 / 2,000,000 行
+[  12.27s]     已读 1,168,456 实体 / 3,000,000 行
+[  15.65s]     文件完成 3,791,303 行
+[  15.65s]   读入 cwq_subgraph.tsv ...
+[  17.14s]     已读 1,402,151 实体 / 4,000,000 行
+[  21.78s]     已读 1,745,719 实体 / 5,000,000 行
+[  26.57s]     已读 1,980,514 实体 / 6,000,000 行
+[  30.62s]     已读 2,158,886 实体 / 7,000,000 行
+[  34.66s]     已读 2,299,751 实体 / 8,000,000 行
+[  38.77s]     已读 2,412,076 实体 / 9,000,000 行
+[  42.78s]     已读 2,502,764 实体 / 10,000,000 行
+[  46.28s]     文件完成 7,207,791 行
+[  46.66s]   合并并去重 ...
+[  54.09s]   去重后 8,258,891 条（重复 2,740,203）
+[  54.09s]   构建出边 / 入边 CSR ...
+[  59.60s] 
+[  59.60s] 三元组      : 8,258,891
+[  59.60s] 实体        : 2,574,875
+[  59.60s] 关系        : 7,042
+[  59.60s] 最大出度/入度: 2,186 / 134,182
+[  59.60s] 索引体积    : 256.1MiB
+[  59.61s] 索引目录    : data\processed\kg\index_all
+[  59.61s] 高频关系 Top5：
+[  59.61s]   common.topic.notable_types                                      387,630 (4.69%)
+[  59.61s]   freebase.valuenotation.is_reviewed                              216,663 (2.62%)
+[  59.61s]   common.topic.notable_for                                        193,656 (2.34%)
+[  59.61s]   film.performance.film                                           179,340 (2.17%)
+[  59.61s]   film.film.starring                                              179,030 (2.17%)
+[  59.61s] 度数 >   100 的关系数:  2085  覆盖三元组 8,171,950
+[  59.61s] 度数 >  1000 的关系数:   697  覆盖三元组 7,705,940
+[  59.61s] 度数 > 10000 的关系数:   150  覆盖三元组 5,822,287
+[  59.61s] 统计已写入 reports/stats/kg_index_all.json
+-- ② 构建 KG 索引 结束，退出码 0，用时 60.2s
+
+======================================================================
+== ③ 生成数据产物
+== C:\Users\杨姚恒泰\AppData\Local\Programs\Python\Python313\python.exe scripts/prepare_dataset.py --dataset all --materialize-subgraphs 100
+======================================================================
+[   0.00s] == 构建 mid -> name 映射 ==
+[   0.63s] mid2name: 40,109 条 -> data\interim\mid2name.json (1.7MiB)
+[   0.66s] 
+== [webqsp] 载入 KG 索引 data\processed\kg\index_all ==
+[   1.70s]   TripleIndex(triples=8,258,891, entities=2,574,875, relations=7,042)
+[   3.61s] 
+[webqsp/train] 读取 WebQSP.train.json
+[   4.33s]   载入 3,098 条问题
+[ 325.50s]   train 500/3,098 ( 16.1%) 2 it/s
+[ 522.13s]   train 1,000/3,098 ( 32.3%) 2 it/s
+[ 599.45s]   train 1,500/3,098 ( 48.4%) 3 it/s
+[ 599.95s]   train 2,000/3,098 ( 64.6%) 3 it/s
+[ 601.62s]   train 2,500/3,098 ( 80.7%) 4 it/s
+[ 601.93s]   train 3,000/3,098 ( 96.8%) 5 it/s
+[ 602.00s]   train 3,098/3,098 (100.0%) 5 it/s
+[ 602.00s]   train 完成 3,098 条，用时 597.7s
+[ 602.04s]   写出 data\processed\webqsp\qa_train.jsonl.gz (815.9KiB)  黄金匹配率 93.6%
+[ 602.05s] 
+[webqsp/test] 读取 WebQSP.test.json
+[ 602.38s]   载入 1,639 条问题
+[ 897.70s]   test 500/1,639 ( 30.5%) 2 it/s
+[1091.33s]   test 1,000/1,639 ( 61.0%) 2 it/s
+[1289.99s]   test 1,500/1,639 ( 91.5%) 2 it/s
+[1346.06s]   test 1,639/1,639 (100.0%) 2 it/s
+[1346.06s]   test 完成 1,639 条，用时 743.7s
+[1346.07s]   写出 data\processed\webqsp\qa_test.jsonl.gz (445.2KiB)  黄金匹配率 92.9%
+[1346.12s] 
+== [cwq] 载入 KG 索引 data\processed\kg\index_all ==
+[1347.28s]   TripleIndex(triples=8,258,891, entities=2,574,875, relations=7,042)
+[1349.03s] 
+[cwq/train] 读取 ComplexWebQuestions_train.json
+[1356.00s]   载入 27,639 条问题
+[1596.73s]   train 500/27,639 (  1.8%) 2 it/s
+[1758.91s]   train 1,000/27,639 (  3.6%) 2 it/s
+[1922.10s]   train 1,500/27,639 (  5.4%) 3 it/s
+[1931.59s]   train 2,000/27,639 (  7.2%) 3 it/s
+[1958.68s]   train 2,500/27,639 (  9.0%) 4 it/s
+[1966.09s]   train 3,000/27,639 ( 10.9%) 5 it/s
+[1973.35s]   train 3,500/27,639 ( 12.7%) 6 it/s
+[1974.45s]   train 4,000/27,639 ( 14.5%) 6 it/s
+[1983.50s]   train 4,500/27,639 ( 16.3%) 7 it/s
+[2009.60s]   train 5,000/27,639 ( 18.1%) 8 it/s
+[2041.12s]   train 5,500/27,639 ( 19.9%) 8 it/s
+[2047.37s]   train 6,000/27,639 ( 21.7%) 9 it/s
+[2062.75s]   train 6,500/27,639 ( 23.5%) 9 it/s
+[2072.03s]   train 7,000/27,639 ( 25.3%) 10 it/s
+[2087.75s]   train 7,500/27,639 ( 27.1%) 10 it/s
+[2098.04s]   train 8,000/27,639 ( 28.9%) 11 it/s
+[2108.22s]   train 8,500/27,639 ( 30.8%) 11 it/s
+[2118.70s]   train 9,000/27,639 ( 32.6%) 12 it/s
+[2140.91s]   train 9,500/27,639 ( 34.4%) 12 it/s
+[2147.70s]   train 10,000/27,639 ( 36.2%) 13 it/s
+[2168.71s]   train 10,500/27,639 ( 38.0%) 13 it/s
+[2181.42s]   train 11,000/27,639 ( 39.8%) 13 it/s
+[2209.44s]   train 11,500/27,639 ( 41.6%) 13 it/s
+[2237.01s]   train 12,000/27,639 ( 43.4%) 14 it/s
+[2257.77s]   train 12,500/27,639 ( 45.2%) 14 it/s
+[2275.28s]   train 13,000/27,639 ( 47.0%) 14 it/s
+[2292.20s]   train 13,500/27,639 ( 48.8%) 14 it/s
+[2298.67s]   train 14,000/27,639 ( 50.7%) 15 it/s
+[2315.74s]   train 14,500/27,639 ( 52.5%) 15 it/s
+[2318.54s]   train 15,000/27,639 ( 54.3%) 16 it/s
+[2335.52s]   train 15,500/27,639 ( 56.1%) 16 it/s
+[2348.87s]   train 16,000/27,639 ( 57.9%) 16 it/s
+[2360.71s]   train 16,500/27,639 ( 59.7%) 16 it/s
+[2377.26s]   train 17,000/27,639 ( 61.5%) 17 it/s
+[2382.76s]   train 17,500/27,639 ( 63.3%) 17 it/s
+[2394.34s]   train 18,000/27,639 ( 65.1%) 17 it/s
+[2400.05s]   train 18,500/27,639 ( 66.9%) 18 it/s
+[2412.07s]   train 19,000/27,639 ( 68.7%) 18 it/s
+[2426.90s]   train 19,500/27,639 ( 70.6%) 18 it/s
+[2429.19s]   train 20,000/27,639 ( 72.4%) 19 it/s
+[2437.35s]   train 20,500/27,639 ( 74.2%) 19 it/s
+[2446.67s]   train 21,000/27,639 ( 76.0%) 19 it/s
+[2460.47s]   train 21,500/27,639 ( 77.8%) 19 it/s
+[2463.11s]   train 22,000/27,639 ( 79.6%) 20 it/s
+[2465.27s]   train 22,500/27,639 ( 81.4%) 20 it/s
+[2472.51s]   train 23,000/27,639 ( 83.2%) 21 it/s
+[2500.44s]   train 23,500/27,639 ( 85.0%) 21 it/s
+[2515.97s]   train 24,000/27,639 ( 86.8%) 21 it/s
+[2540.16s]   train 24,500/27,639 ( 88.6%) 21 it/s
+[2556.13s]   train 25,000/27,639 ( 90.5%) 21 it/s
+[2569.15s]   train 25,500/27,639 ( 92.3%) 21 it/s
+[2578.49s]   train 26,000/27,639 ( 94.1%) 21 it/s
+[2597.88s]   train 26,500/27,639 ( 95.9%) 21 it/s
+[2612.38s]   train 27,000/27,639 ( 97.7%) 21 it/s
+[2629.96s]   train 27,500/27,639 ( 99.5%) 22 it/s
+[2636.65s]   train 27,639/27,639 (100.0%) 22 it/s
+[2636.66s]   train 完成 27,639 条，用时 1280.7s
+[2636.66s]   写出 data\processed\cwq\qa_train.jsonl.gz (4.7MiB)  黄金匹配率 79.9%
+[2636.72s] 
+[cwq/test] 读取 ComplexWebQuestions_dev.json
+[2637.51s]   载入 3,519 条问题
+[2873.06s]   test 500/3,519 ( 14.2%) 2 it/s
+[3037.48s]   test 1,000/3,519 ( 28.4%) 3 it/s
+[3202.06s]   test 1,500/3,519 ( 42.6%) 3 it/s
+[3357.42s]   test 2,000/3,519 ( 56.8%) 3 it/s
+[3533.31s]   test 2,500/3,519 ( 71.0%) 3 it/s
+[3709.47s]   test 3,000/3,519 ( 85.3%) 3 it/s
+[3870.84s]   test 3,500/3,519 ( 99.5%) 3 it/s
+[3876.47s]   test 3,519/3,519 (100.0%) 3 it/s
+[3876.47s]   test 完成 3,519 条，用时 1239.0s
+[3876.48s]   写出 data\processed\cwq\qa_test.jsonl.gz (759.3KiB)  黄金匹配率 83.3%
+[3876.50s] 
+[cwq/official_test_no_answer] 读取 ComplexWebQuestions_test.json
+[3877.26s]   载入 3,531 条问题
+[3877.29s]   official_test_no_answer 500/3,531 ( 14.2%) 18,708 it/s
+[3877.31s]   official_test_no_answer 1,000/3,531 ( 28.3%) 23,380 it/s
+[3877.32s]   official_test_no_answer 1,500/3,531 ( 42.5%) 25,717 it/s
+[3877.34s]   official_test_no_answer 2,000/3,531 ( 56.6%) 26,929 it/s
+[3877.35s]   official_test_no_answer 2,500/3,531 ( 70.8%) 27,373 it/s
+[3877.37s]   official_test_no_answer 3,000/3,531 ( 85.0%) 28,083 it/s
+[3877.39s]   official_test_no_answer 3,500/3,531 ( 99.1%) 28,506 it/s
+[3877.39s]   official_test_no_answer 3,531/3,531 (100.0%) 28,455 it/s
+[3877.39s]   official_test_no_answer 完成 3,531 条，用时 0.1s
+[3877.39s]   写出 data\processed\cwq\qa_official_test_no_answer.jsonl.gz (460.6KiB)  黄金匹配率 0.0%
+[3877.40s] 
+=== 完成，用时 3877.4s ===
+[3877.40s]   webqsp/train                n= 3,098  gold matched= 93.6%  src in KG= 99.9%
+[3877.40s]   webqsp/test                 n= 1,639  gold matched= 92.9%  src in KG= 99.9%
+[3877.40s]   cwq/train                n=27,639  gold matched= 79.9%  src in KG=100.0%
+[3877.40s]   cwq/test                 n= 3,519  gold matched= 83.3%  src in KG=100.0%
+[3877.40s]   cwq/official_test_no_answer n= 3,531  gold matched=  0.0%  src in KG=  0.0%
+[3877.40s] 统计汇总 -> reports\stats\prepare_all.json
+-- ③ 生成数据产物 结束，退出码 0，用时 3878.2s
+
+======================================================================
+== ④ 产物自检
+== C:\Users\杨姚恒泰\AppData\Local\Programs\Python\Python313\python.exe scripts/validate_outputs.py
+======================================================================
+加载 KG 索引 ...
+
+== 检查 webqsp ==
+  webqsp/test                   n= 1,639  matched= 1,523  样本中子图=50  黄金三元组越界=0
+  webqsp/train                  n= 3,098  matched= 2,901  样本中子图=50  黄金三元组越界=0
+
+== 检查 cwq ==
+  cwq/official_test_no_answer n= 3,531  matched=     0  样本中子图=0  黄金三元组越界=0
+  cwq/test                   n= 3,519  matched= 2,931  样本中子图=50  黄金三元组越界=0
+  cwq/train                  n=27,639  matched=22,073  样本中子图=50  黄金三元组越界=0
+
+============================================================
+检查 614009 项：0 项失败，0 项警告
+自检通过
+-- ④ 产物自检 结束，退出码 0，用时 35.0s
+
+======================================================================
+== ⑤ 统计汇总
+== C:\Users\杨姚恒泰\AppData\Local\Programs\Python\Python313\python.exe scripts/summarize_stats.py --out reports/A_统计汇总.md
+======================================================================
+已写入 D:\Repo\03-Project\data_knowledge_graph\reports\A_统计汇总.md
+-- ⑤ 统计汇总 结束，退出码 0，用时 0.1s
+
+全部完成。产物在 data/processed/，报告在 reports/。
+
+[run_all exit code: 0]

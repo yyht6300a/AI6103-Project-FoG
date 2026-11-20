@@ -2,6 +2,7 @@
 
 本项目旨在复现论文 **Foresight-over-Graph: Reasoning Beyond Local Horizons for Knowledge Base Question Answering**（NeurIPS 2026）。
 
+
 这是一个小组协作项目，主要实现以下模块：
 
 - 知识图谱（Knowledge Graph）的数据准备与索引构建
@@ -17,22 +18,20 @@
 
 ```text
 .
-├── config/                         # 运行与训练配置
-├── data_knowledge_graph/           # 成员 A：KG 工具和处理后的数据
-│   ├── fog/                         # KG 索引及子图操作工具
-│   └── data/processed/             # 生成的 KG 索引、WebQSP/CWQ 数据
+├── paper/                      # the paper and its architecture figure
+├── docs/                       # analysis document and extracted paper text
+├── config/                     # runtime configuration (LLM, embedding, thresholds)
+├── data/
+│   ├── raw/                    # WebQSP and CWQ datasets (samples committed, full data ignored)
+│   ├── processed/              # extracted triples.tsv and entity2name.tsv
+│   └── freebase/               # Freebase dumps or Virtuoso database (not committed)
 ├── src/
-│   ├── data/                       # 数据集处理工具
-│   ├── model/                      # Embedding、Scorer、采样、训练及 FFP 框架
-│   └── agent/                      # Agent 预留模块
-├── scripts/
-│   ├── build_embedding_cache.py    # 构建冻结的 Qwen3 Embedding Cache
-│   ├── train_scorer.py             # 训练和评估 Initial Scorer
-│   └── analyze_score_distribution.py # 分析验证集评分分布及阈值
-├── tests/                          # 成员 B 的单元测试及集成相关测试
-├── experiments/                    # 阈值策略、实验记录及评估指标
-├── requirements.txt
-└── README.md
+│   ├── data/                   # dataset loading and preprocessing
+│   ├── model/                  # question-conditioned triple encoder, scorer, FSE, FFP
+│   └── agent/                  # memory subgraph manager and LLM interaction
+├── experiments/                # threshold policy and retrieval metrics
+├── scripts/                    # dataset download and helper scripts
+└── requirements.txt
 ```
 
 以下目录属于本地生成的数据或训练产物，不应作为源代码提交到 GitHub：
@@ -354,8 +353,35 @@ src/model/mock_scorer.py
 ```bash
 python -m unittest discover -s tests -p 'test_b_*.py'
 ```
-
 测试主要覆盖成员 B 的 Embedding、Scorer、采样和训练相关逻辑。
+
+
+### LLM configuration
+
+Copy [`env_example`](env_example) to `.env` and fill in `LLM_API_KEY` locally. The local file contains only `LLM_MODEL_NAME`, `LLM_API_KEY` and `LLM_BASE_URL`. Nonempty model and URL values override defaults in [`config/config-dev.yml`](config/config-dev.yml); blank values retain those defaults. The key is read only from `.env`, which Git ignores. Shared YAML defaults remain `gpt-4o-mini` at `https://api.openai.com/v1`. For local development, `.env` may select `deepseek-flash` at `https://api.deepseek.com` with a DeepSeek key through the [official OpenAI-compatible API](https://api-docs.deepseek.com/). Member D must switch back to `gpt-4o-mini` with the OpenAI endpoint and key and validate the module before delivery. Set the model and URL together, or leave both blank for YAML defaults; failures do not trigger a provider fallback. The allowed models are `deepseek-flash`, `gpt-4o-mini`, `gpt-4`, and `gpt-4o`. The earlier OpenAI live check passed on 2026/11/08 with `gpt-4o-mini-2024-07-18`.
+
+Set `llm.timeout` and `llm.max_retries` only in YAML. Timeout is a positive finite number of seconds per HTTP connect/read operation; max_retries is the non-negative number of additional attempts after the first request. Legacy `LLM_TIMEOUT` and `LLM_MAX_RETRIES` entries in `.env` are ignored. Dotenv files support single-line assignments, quotes, optional `export` prefixes and comments; shell commands, multiline values and variable interpolation are unsupported. Configuration loading neither reads nor modifies process environment variables. The HTTP client disables environment-derived proxies, CA bundles and credentials and passes the model, key, endpoint and timeout explicitly. It uses the OpenAI-compatible `/chat/completions` protocol; other protocols need a separate adapter.
+
+```python
+from src.agent.llm_config import load_llm_config
+from src.agent.llm_client import LLMClient
+
+client = LLMClient(load_llm_config())  # Validates before any request.
+try:
+    response = client.complete([{"role": "user", "content": "Reply with OK."}])
+finally:
+    client.close()
+```
+
+Run offline checks with `python -m unittest discover -s tests -v`. These use synthetic credentials, mocked transport and private temporary CSV files. Run `python -m src.agent.llm_smoke` for a paid live check using the effective configuration; it checks a short acknowledgement in memory and prints configuration and usage metadata without printing credentials or response content.
+
+Every HTTP attempt, including failures and retries, appends a row to [`logs/llm_usage.csv`](logs/llm_usage.csv), using UTF-8 and the columns `timestamp, model, input_tokens, output_tokens, status, error_type, request_id`. The timestamp is the request start time in UTC with an explicit offset. Model uses the returned model when available, otherwise the requested model; token counts come from `usage.prompt_tokens` and `usage.completion_tokens`, and request ID comes from the `x-request-id` header, following the [OpenAI Chat Completions reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) and [request debugging reference](https://developers.openai.com/api/reference/overview#debugging-requests). Unknown counts and IDs stay blank; reported zero counts remain zero. Status is `success` or `error`; error type contains only the exception class. HTTP success with invalid JSON is an error; application-level validation after the client returns does not change the HTTP accounting row. Keys, prompts, triples, model replies and error messages are excluded. Keep real usage rows in Git for later bill reconciliation; usage alone does not establish billed cost. Clients check the CSV header and writability before sending; append failures propagate without retrying. Concurrent processes must serialize CSV writes externally. Memory management remains a subsequent reproduction task.
+
+### Module reference
+
+See [Member D modules](docs/part_d.md) for interfaces and usage examples.
+
+## Threshold optimization experiments
 
 项目还包含 `experiments/` 目录，用于阈值策略实验、过程记录及评估指标统计。
 

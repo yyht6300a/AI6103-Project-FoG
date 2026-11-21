@@ -479,3 +479,56 @@ triples, refined_scores = fse_ffp_to_potential(out, subgraph)
 ```
 
 `refined_scores` 是 FFP 重打分后的概率，成员 D 按 `tau_p=0.7` 筛选 potential 子图。
+
+## 8. 端到端测试（单轮驱动）
+
+`scripts/run_e2e.py` 是最小可运行的端到端驱动：对每道题执行一轮
+A→B→C→D→E（KG 子图 → Scorer → FSE/FFP → 记忆管理与 LLM → Hit/Hit@1/F1）。
+当前为单轮，尚未包含多轮再检索与问题分解。
+
+### 8.1 运行前准备
+
+- LLM：在 `config/config-dev.yml` 配置 `model_name` / `base_url` / `timeout` /
+  `max_retries`，并在项目根目录 `.env` 中填入 `LLM_API_KEY`（见上文 LLM
+  configuration）。
+- 成员 A：KG 索引与处理后的 QA 文件。默认路径见 `src/model/kg_bridge.py`，
+  可用 `--index-dir` / `--processed-root` 覆盖。
+- 成员 B：Embedding Cache（默认 `cache/embeddings_v2`，必须与 KG 索引一致，
+  可用 `--cache` 覆盖）；Scorer 权重（可用第 4 节从 Hugging Face 下载的
+  `webqsp/epoch5.pt` / `cwq/epoch4.pt`，通过 `--checkpoint` 传入）。
+- 成员 C：FFP checkpoint（通过 `--ffp-checkpoint` 传入，例如
+  `checkpoints/ffp_webqsp/checkpoint_epoch4.pt`）。若 checkpoint 内含
+  `scorer_state`，脚本会用其覆盖 scorer，因此可直接使用联合训练产物。
+
+### 8.2 运行命令
+
+WebQSP 示例：
+
+```bash
+python scripts/run_e2e.py \
+  --dataset webqsp \
+  --checkpoint webqsp/epoch5.pt \
+  --ffp-checkpoint checkpoints/ffp_webqsp/checkpoint_epoch4.pt \
+  --limit 50
+```
+
+CWQ 示例：
+
+```bash
+python scripts/run_e2e.py \
+  --dataset cwq \
+  --checkpoint cwq/epoch4.pt \
+  --ffp-checkpoint checkpoints/ffp_cwq/checkpoint_epoch4.pt \
+  --limit 50
+```
+
+可选参数：`--tau-lo` / `--tau-hi`（FSE 深度调度阈值，默认 0.02 / 0.10）、
+`--tau-p`（potential 子图阈值，默认 0.7）、`--max-nodes` / `--max-edges`
+（子图规模，默认 8000 / 10000）、`--prompt-variant`（默认
+`evidence_decision`）、`--device`（默认自动选择 cuda / cpu）。
+
+### 8.3 输出
+
+脚本按题目逐条容错，单题异常不会中断整体运行；每 10 题打印一次进度，最后输出
+`n`、`errors`、`Hit`、`Hit@1`、`F1` 与总耗时。这是当前端到端第一版指标，
+多轮再检索与问题分解是后续扩展方向。

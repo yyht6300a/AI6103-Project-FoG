@@ -145,7 +145,7 @@ def build_memory_prompt(
     """
     if not isinstance(question, str) or not question.strip():
         raise ValueError("Original question must be a nonblank string")
-    if prompt_variant not in ("paper", "retrieval_questions", "answer_ranking"):
+    if prompt_variant not in ("paper", "paper_structured", "retrieval_questions", "answer_ranking"):
         raise ValueError("Unknown memory prompt variant")
     memory = _freeze_triplets(memory_triplets)
     potential = _freeze_triplets(potential_triplets)

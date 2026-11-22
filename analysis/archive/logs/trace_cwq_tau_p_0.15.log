@@ -1,0 +1,21 @@
+WebQTrn-1430_ac053cda0a7424c48e4809c71171fbed: D_answer pred=['Zulfikar Ali Bhutto', 'Ayub Khan', 'Sardar Muhammad Yaqoob Khan', 'Raja Muhammad Zulqarnain Khan', 'Pervez Musharraf'] gold=['Muhammad Zia-ul-Haq'] gold_scores=[0.182, 0.405, 0.392]
+WebQTrn-2505_eba9c2e29a1198e8b56c2f7e4210638b: ERROR MemoryValidationError
+WebQTest-823_ed31f9dd431831dbd32a06b958c7c97c: A_candidate
+WebQTrn-2181_8d86dc5e03446f0e50fd69bc06ae0658: HIT pred=['John Harbaugh'] gold=['John Harbaugh']
+WebQTrn-1447_f1ea2e60c0bd4311ef47cc0d7f6c0dd8: CD_tau_p (max gold score=0.087 <= 0.15)
+WebQTrn-453_2326103f221042f024262b19814ee9d3: HIT pred=['Kenyan shilling'] gold=['Kenyan shilling']
+WebQTrn-453_8c50e30ac5163e6dabfc999a7129a4ea: ERROR MemoryValidationError
+WebQTrn-1929_de8581ad379fdf8fb0e03c89e19ead1a: HIT pred=['1923 World Series'] gold=['1923 World Series']
+WebQTrn-970_33a7e145f293d98099b1cd924ec3378f: C_pruned (gold missing in kept); gold_scores_present=[0.452, 0.461]
+WebQTrn-1948_f2ac0ed793fc82b685d4c71e78a53a59: A_candidate
+WebQTest-1081_6118bd42202be020c123831a76c283c6: A_candidate
+WebQTrn-3287_ebfe3c418f7914f9babf21caade27b05: HIT pred=['Swedish krona'] gold=['Swedish krona']
+WebQTest-1508_872253e47dd6ddaa213ff31eeda8783b: A_candidate
+WebQTrn-2674_831fb3325644a924d433e2b267f6d238: HIT pred=['South Carolina'] gold=['South Carolina']
+WebQTrn-860_02bcf2def8fd43213ec01b3c1396b6b9: A_candidate
+WebQTest-811_22a085e4a873315a9c2e63361cbd9248: C_pruned (gold missing in kept); gold_scores_present=[0.423]
+WebQTrn-2631_770d8b533fd2f564cf8401e6727b03f6: HIT pred=['Turkey'] gold=['Turkey']
+WebQTest-1638_85f381b8012b4def553954906bc9fafb: HIT pred=['Dutch Language', 'French', 'German Language'] gold=['Dutch Language', 'German Language', 'French']
+WebQTest-1819_9be8c18e016b713cbb7f7feb6badebc7: HIT pred=['Christianity', 'Catholicism'] gold=['Protestantism', 'Catholicism']
+WebQTrn-1036_21286e9775945dae1c8dd9dd06228073: D_answer pred=[] gold=['François Hollande', 'Nicolas Sarkozy'] gold_scores=[0.606, 0.404]
+SUMMARY {"hit": 8, "A_candidate": 5, "C_pruned": 2, "CD_tau_p": 1, "D_answer": 2, "error": 2}

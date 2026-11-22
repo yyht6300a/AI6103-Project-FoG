@@ -11,6 +11,21 @@ import json
 from src.agent.memory_response import _unique_object, _reject_constant
 
 
+RANKING_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "answer_ranking", "strict": True,
+        "schema": {
+            "type": "object", "additionalProperties": False,
+            "required": ["predict_answer"],
+            "properties": {
+                "predict_answer": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+}
+
+
 RANKING_INSTRUCTIONS = (
     '### Fixed Evidence Answer Ranking (implementation enhancement)\n'
     'Using only the selected triples, order the supplied candidate answers from '
@@ -63,6 +78,8 @@ def parse_ranking(completion: dict, answers: Sequence[str]) -> tuple[str, ...]:
             raise ValueError('Ranking completion refused or unfinished')
         value = json.loads(message['content'], object_pairs_hook=_unique_object,
                            parse_constant=_reject_constant)
+    except json.JSONDecodeError:
+        raise ValueError("Invalid ranking JSON") from None
     except (KeyError, IndexError, TypeError, AttributeError, RecursionError):
         raise ValueError('Invalid ranking completion') from None
     if not isinstance(value, dict) or set(value) != {'predict_answer'}:

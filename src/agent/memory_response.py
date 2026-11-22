@@ -8,6 +8,7 @@ remain LLM responsibilities; parsing neither calls the LLM nor publishes updates
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 import json
+import unicodedata
 
 from src.agent.validation_error import MemoryValidationError
 from src.agent.memory_state import _freeze_triplets
@@ -31,6 +32,16 @@ MEMORY_RESPONSE_FORMAT = {
     },
 }
 # Literal membership, triple length and decision consistency remain parser gates.
+
+
+def _normalize_entity(value: str) -> str:
+    """Normalize one entity string for membership comparison.
+
+    Whitespace-only decoration and composed/decomposed Unicode forms are
+    treated as identical; case, internal whitespace and character identity are
+    still preserved. Returned values always keep the model's original strings.
+    """
+    return unicodedata.normalize("NFC", value).strip()
 
 
 @dataclass(frozen=True)
@@ -142,6 +153,7 @@ def parse_memory_response(
             one-shot iterators are consumed, even if output validation fails.
     """
     knowledge = _freeze_triplets(memory_triplets) | _freeze_triplets(potential_triplets)
+    knowledge_norm = {tuple(_normalize_entity(part) for part in triple) for triple in knowledge}
     if not isinstance(content, str):
         raise MemoryValidationError("content_type")
     try:
@@ -163,11 +175,13 @@ def parse_memory_response(
         selected_graph = _freeze_triplets(selected)
     except ValueError:
         raise MemoryValidationError("selected_shape") from None
-    if not selected_graph <= knowledge:
+    if any(tuple(_normalize_entity(part) for part in triple) not in knowledge_norm
+           for triple in selected_graph):
         raise MemoryValidationError("selected_membership")
     answers = _string_array(output["predict_answer"], "answer_array")
-    entities = {entity for head, _, tail in selected_graph for entity in (head, tail)}
-    if any(answer not in entities for answer in answers):
+    entities = {_normalize_entity(entity)
+                for head, _, tail in selected_graph for entity in (head, tail)}
+    if any(_normalize_entity(answer) not in entities for answer in answers):
         raise MemoryValidationError("answer_membership")
     questions = _string_array(output["subsequent_question"], "question_array")
     if len(questions) > 3:

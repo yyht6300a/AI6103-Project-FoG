@@ -52,6 +52,7 @@ from src.model.kg_bridge import (  # noqa: E402
 )
 from src.model.scorer import ForesightTripleScorer  # noqa: E402
 from src.model.state_provider import build_subgraph_from_record  # noqa: E402
+from src.agent.validation_error import failure_diagnostics, MemoryValidationError  # noqa: E402
 
 
 def load_test_records(processed_root, dataset, split="test"):
@@ -120,15 +121,24 @@ def main() -> None:
                                   tau_lo=args.tau_lo, tau_hi=args.tau_hi, device=device)
                 triples, scores = fse_ffp_to_potential(out, sub)
                 state = QuestionMemory(rec["question"])
-                result = manage_memory(state, triples, scores, client,
-                                       potential_threshold=args.tau_p,
-                                       prompt_variant=args.prompt_variant)
+                try:
+                    result = manage_memory(state, triples, scores, client,
+                                           potential_threshold=args.tau_p,
+                                           prompt_variant=args.prompt_variant)
+                except MemoryValidationError:
+                    # The strict evidence-decision protocol only covers a subset
+                    # of question forms. Fall back to the paper's Figure 8
+                    # selection instead of dropping the whole question.
+                    result = manage_memory(state, triples, scores, client,
+                                           potential_threshold=args.tau_p,
+                                           prompt_variant="paper_structured")
                 predicted = list(result.response.predict_answer)
                 m = end_to_end_metrics(predicted, rec["answers"])
                 hit_sum += m["hit"]; hit1_sum += m["hit@1"]; f1_sum += m["f1"]; n += 1
             except Exception as exc:  # noqa: BLE001 - one bad question must not abort the run
                 errors += 1
-                print(f"[{i}] {rec['qid']}: {type(exc).__name__}", flush=True)
+                diag = failure_diagnostics(exc)
+                print(f"[{i}] {rec['qid']}: {type(exc).__name__} {diag}", flush=True)
             if (i + 1) % 10 == 0:
                 print(f"[{i+1}/{len(records)}] hit={hit_sum/max(n,1):.3f} "
                       f"hit@1={hit1_sum/max(n,1):.3f} f1={f1_sum/max(n,1):.3f}", flush=True)

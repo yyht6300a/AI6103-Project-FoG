@@ -1,0 +1,47 @@
+Q[0] WebQTest-0 gold_n=1 gold_in_kept=1
+  gold scores: [0.6972]
+  kept score stats: min=0.0083 p25=0.1401 p50=0.3284 p75=0.4428 p90=0.4623 max=0.7959 n=574
+    kept>tau_p=0.1: 456/574
+    kept>tau_p=0.2: 358/574
+    kept>tau_p=0.3: 303/574
+    kept>tau_p=0.4: 247/574
+    kept>tau_p=0.5: 29/574
+    kept>tau_p=0.6: 26/574
+    kept>tau_p=0.7: 4/574
+Q[1] WebQTest-1 gold_n=2 gold_in_kept=1
+Q[2] WebQTest-3 gold_n=2 gold_in_kept=2
+Q[3] WebQTest-6 gold_n=1 gold_in_kept=1
+Q[4] WebQTest-7 gold_n=1 gold_in_kept=1
+Q[5] WebQTest-8 gold_n=1 gold_in_kept=1
+Q[6] WebQTest-9 gold_n=2 gold_in_kept=1
+Q[7] WebQTest-13 gold_n=1 gold_in_kept=1
+Q[8] WebQTest-14 gold_n=1 gold_in_kept=1
+Q[9] WebQTest-16 gold_n=1 gold_in_kept=1
+Q[10] WebQTest-19 gold_n=1 gold_in_kept=1
+Q[11] WebQTest-20 gold_n=1 gold_in_kept=1
+Q[12] WebQTest-21 gold_n=1 gold_in_kept=0
+Q[13] WebQTest-22 gold_n=1 gold_in_kept=1
+Q[14] WebQTest-23 gold_n=1 gold_in_kept=1
+Q[15] WebQTest-24 gold_n=1 gold_in_kept=1
+Q[16] WebQTest-26 gold_n=1 gold_in_kept=1
+Q[17] WebQTest-28 gold_n=2 gold_in_kept=1
+Q[18] WebQTest-33 gold_n=1 gold_in_kept=1
+Q[19] WebQTest-34 gold_n=2 gold_in_kept=0
+Q[20] WebQTest-35 gold_n=1 gold_in_kept=1
+Q[21] WebQTest-36 gold_n=2 gold_in_kept=2
+Q[22] WebQTest-37 gold_n=1 gold_in_kept=1
+Q[23] WebQTest-38 gold_n=4 gold_in_kept=0
+Q[24] WebQTest-39 gold_n=2 gold_in_kept=2
+Q[25] WebQTest-41 gold_n=1 gold_in_kept=1
+Q[26] WebQTest-42 gold_n=1 gold_in_kept=0
+Q[27] WebQTest-43 gold_n=1 gold_in_kept=1
+Q[28] WebQTest-44 gold_n=2 gold_in_kept=2
+Q[29] WebQTest-45 gold_n=1 gold_in_kept=1
+AGGREGATE gold-edge refined scores: min=0.0638 p10=0.1489 p25=0.3145 p50=0.5092 p75=0.6834 p90=0.7979 max=0.8159 n=30
+  gold_score>tau_p=0.1: 27/30 = 0.900
+  gold_score>tau_p=0.2: 25/30 = 0.833
+  gold_score>tau_p=0.3: 23/30 = 0.767
+  gold_score>tau_p=0.4: 18/30 = 0.600
+  gold_score>tau_p=0.5: 15/30 = 0.500
+  gold_score>tau_p=0.6: 12/30 = 0.400
+  gold_score>tau_p=0.7: 6/30 = 0.200

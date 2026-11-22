@@ -19,8 +19,9 @@ class LLMClient:
     """Own a synchronous HTTP session for one validated LLM configuration.
 
     Call close after use. Each completion permits at most max_retries additional
-    attempts for timeouts, connection failures, HTTP 429 and HTTP 5xx responses.
-    Other HTTP errors and invalid JSON propagate without retrying.
+    attempts for timeouts, connection failures, malformed (non-JSON) response
+    bodies, HTTP 429 and HTTP 5xx responses, plus three additional attempts for
+    HTTP 403. Other HTTP errors propagate without retrying.
     """
 
     def __init__(self, config: LLMConfig, usage_path: Path = USAGE_PATH) -> None:
@@ -34,6 +35,8 @@ class LLMClient:
         self.usage_log = UsageLog(usage_path)
         self.session = requests.Session()
         self.session.trust_env = False
+        if config.proxy_url:
+            self.session.proxies = {"http": config.proxy_url, "https": config.proxy_url}
 
     def complete(self, messages: Sequence[Mapping[str, str]], *, response_format=None) -> dict:
         """Submit messages and return the service's decoded response.
@@ -49,17 +52,25 @@ class LLMClient:
             requests.RequestException: A terminal HTTP or transport failure occurs.
             ValueError: The response is not a JSON object.
         """
-        for attempt in range(self.config.max_retries + 1):
+        attempt = 0
+        while True:
             try:
                 return self._attempt(messages, response_format=response_format)
-            except (requests.Timeout, requests.ConnectionError):
-                if attempt == self.config.max_retries:
+            except (requests.Timeout, requests.ConnectionError, requests.exceptions.JSONDecodeError):
+                if attempt >= self.config.max_retries:
                     raise
             except requests.HTTPError as error:
                 status = error.response.status_code if error.response is not None else 0
-                if attempt == self.config.max_retries or not (status == 429 or status >= 500):
+                if status == 403:
+                    budget = 3
+                elif status == 429 or status >= 500:
+                    budget = self.config.max_retries
+                else:
                     raise
-            time.sleep(min(2 ** attempt, 8))
+                if attempt >= budget:
+                    raise
+            attempt += 1
+            time.sleep(min(2 ** (attempt - 1), 8))
         raise RuntimeError("LLM retry loop exhausted unexpectedly")
 
     def _attempt(self, messages: Sequence[Mapping[str, str]], *, response_format=None) -> dict:

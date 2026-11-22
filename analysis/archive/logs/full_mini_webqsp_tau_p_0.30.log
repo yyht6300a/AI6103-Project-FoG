@@ -1,0 +1,259 @@
+e2e questions: 1523
+llm: gpt-4o-mini @ https://api.openai.com/v1
+[1] WebQTest-1: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[10/1523] hit=0.778 hit@1=0.778 f1=0.778
+[19] WebQTest-34: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[20/1523] hit=0.778 hit@1=0.778 f1=0.778
+[30/1523] hit=0.643 hit@1=0.643 f1=0.643
+[40/1523] hit=0.605 hit@1=0.605 f1=0.605
+[40] WebQTest-61: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[50/1523] hit=0.638 hit@1=0.638 f1=0.638
+[54] WebQTest-77: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[59] WebQTest-83: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[60/1523] hit=0.582 hit@1=0.582 f1=0.582
+[70/1523] hit=0.538 hit@1=0.538 f1=0.546
+[74] WebQTest-102: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[79] WebQTest-107: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[80/1523] hit=0.548 hit@1=0.548 f1=0.555
+[90/1523] hit=0.554 hit@1=0.530 f1=0.540
+[100/1523] hit=0.538 hit@1=0.505 f1=0.522
+[110/1523] hit=0.534 hit@1=0.505 f1=0.520
+[118] WebQTest-162: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[120/1523] hit=0.545 hit@1=0.518 f1=0.532
+[124] WebQTest-168: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[130/1523] hit=0.529 hit@1=0.504 f1=0.517
+[135] WebQTest-180: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[140/1523] hit=0.538 hit@1=0.515 f1=0.527
+[150/1523] hit=0.536 hit@1=0.514 f1=0.525
+[160/1523] hit=0.540 hit@1=0.520 f1=0.535
+[170/1523] hit=0.537 hit@1=0.519 f1=0.533
+[173] WebQTest-225: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[177] WebQTest-232: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[180/1523] hit=0.530 hit@1=0.512 f1=0.525
+[184] WebQTest-241: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[185] WebQTest-243: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[190/1523] hit=0.528 hit@1=0.511 f1=0.524
+[200/1523] hit=0.527 hit@1=0.505 f1=0.520
+[210/1523] hit=0.531 hit@1=0.510 f1=0.524
+[220/1523] hit=0.519 hit@1=0.500 f1=0.514
+[230/1523] hit=0.528 hit@1=0.509 f1=0.523
+[237] WebQTest-314: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[240/1523] hit=0.538 hit@1=0.511 f1=0.524
+[240] WebQTest-317: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[250/1523] hit=0.534 hit@1=0.509 f1=0.521
+[258] WebQTest-342: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[260/1523] hit=0.527 hit@1=0.502 f1=0.514
+[260] WebQTest-344: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[266] WebQTest-354: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[270/1523] hit=0.514 hit@1=0.490 f1=0.504
+[271] WebQTest-362: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[274] WebQTest-367: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[280/1523] hit=0.517 hit@1=0.494 f1=0.508
+[281] WebQTest-381: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[288] WebQTest-393: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[290/1523] hit=0.521 hit@1=0.498 f1=0.513
+[299] WebQTest-405: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[300/1523] hit=0.507 hit@1=0.486 f1=0.500
+[300] WebQTest-406: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[310/1523] hit=0.505 hit@1=0.481 f1=0.495
+[320/1523] hit=0.508 hit@1=0.485 f1=0.501
+[323] WebQTest-436: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[330/1523] hit=0.507 hit@1=0.484 f1=0.499
+[340/1523] hit=0.506 hit@1=0.484 f1=0.499
+[350/1523] hit=0.512 hit@1=0.491 f1=0.505
+[354] WebQTest-477: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[360/1523] hit=0.511 hit@1=0.489 f1=0.503
+[370/1523] hit=0.507 hit@1=0.487 f1=0.500
+[380/1523] hit=0.510 hit@1=0.490 f1=0.503
+[384] WebQTest-523: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[388] WebQTest-527: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[390/1523] hit=0.512 hit@1=0.493 f1=0.507
+[392] WebQTest-532: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[400/1523] hit=0.505 hit@1=0.484 f1=0.498
+[410/1523] hit=0.503 hit@1=0.482 f1=0.495
+[420/1523] hit=0.497 hit@1=0.477 f1=0.490
+[421] WebQTest-576: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[430/1523] hit=0.491 hit@1=0.471 f1=0.484
+[434] WebQTest-590: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[437] WebQTest-596: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[440/1523] hit=0.494 hit@1=0.474 f1=0.488
+[449] WebQTest-612: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[450/1523] hit=0.490 hit@1=0.471 f1=0.484
+[456] WebQTest-622: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[460/1523] hit=0.489 hit@1=0.468 f1=0.481
+[463] WebQTest-634: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[470/1523] hit=0.493 hit@1=0.472 f1=0.485
+[480/1523] hit=0.493 hit@1=0.473 f1=0.485
+[481] WebQTest-656: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[490/1523] hit=0.492 hit@1=0.472 f1=0.485
+[497] WebQTest-675: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[500/1523] hit=0.491 hit@1=0.470 f1=0.483
+[501] WebQTest-680: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[510/1523] hit=0.493 hit@1=0.471 f1=0.484
+[512] WebQTest-694: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[513] WebQTest-695: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[520/1523] hit=0.491 hit@1=0.468 f1=0.480
+[528] WebQTest-712: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[529] WebQTest-713: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[530/1523] hit=0.485 hit@1=0.462 f1=0.474
+[540/1523] hit=0.487 hit@1=0.465 f1=0.477
+[550/1523] hit=0.489 hit@1=0.467 f1=0.479
+[550] WebQTest-742: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[560/1523] hit=0.492 hit@1=0.471 f1=0.482
+[570/1523] hit=0.490 hit@1=0.466 f1=0.477
+[580/1523] hit=0.489 hit@1=0.465 f1=0.476
+[586] WebQTest-787: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[590/1523] hit=0.488 hit@1=0.464 f1=0.476
+[600/1523] hit=0.490 hit@1=0.465 f1=0.476
+[602] WebQTest-812: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[610/1523] hit=0.488 hit@1=0.463 f1=0.474
+[612] WebQTest-828: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[620/1523] hit=0.487 hit@1=0.461 f1=0.473
+[626] WebQTest-848: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[630/1523] hit=0.486 hit@1=0.460 f1=0.472
+[640/1523] hit=0.486 hit@1=0.461 f1=0.473
+[650/1523] hit=0.483 hit@1=0.457 f1=0.469
+[653] WebQTest-883: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[659] WebQTest-889: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[660/1523] hit=0.482 hit@1=0.456 f1=0.468
+[668] WebQTest-900: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[670/1523] hit=0.481 hit@1=0.456 f1=0.468
+[680/1523] hit=0.486 hit@1=0.461 f1=0.474
+[690/1523] hit=0.485 hit@1=0.459 f1=0.472
+[700/1523] hit=0.482 hit@1=0.456 f1=0.469
+[710/1523] hit=0.481 hit@1=0.455 f1=0.469
+[720/1523] hit=0.481 hit@1=0.456 f1=0.469
+[720] WebQTest-976: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[730/1523] hit=0.478 hit@1=0.453 f1=0.467
+[740/1523] hit=0.475 hit@1=0.449 f1=0.464
+[740] WebQTest-1000: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[750/1523] hit=0.472 hit@1=0.446 f1=0.461
+[760/1523] hit=0.471 hit@1=0.446 f1=0.460
+[761] WebQTest-1028: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[770/1523] hit=0.473 hit@1=0.448 f1=0.463
+[775] WebQTest-1043: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[780/1523] hit=0.474 hit@1=0.450 f1=0.464
+[780] WebQTest-1048: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[790/1523] hit=0.474 hit@1=0.450 f1=0.464
+[797] WebQTest-1074: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[798] WebQTest-1075: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[800/1523] hit=0.477 hit@1=0.453 f1=0.467
+[810/1523] hit=0.480 hit@1=0.456 f1=0.470
+[816] WebQTest-1096: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[819] WebQTest-1099: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[820/1523] hit=0.476 hit@1=0.453 f1=0.466
+[821] WebQTest-1102: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[830/1523] hit=0.476 hit@1=0.453 f1=0.466
+[840/1523] hit=0.478 hit@1=0.454 f1=0.468
+[850/1523] hit=0.474 hit@1=0.451 f1=0.464
+[860/1523] hit=0.473 hit@1=0.449 f1=0.462
+[870/1523] hit=0.472 hit@1=0.449 f1=0.462
+[880/1523] hit=0.471 hit@1=0.448 f1=0.461
+[890/1523] hit=0.470 hit@1=0.448 f1=0.461
+[900/1523] hit=0.471 hit@1=0.448 f1=0.462
+[905] WebQTest-1227: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[910/1523] hit=0.471 hit@1=0.448 f1=0.462
+[914] WebQTest-1238: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[920/1523] hit=0.469 hit@1=0.446 f1=0.459
+[926] WebQTest-1251: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[930/1523] hit=0.470 hit@1=0.447 f1=0.460
+[931] WebQTest-1257: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[940/1523] hit=0.471 hit@1=0.447 f1=0.460
+[941] WebQTest-1269: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[950/1523] hit=0.468 hit@1=0.445 f1=0.457
+[953] WebQTest-1285: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[960/1523] hit=0.470 hit@1=0.446 f1=0.459
+[965] WebQTest-1303: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[970/1523] hit=0.470 hit@1=0.446 f1=0.459
+[980/1523] hit=0.468 hit@1=0.444 f1=0.457
+[990/1523] hit=0.470 hit@1=0.445 f1=0.457
+[996] WebQTest-1340: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1000/1523] hit=0.468 hit@1=0.444 f1=0.456
+[1000] WebQTest-1344: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1010/1523] hit=0.468 hit@1=0.444 f1=0.456
+[1020/1523] hit=0.468 hit@1=0.443 f1=0.456
+[1030/1523] hit=0.470 hit@1=0.444 f1=0.456
+[1034] WebQTest-1390: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1037] WebQTest-1395: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1040/1523] hit=0.472 hit@1=0.445 f1=0.457
+[1050/1523] hit=0.470 hit@1=0.444 f1=0.456
+[1054] WebQTest-1425: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1060/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1062] WebQTest-1435: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1070/1523] hit=0.474 hit@1=0.448 f1=0.460
+[1070] WebQTest-1449: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1080/1523] hit=0.475 hit@1=0.448 f1=0.460
+[1082] WebQTest-1464: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1090/1523] hit=0.476 hit@1=0.450 f1=0.462
+[1100/1523] hit=0.475 hit@1=0.448 f1=0.461
+[1110/1523] hit=0.473 hit@1=0.446 f1=0.458
+[1110] WebQTest-1502: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1120/1523] hit=0.474 hit@1=0.447 f1=0.459
+[1123] WebQTest-1522: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1130/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1140/1523] hit=0.473 hit@1=0.446 f1=0.458
+[1142] WebQTest-1544: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1150/1523] hit=0.475 hit@1=0.449 f1=0.461
+[1156] WebQTest-1562: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1160/1523] hit=0.476 hit@1=0.449 f1=0.461
+[1166] WebQTest-1572: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1170/1523] hit=0.475 hit@1=0.447 f1=0.460
+[1179] WebQTest-1590: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1180/1523] hit=0.474 hit@1=0.447 f1=0.460
+[1188] WebQTest-1604: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1190/1523] hit=0.475 hit@1=0.448 f1=0.460
+[1200/1523] hit=0.474 hit@1=0.446 f1=0.459
+[1210/1523] hit=0.474 hit@1=0.446 f1=0.459
+[1212] WebQTest-1631: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1213] WebQTest-1632: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1220/1523] hit=0.475 hit@1=0.448 f1=0.461
+[1230/1523] hit=0.475 hit@1=0.446 f1=0.460
+[1238] WebQTest-1666: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1240/1523] hit=0.475 hit@1=0.446 f1=0.460
+[1247] WebQTest-1675: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1250/1523] hit=0.475 hit@1=0.446 f1=0.459
+[1260/1523] hit=0.474 hit@1=0.446 f1=0.460
+[1270/1523] hit=0.474 hit@1=0.446 f1=0.460
+[1270] WebQTest-1706: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1280/1523] hit=0.474 hit@1=0.446 f1=0.460
+[1280] WebQTest-1719: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1290/1523] hit=0.474 hit@1=0.446 f1=0.460
+[1300/1523] hit=0.473 hit@1=0.446 f1=0.459
+[1310/1523] hit=0.473 hit@1=0.446 f1=0.460
+[1315] WebQTest-1763: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1320/1523] hit=0.473 hit@1=0.446 f1=0.459
+[1321] WebQTest-1769: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1323] WebQTest-1771: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1330/1523] hit=0.473 hit@1=0.446 f1=0.459
+[1340/1523] hit=0.472 hit@1=0.445 f1=0.458
+[1350/1523] hit=0.471 hit@1=0.444 f1=0.457
+[1352] WebQTest-1808: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1360/1523] hit=0.470 hit@1=0.443 f1=0.456
+[1370/1523] hit=0.471 hit@1=0.445 f1=0.457
+[1370] WebQTest-1830: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1373] WebQTest-1836: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1380/1523] hit=0.472 hit@1=0.446 f1=0.458
+[1385] WebQTest-1851: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1390/1523] hit=0.471 hit@1=0.445 f1=0.458
+[1400/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1410/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1420/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1430/1523] hit=0.475 hit@1=0.450 f1=0.462
+[1440/1523] hit=0.475 hit@1=0.449 f1=0.461
+[1443] WebQTest-1929: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1450/1523] hit=0.475 hit@1=0.449 f1=0.461
+[1460/1523] hit=0.475 hit@1=0.450 f1=0.462
+[1470/1523] hit=0.476 hit@1=0.450 f1=0.462
+[1472] WebQTest-1971: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1475] WebQTest-1976: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1480/1523] hit=0.475 hit@1=0.450 f1=0.462
+[1490/1523] hit=0.474 hit@1=0.448 f1=0.460
+[1500/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1510/1523] hit=0.473 hit@1=0.447 f1=0.459
+[1520/1523] hit=0.473 hit@1=0.448 f1=0.460
+
+=== E2E results (n=1424, errors=99) ===
+Hit   = 0.4726
+Hit@1 = 0.4473
+F1    = 0.4593
+time 11977s

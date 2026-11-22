@@ -10,7 +10,7 @@ from dataclasses import dataclass, replace
 from numbers import Real
 
 from src.agent.llm_client import LLMClient
-from src.agent.answer_ranking import build_ranking_prompt, parse_ranking
+from src.agent.answer_ranking import build_ranking_prompt, parse_ranking, RANKING_RESPONSE_FORMAT
 from src.agent.memory_response import MemoryResponse
 from src.agent.memory_state import QuestionMemory
 from src.agent.memory_update import update_memory
@@ -133,7 +133,8 @@ def manage_memory(
         return provisional
     prompt = build_ranking_prompt(state.original_question, response.selected_triplets,
                                   response.predict_answer)
-    ranked = parse_ranking(client.complete([{"role": "user", "content": prompt}]),
+    ranked = parse_ranking(client.complete([{"role": "user", "content": prompt}],
+                                           response_format=RANKING_RESPONSE_FORMAT),
                            response.predict_answer)
     return MSMResult(provisional.state, replace(response, predict_answer=ranked))
 

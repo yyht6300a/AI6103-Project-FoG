@@ -152,8 +152,6 @@ class MemoryUpdateTests(unittest.TestCase):
         cases = [
             completion([A, (B[2], B[1], B[0])], questions=["Who?"]),
             completion([A, (A[0], B[1], A[2])], questions=["Who?"]),
-            completion([A, (B[0] + " ", B[1], B[2])], questions=["Who?"]),
-            completion([A, B], [B[2] + " "]),
             completion([A, B], ["External answer"]),
         ]
         for output in cases:

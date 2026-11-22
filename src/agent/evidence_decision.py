@@ -119,6 +119,9 @@ from the root. Do not flatten a dependent path into independent entity groups.
 Other path lengths, conditional paths, aggregation and complex requirements
 are unsupported: use the unsupported description variant.
 Code will query the COMPLETE graph for condition facts and select the branch.
+Every entity name you write (root_entity, entity, subject, value) must be copied
+verbatim from the Numbered knowledge or the original question. Never write an
+answer value as an entity and never invent a name.
 """
 
 # Generation and local decoding independently enforce the same tagged union.

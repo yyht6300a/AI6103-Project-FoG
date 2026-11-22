@@ -82,8 +82,12 @@ def update_memory(
         prompt = build_memory_prompt(
             state.original_question, state.memory_triplets, potential, prompt_variant=prompt_variant,
         )
-    options = ({"response_format": decision_response_format(decision, MEMORY_RESPONSE_FORMAT)}
-               if prompt_variant == "evidence_decision" else {})
+    if prompt_variant == "evidence_decision":
+        options = {"response_format": decision_response_format(decision, MEMORY_RESPONSE_FORMAT)}
+    elif prompt_variant == "paper_structured":
+        options = {"response_format": MEMORY_RESPONSE_FORMAT}
+    else:
+        options = {}
     completion = client.complete([{"role": "user", "content": prompt}], **options)
     try:
         choice = completion["choices"][0]

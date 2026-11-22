@@ -1,0 +1,47 @@
+Q[0] WebQTrn-1430_ac053cda0a7424c48e4809c71171fbed gold_n=3 gold_in_kept=3
+  gold scores: [0.1817, 0.4054, 0.3922]
+  kept score stats: min=0.0124 p25=0.1268 p50=0.1983 p75=0.3330 p90=0.4277 max=0.6131 n=1284
+    kept>tau_p=0.1: 1104/1284
+    kept>tau_p=0.2: 635/1284
+    kept>tau_p=0.3: 370/1284
+    kept>tau_p=0.4: 196/1284
+    kept>tau_p=0.5: 55/1284
+    kept>tau_p=0.6: 2/1284
+    kept>tau_p=0.7: 0/1284
+Q[1] WebQTrn-2505_eba9c2e29a1198e8b56c2f7e4210638b gold_n=3 gold_in_kept=3
+Q[2] WebQTest-823_ed31f9dd431831dbd32a06b958c7c97c gold_n=2 gold_in_kept=1
+Q[3] WebQTrn-2181_8d86dc5e03446f0e50fd69bc06ae0658 gold_n=2 gold_in_kept=2
+Q[4] WebQTrn-1447_f1ea2e60c0bd4311ef47cc0d7f6c0dd8 gold_n=2 gold_in_kept=2
+Q[5] WebQTrn-453_2326103f221042f024262b19814ee9d3 gold_n=3 gold_in_kept=3
+Q[6] WebQTrn-453_8c50e30ac5163e6dabfc999a7129a4ea gold_n=2 gold_in_kept=2
+Q[7] WebQTrn-1929_de8581ad379fdf8fb0e03c89e19ead1a gold_n=2 gold_in_kept=2
+Q[8] WebQTrn-970_33a7e145f293d98099b1cd924ec3378f gold_n=3 gold_in_kept=2
+Q[9] WebQTrn-1948_f2ac0ed793fc82b685d4c71e78a53a59 gold_n=3 gold_in_kept=1
+Q[10] WebQTest-1081_6118bd42202be020c123831a76c283c6 gold_n=4 gold_in_kept=3
+Q[11] WebQTrn-3287_ebfe3c418f7914f9babf21caade27b05 gold_n=2 gold_in_kept=2
+Q[12] WebQTest-1508_872253e47dd6ddaa213ff31eeda8783b gold_n=2 gold_in_kept=1
+Q[13] WebQTrn-2674_831fb3325644a924d433e2b267f6d238 gold_n=1 gold_in_kept=1
+Q[14] WebQTrn-860_02bcf2def8fd43213ec01b3c1396b6b9 gold_n=3 gold_in_kept=2
+Q[15] WebQTest-811_22a085e4a873315a9c2e63361cbd9248 gold_n=3 gold_in_kept=1
+Q[16] WebQTrn-2631_770d8b533fd2f564cf8401e6727b03f6 gold_n=1 gold_in_kept=1
+Q[17] WebQTest-1638_85f381b8012b4def553954906bc9fafb gold_n=2 gold_in_kept=2
+Q[18] WebQTest-1819_9be8c18e016b713cbb7f7feb6badebc7 gold_n=1 gold_in_kept=1
+Q[19] WebQTrn-1036_21286e9775945dae1c8dd9dd06228073 gold_n=2 gold_in_kept=2
+Q[20] WebQTest-1441_bb949340bcc140182ac61775c7ccc0e9 gold_n=3 gold_in_kept=2
+Q[21] WebQTest-1137_cc64b3264c8839a0cbd15502632b2302 gold_n=1 gold_in_kept=1
+Q[22] WebQTest-426_0642f30e974b46ce4bcdb74f0546d0f7 gold_n=1 gold_in_kept=1
+Q[23] WebQTrn-1503_8e4ffbb924cdcf9393c9cfa849b3a31c gold_n=3 gold_in_kept=3
+Q[24] WebQTrn-191_ae76bd88c3f0e3053710b519d4dfdce1 gold_n=1 gold_in_kept=1
+Q[25] WebQTrn-577_c4cb89dfae8793bedbe134ad40d07af9 gold_n=2 gold_in_kept=2
+Q[26] WebQTrn-233_dd11343b9c28a21731d2ce4bbdc2630d gold_n=2 gold_in_kept=2
+Q[27] WebQTest-1819_f20d37026a54a0ce5789e0e93e43c619 gold_n=2 gold_in_kept=1
+Q[28] WebQTrn-3517_729a7d1cb0dc9ea34d745db1f1115860 gold_n=2 gold_in_kept=2
+Q[29] WebQTrn-2674_9f014aea6b14b01d363d2e5368a31a92 gold_n=2 gold_in_kept=1
+AGGREGATE gold-edge refined scores: min=0.0348 p10=0.0877 p25=0.2871 p50=0.3922 p75=0.5111 p90=0.5691 max=0.6413 n=53
+  gold_score>tau_p=0.1: 44/53 = 0.830
+  gold_score>tau_p=0.2: 40/53 = 0.755
+  gold_score>tau_p=0.3: 39/53 = 0.736
+  gold_score>tau_p=0.4: 25/53 = 0.472
+  gold_score>tau_p=0.5: 14/53 = 0.264
+  gold_score>tau_p=0.6: 5/53 = 0.094
+  gold_score>tau_p=0.7: 0/53 = 0.000

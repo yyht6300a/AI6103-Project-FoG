@@ -140,7 +140,7 @@ class LLMUsageTests(unittest.TestCase):
             ([self.response(503, b"bad"), self.response(503, b"bad")], requests.HTTPError, 2),
             ([requests.ConnectionError(), requests.ConnectionError()], requests.ConnectionError, 2),
             ([self.response(401, {"error": "unauthorized"})], requests.HTTPError, 1),
-            ([self.response(200, b"bad")], ValueError, 1),
+            ([self.response(200, b"bad"), self.response(200, b"bad")], ValueError, 2),
             ([self.response(200, [])], ValueError, 1),
             ([self.response(302, {})], requests.HTTPError, 1),
         ]

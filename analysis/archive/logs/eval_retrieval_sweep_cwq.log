@@ -1,0 +1,26 @@
+nohup: ignoring input
+===== [1] fixed tau_e=0.1 =====
+test questions: 200 (fixed tau_e=0.1)
+R_evid =0.848
+P_prune=0.887
+H_path =0.793
+questions evaluated: 198 (147s)
+===== [2] depth 0.03/0.15 =====
+test questions: 200 (depth tau_lo=0.03, tau_hi=0.15)
+R_evid =0.918
+P_prune=0.883
+H_path =0.864
+questions evaluated: 198 (151s)
+===== [3] depth 0.02/0.10 =====
+test questions: 200 (depth tau_lo=0.02, tau_hi=0.1)
+R_evid =0.942
+P_prune=0.847
+H_path =0.914
+questions evaluated: 198 (149s)
+===== [4] depth 0.01/0.08 =====
+test questions: 200 (depth tau_lo=0.01, tau_hi=0.08)
+R_evid =0.953
+P_prune=0.822
+H_path =0.934
+questions evaluated: 198 (148s)
+===== CWQ SWEEP DONE =====

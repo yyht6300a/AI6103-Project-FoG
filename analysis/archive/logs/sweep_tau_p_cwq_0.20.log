@@ -1,0 +1,14 @@
+e2e questions: 20
+llm: gpt-4o @ https://api.openai.com/v1
+[2] WebQTest-823_ed31f9dd431831dbd32a06b958c7c97c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[4] WebQTrn-1447_f1ea2e60c0bd4311ef47cc0d7f6c0dd8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[10/20] hit=0.500 hit@1=0.500 f1=0.500
+[11] WebQTrn-3287_ebfe3c418f7914f9babf21caade27b05: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[16] WebQTrn-2631_770d8b533fd2f564cf8401e6727b03f6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[20/20] hit=0.438 hit@1=0.438 f1=0.438
+
+=== E2E results (n=16, errors=4) ===
+Hit   = 0.4375
+Hit@1 = 0.4375
+F1    = 0.4375
+time 77s

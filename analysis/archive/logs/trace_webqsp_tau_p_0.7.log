@@ -1,0 +1,11 @@
+WebQTest-0: CD_tau_p (max gold score=0.697 <= 0.7)
+WebQTest-1: C_pruned (gold missing in kept); gold_scores_present=[0.471]
+WebQTest-3: CD_tau_p (max gold score=0.697 <= 0.7)
+WebQTest-6: CD_tau_p (max gold score=0.355 <= 0.7)
+WebQTest-7: CD_tau_p (max gold score=0.372 <= 0.7)
+WebQTest-8: HIT pred=['Bifocals', 'Franklin stove', 'Glass harmonica', 'Lightning rod'] gold=['Lightning rod', 'Bifocals', 'Glass harmonica', 'Franklin stove']
+WebQTest-9: A_candidate
+WebQTest-13: CD_tau_p (max gold score=0.277 <= 0.7)
+WebQTest-14: CD_tau_p (max gold score=0.162 <= 0.7)
+WebQTest-16: HIT pred=['England', 'Northern Ireland', 'Scotland', 'Wales'] gold=['England', 'Northern Ireland', 'Scotland', 'Wales']
+SUMMARY {"hit": 2, "A_candidate": 1, "C_pruned": 1, "CD_tau_p": 6, "D_answer": 0, "error": 0}

@@ -69,6 +69,7 @@ class LLMConfig:
     base_url: str
     timeout: float
     max_retries: int
+    proxy_url: str = ""
 
     def __post_init__(self) -> None:
         """Reject incomplete or unsafe settings before any network operation.
@@ -97,6 +98,16 @@ class LLMConfig:
             valid = False
         if not valid or url.username or url.password or url.query or url.fragment:
             raise ValueError("LLM base_url must be HTTP(S), without credentials, query or fragment")
+        if self.proxy_url:
+            if not isinstance(self.proxy_url, str):
+                raise ValueError("LLM proxy_url must be an HTTP(S) URL")
+            try:
+                proxy = urlsplit(self.proxy_url)
+                valid = proxy.scheme in ("http", "https") and proxy.hostname and proxy.port != 0
+            except ValueError:
+                valid = False
+            if not valid or proxy.query or proxy.fragment:
+                raise ValueError("LLM proxy_url must be an HTTP(S) URL without query or fragment")
 
 
 def load_llm_config(
@@ -129,6 +140,8 @@ def load_llm_config(
     }
     # Secrets must never be loaded from a shared YAML file.
     merged["api_key"] = overrides.get("LLM_API_KEY", "").strip()
+    # Optional transport proxy is local-only and never loaded from shared YAML.
+    merged["proxy_url"] = overrides.get("LLM_PROXY_URL", "").strip()
     # Request policy belongs to the shared YAML, never to local overrides.
     merged["timeout"] = defaults.get("timeout")
     merged["max_retries"] = defaults.get("max_retries")

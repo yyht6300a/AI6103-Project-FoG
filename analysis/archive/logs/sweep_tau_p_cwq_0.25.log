@@ -1,0 +1,11 @@
+e2e questions: 20
+llm: gpt-4o @ https://api.openai.com/v1
+[2] WebQTest-823_ed31f9dd431831dbd32a06b958c7c97c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[10/20] hit=0.333 hit@1=0.333 f1=0.333
+[20/20] hit=0.368 hit@1=0.368 f1=0.368
+
+=== E2E results (n=19, errors=1) ===
+Hit   = 0.3684
+Hit@1 = 0.3684
+F1    = 0.3684
+time 77s

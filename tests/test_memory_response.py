@@ -206,9 +206,7 @@ class MemoryResponseTests(unittest.TestCase):
             [("A", "r", "C")], [("A", "s", "B")],
             [("A", "r/s", "C")], [("A B", "r", "C")],
             [("New", "located_in", "USA"), ("York", "located_in", "USA")],
-            [("a", "r", "B")], [("A ", "r", "B")],
-            [("A", "R", "B")], [("A", "r", " B")],
-            [("Cafe\u0301", "named", "Place")], [("External", "r", "B")],
+            [("a", "r", "B")], [("A", "R", "B")], [("External", "r", "B")],
         ]
         for selected in invalid:
             with self.subTest(selected=selected):
@@ -217,6 +215,15 @@ class MemoryResponseTests(unittest.TestCase):
                         response_json(selected, questions=["What evidence is missing?"]),
                         knowledge[:2], knowledge[2:],
                     )
+        normalized = [
+            [("A ", "r", "B")], [("A", "r", " B")], [("Cafe\u0301", "named", "Place")],
+        ]
+        for selected in normalized:
+            with self.subTest(selected=selected, valid=True):
+                parse_memory_response(
+                    response_json(selected, questions=["What evidence is missing?"]),
+                    knowledge[:2], knowledge[2:],
+                )
 
     def test_exact_match_uses_decoded_strings_without_enforcing_row_order(self) -> None:
         """Accept equivalent JSON spellings and reordered intact input triples.
@@ -238,12 +245,16 @@ class MemoryResponseTests(unittest.TestCase):
     def test_answers_require_head_or_tail_identity(self) -> None:
         """Validate literal entity range without guessing answer semantics.
 
-        Relation-only names, partial names, case changes, normalization and
-        external entities fail even when the submitted graph is fully selected.
+        Relation-only names, partial names, case changes and external entities
+        fail even when the submitted graph is fully selected. Whitespace-only
+        decoration and Unicode composition variants are accepted.
         """
         knowledge = [("Country A", "led_by", "Person B"), (" é", "r", "C")]
-        for answer in ("led_by", "Person", "person b", "Person B ", "é", " e\u0301", "External"):
+        for answer in ("led_by", "Person", "person b", "External"):
             with self.subTest(answer=answer), self.assertRaises(ValueError):
+                parse_memory_response(response_json(knowledge, [answer]), knowledge, [])
+        for answer in ("Person B ", "é", " e\u0301"):
+            with self.subTest(answer=answer, valid=True):
                 parse_memory_response(response_json(knowledge, [answer]), knowledge, [])
         result = parse_memory_response(
             response_json(knowledge, ["Person B", "Country A"]), [], knowledge,

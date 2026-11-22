@@ -1,0 +1,945 @@
+e2e questions: 2931
+llm: gpt-4o-mini @ https://api.openai.com/v1
+[1] WebQTrn-2505_eba9c2e29a1198e8b56c2f7e4210638b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2] WebQTest-823_ed31f9dd431831dbd32a06b958c7c97c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[3] WebQTrn-2181_8d86dc5e03446f0e50fd69bc06ae0658: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[10/2931] hit=0.429 hit@1=0.429 f1=0.429
+[20/2931] hit=0.588 hit@1=0.529 f1=0.529
+[22] WebQTest-426_0642f30e974b46ce4bcdb74f0546d0f7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[30/2931] hit=0.615 hit@1=0.577 f1=0.577
+[30] WebQTrn-1447_a197bfc944cba32fc63d251430968bba: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[40/2931] hit=0.571 hit@1=0.543 f1=0.543
+[42] WebQTrn-3252_ba718d6ea1b061cf21c3d7d03ef2110c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[44] WebQTrn-2411_d722227a6d3fbe0525658c0afef7e182: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[47] WebQTrn-3252_585c717aaf67fbced8aaaee42eedb591: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[50/2931] hit=0.548 hit@1=0.524 f1=0.524
+[51] WebQTrn-2674_d8ad18dc5786fa56df080b3575f35942: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[52] WebQTrn-2190_ba962455c2b91117ad6d46cc4b6fc8df: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[55] WebQTrn-2631_fb65618c1d531bfa92f98b3a349e83c0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[58] WebQTrn-1183_9feec7b85d9fba5c263cd3dfbb9e8626: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[60/2931] hit=0.521 hit@1=0.479 f1=0.479
+[60] WebQTest-823_21ca1d6edc5a012358fa509ec10b19d4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[62] WebQTest-1382_08611d332445d75ddd6a93650524e69a: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[66] WebQTrn-3252_471b83eade9707a4dba68e201bf29d73: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[68] WebQTrn-538_3b521e4133132fe5c032a9946f9616c9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[70/2931] hit=0.481 hit@1=0.444 f1=0.444
+[70] WebQTrn-1026_581337ace77f1d6de899249790a7682b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[74] WebQTest-1819_7bd6b37d01a372aa5af2a8d5ef53d827: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[75] WebQTrn-538_67a80b4bbc34f34c815f1c90890d17fd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[76] WebQTest-801_f4440609f5cecb091bf8e86adb47be25: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[78] WebQTrn-1178_22b05dbc08fa9ca8ff5bcf8387fef9b7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[80/2931] hit=0.475 hit@1=0.441 f1=0.441
+[81] WebQTest-1792_3a156e581e05697e24d08678adfc1862: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[86] WebQTrn-2505_f5debef35c97e79690f1282a59e3d9b4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[90/2931] hit=0.493 hit@1=0.463 f1=0.463
+[95] WebQTest-784_9495f0be10a5bc18b35d47a78603f464: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[96] WebQTest-527_b29f05247d8bace580362572c5c491c0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[97] WebQTrn-2711_a57061e7792a90ec7474f5e74b02daa0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[99] WebQTest-823_143c89d70679c3e5257c93d8e2bc4c67: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[100/2931] hit=0.507 hit@1=0.479 f1=0.479
+[105] WebQTrn-1109_ce9e63f584bb125ed3c24497c166ea83: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[106] WebQTrn-2095_8f00c2959923258d4289c1c8ce58a26c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[110/2931] hit=0.494 hit@1=0.469 f1=0.469
+[110] WebQTrn-909_7d0f17238fcb0a1f0ecaae99f80bfe9f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[119] WebQTrn-1735_027a80918c3d4fa41fe6acb267115bf3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[120/2931] hit=0.483 hit@1=0.461 f1=0.461
+[123] WebQTrn-983_11ea586be4ad1a07d188cae86fd7f135: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[127] WebQTrn-806_9b79e13b1905c44914eab9916a30cf0c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[128] WebQTrn-531_9be8c18e016b713cbb7f7feb6badebc7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[129] WebQTrn-2411_6a69589b94f4e404c1a535c0a309d10f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[130/2931] hit=0.505 hit@1=0.484 f1=0.484
+[130] WebQTest-527_5e7f2ddc862adf547cf031bf067e6af0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[131] WebQTest-775_25e0b5afad301efabe261c0f22f4840a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[132] WebQTest-426_e44e4a761ad7f797bf362304d0bd6628: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[133] WebQTrn-1430_df1aa3f279cd680ac5334efd15d423af: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[137] WebQTrn-2601_201314aa8824d0802c2f9a8e22c55848: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[139] WebQTest-1508_471b83eade9707a4dba68e201bf29d73: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[140/2931] hit=0.495 hit@1=0.475 f1=0.478
+[150/2931] hit=0.486 hit@1=0.468 f1=0.477
+[157] WebQTrn-3012_359a378e074dbe711e5c3187b4affb77: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[160/2931] hit=0.458 hit@1=0.441 f1=0.455
+[161] WebQTrn-2711_75e46121bded1ab4f276d4ec24bb366e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[163] WebQTrn-836_75e46121bded1ab4f276d4ec24bb366e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[164] WebQTrn-191_82e069064d66663276c549f47e5e179d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[169] WebQTest-937_d29e4cb9b978726fc273cc9c50666d91: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[170/2931] hit=0.452 hit@1=0.435 f1=0.449
+[170] WebQTrn-3437_4f6b8f36a3d6bd343c713351dfa1837a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[171] WebQTrn-1941_0415f406246ee6468d7eb40867780498: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[178] WebQTrn-1754_719d113f0572295305e7945531140757: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[180/2931] hit=0.450 hit@1=0.435 f1=0.448
+[182] WebQTrn-3475_c57dab9dea60589ff52493405d9e0c14: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[185] WebQTest-1382_2ed287b0ef57067bd3a79f71c2fa849e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[190/2931] hit=0.460 hit@1=0.446 f1=0.458
+[193] WebQTrn-2611_162e0e450fa8156ecb9927c4aa6d5b78: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[196] WebQTrn-2190_10aa3b0c992e4e6f4cf624c6c38c727f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[198] WebQTrn-1481_33d7513465f4bf5a6fb4c91a0cc50ce2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[200/2931] hit=0.459 hit@1=0.445 f1=0.457
+[201] WebQTrn-1373_827770e3b0435563fa1afb84f50ff598: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[205] WebQTrn-3358_00e7160f1c3799ddd3b5f82d970ad400: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[206] WebQTest-652_0221fbe445d2329cd914c556d410ebfe: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[207] WebQTrn-2631_682800b1263c4a6d5b650e4196fc2b7d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[210/2931] hit=0.461 hit@1=0.447 f1=0.458
+[210] WebQTrn-3012_f2ac0ed793fc82b685d4c71e78a53a59: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[212] WebQTest-418_3dda6298595e4f26e293908df47bbd2a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[220/2931] hit=0.463 hit@1=0.450 f1=0.460
+[224] WebQTest-1976_4bc00672c2fa4ab415544a16ae899797: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[225] WebQTrn-2711_7bd6b37d01a372aa5af2a8d5ef53d827: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[230/2931] hit=0.464 hit@1=0.446 f1=0.459
+[232] WebQTrn-659_56cf05bd5b41e04f4358490ed3e81619: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[233] WebQTrn-1036_1ccb86b835651dd096985db99388ce10: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[234] WebQTrn-2808_a7cd8cc592cd49fdae044561d5c57dc8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[235] WebQTrn-191_56db047b2b9998c2b4e9115b94cf1e39: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[236] WebQTrn-2544_020f93c678f201a55199a0c40d829467: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[239] WebQTest-395_e42fb4a1fc4d571f6d9172eb77fe5b24: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[240/2931] hit=0.465 hit@1=0.448 f1=0.460
+[245] WebQTrn-1631_9396c36eb48f3766317ace57b036e523: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[249] WebQTrn-3012_635f92c7aef5d820133b2cf3337a73e3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[250/2931] hit=0.467 hit@1=0.450 f1=0.466
+[250] WebQTrn-1109_2e7451388c28574ff15f0b12612d6d6a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[251] WebQTrn-2711_5b52c9e057d0f0e6704f0b264e864dfc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[252] WebQTrn-300_ea7dac5c26e1805d15c2eaaf761a24b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[256] WebQTrn-983_7bb3762d89a96ae20e23b2c38166d2e6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[258] WebQTest-823_30f41f81fd258148ae2f78c4b5d81684: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[260/2931] hit=0.470 hit@1=0.454 f1=0.469
+[267] WebQTest-1680_d794c34dc342db62dd4f4d7c4d666197: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[268] WebQTrn-3012_81bcd31f4543403774b83eaa26c377cd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[270/2931] hit=0.477 hit@1=0.451 f1=0.465
+[273] WebQTrn-836_be64d515debe3029f7c0fb2af05bfe7e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[276] WebQTrn-1447_3b8f02aef9cb6034e997a0d742012698: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[280/2931] hit=0.468 hit@1=0.443 f1=0.463
+[280] WebQTrn-1538_79a940d7a0bf5b8611a54f6ddab3b3fd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[281] WebQTrn-1861_3a38e415c12808302abb9d102df32556: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[288] WebQTrn-2513_0fe2ee1f56e6c9e99eea39af139f1d2a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[290/2931] hit=0.476 hit@1=0.452 f1=0.471
+[293] WebQTrn-3437_d29e4cb9b978726fc273cc9c50666d91: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[297] WebQTest-426_48414fac64ceef2f167ad6de42efe07d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[300/2931] hit=0.481 hit@1=0.458 f1=0.477
+[300] WebQTrn-3437_903862ba8e6858e19627acb4f736619f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[308] WebQTrn-806_e44e4a761ad7f797bf362304d0bd6628: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[310/2931] hit=0.478 hit@1=0.451 f1=0.469
+[311] WebQTrn-1861_3f7f8a908bd1ff6d3ddd85ecda107dc1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[313] WebQTrn-1907_9aee5423fd1fb29bfc9e3485f7cbce5e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[315] WebQTest-1441_682800b1263c4a6d5b650e4196fc2b7d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[317] WebQTrn-1804_9026725473f3be4310b7c1fe17209df2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[320/2931] hit=0.474 hit@1=0.448 f1=0.465
+[323] WebQTrn-2238_f1527b45a0617122601479ff1c0ba83e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[326] WebQTrn-1447_c463361ce47038709ef68df283b7ee05: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[330/2931] hit=0.483 hit@1=0.458 f1=0.475
+[334] WebQTest-527_fd1177ac0eaa780f0745249e5b424b48: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[338] WebQTest-472_f085fa4c2b6c7af6fd1f07e269a418de: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[340/2931] hit=0.484 hit@1=0.459 f1=0.478
+[340] WebQTrn-2238_afaa230ae73fd90c8458e9e2a3a30e22: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[344] WebQTrn-1212_eaa7a9f669e0d6d5caf732fd225ff411: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[347] WebQTest-1782_f4440609f5cecb091bf8e86adb47be25: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[349] WebQTrn-1108_52aab68ebe2b9271ebcd3e67b1fc33e0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[350/2931] hit=0.480 hit@1=0.456 f1=0.474
+[353] WebQTest-1792_eb6be9ba3dfa705df906a60a2baf1801: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[356] WebQTrn-3475_20c0eba253c55529f9842b40b5a54ac5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[358] WebQTest-784_395b21b08e465b8c159e7c913b06be6e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[360/2931] hit=0.475 hit@1=0.452 f1=0.469
+[360] WebQTrn-538_c707414f103503f2530fc654a85645fe: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[361] WebQTest-147_03440079c49742324442f6183c81e4be: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[366] WebQTest-723_2451ce545a3ee80dba7e7c9e75169256: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[367] WebQTrn-538_c071c552853eb739a0ff0c67bb9ed366: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[370/2931] hit=0.479 hit@1=0.457 f1=0.476
+[371] WebQTrn-3319_c29c8a9dab6a2024bba77927922a0d3d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[372] WebQTrn-2736_f4440609f5cecb091bf8e86adb47be25: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[375] WebQTrn-3507_1021d4ffb7640e15b969107e18bb7b29: MemoryValidationError {'failure_stage': 'questions', 'error_code': 'questions_required'}
+[376] WebQTest-418_0d1fac8801614cb30f72c3cab3b21e29: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[377] WebQTrn-2190_058203c22235854bf96557ab2b7c383e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[380/2931] hit=0.481 hit@1=0.459 f1=0.478
+[381] WebQTrn-1793_b877830ca3434c2aa28d75ebf2cdc911: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[383] WebQTrn-648_744a496b907e407b16bc5d7c197dc3f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[386] WebQTrn-648_7322a2a4d46bf36b95bfab4418c9a32b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[390/2931] hit=0.484 hit@1=0.462 f1=0.481
+[394] WebQTrn-2095_07bc2732f3f01630b27a86518ac7a539: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[395] WebQTest-1441_380d57299109c7ae18f10e52204fc0c3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[398] WebQTrn-1447_20af9091779e273294302583a6881ae5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[399] WebQTest-823_ce0d4e864020f94cb6ba262eb64a975e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[400/2931] hit=0.477 hit@1=0.456 f1=0.474
+[410/2931] hit=0.474 hit@1=0.451 f1=0.468
+[411] WebQTest-49_a3af159c0a6db13e6a3cff4cfca99f5c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[412] WebQTrn-639_df815e2033151192a5ac902cfa7fd158: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[415] WebQTrn-3695_444c9a1fb9cc17ec16cbf856ecf8ce05: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[417] WebQTrn-1948_74c5edd9a79d51772446ff4746bd318f: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[418] WebQTrn-921_f5debef35c97e79690f1282a59e3d9b4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[420/2931] hit=0.473 hit@1=0.450 f1=0.467
+[430/2931] hit=0.461 hit@1=0.438 f1=0.455
+[434] WebQTrn-263_f8a370b576be923db6054553b1f72fbb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[435] WebQTest-1382_25f464b6b3713c19efb9c670dd758f65: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[438] WebQTrn-191_f56f373dffa7018629cc084a37e44b67: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[440/2931] hit=0.463 hit@1=0.441 f1=0.458
+[441] WebQTrn-2150_175da2d6cec3598faf048e9722cbbc47: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[444] WebQTrn-860_31e25dd0a2a9bdd85f454618645c65f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[448] WebQTrn-1026_682800b1263c4a6d5b650e4196fc2b7d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[450/2931] hit=0.457 hit@1=0.435 f1=0.452
+[450] WebQTrn-1026_0345a97dbf60947ca0cbf206c0bbba50: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[454] WebQTrn-400_0f9bacde023054f0139544f95a9ec439: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[459] WebQTrn-1804_a725d13be16116bdc37bf5dd852e35b1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[460/2931] hit=0.459 hit@1=0.438 f1=0.455
+[463] WebQTrn-1430_3164a91af354214b30395962c44a1fdd: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[469] WebQTrn-1036_7cb966116dddf0946ff3a4e2b07c15f9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[470/2931] hit=0.454 hit@1=0.433 f1=0.450
+[476] WebQTest-1081_0b51041e86d915ba7ff96b1239b273c4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[480/2931] hit=0.451 hit@1=0.428 f1=0.446
+[484] WebQTest-1011_6e736323c3e16bac23de623fb097682c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[490/2931] hit=0.445 hit@1=0.420 f1=0.438
+[492] WebQTrn-1036_d4a0a500d38547fd07119abecd617b4c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[497] WebQTest-426_ae64704cb347aa76764b4232059b8823: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[500/2931] hit=0.455 hit@1=0.427 f1=0.444
+[510/2931] hit=0.458 hit@1=0.432 f1=0.449
+[511] WebQTrn-1363_2eeceefff91513b8905438220dfa0af7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[513] WebQTrn-2711_be64d515debe3029f7c0fb2af05bfe7e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[514] WebQTest-1362_ecf74b22fdffc9655aa5128a68cb4dbd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[520/2931] hit=0.461 hit@1=0.434 f1=0.451
+[524] WebQTrn-1418_83a4afa1a6b8a3afe1dd27a0544d6092: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[530/2931] hit=0.458 hit@1=0.432 f1=0.448
+[530] WebQTest-1081_1ae16c158c944ddfc2122f527ed7a051: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[540/2931] hit=0.457 hit@1=0.432 f1=0.448
+[541] WebQTest-801_d32e0126efe42fc1ea253a65d28aa444: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[546] WebQTrn-548_5b2c4b0d5faeffa7e6ed3767a4a57c89: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[550/2931] hit=0.458 hit@1=0.431 f1=0.447
+[550] WebQTrn-3529_dafd4079f2d468ea4e33abdb78f88815: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[554] WebQTrn-295_61ee5c2624ff7cb854e34464d3721ded: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[560/2931] hit=0.449 hit@1=0.423 f1=0.439
+[564] WebQTrn-2674_9823e8cbdb9cc73054cef8a7305b1e78: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[570/2931] hit=0.444 hit@1=0.418 f1=0.435
+[573] WebQTrn-263_f5d13799dbaa074d1390f2c6983d1eca: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[575] WebQTrn-3437_31168173e6508681beae4dd3fe350bc8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[580/2931] hit=0.448 hit@1=0.420 f1=0.436
+[588] WebQTrn-909_1416afff7c8d4b7f69676dca651a2f7c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[590/2931] hit=0.445 hit@1=0.418 f1=0.434
+[591] WebQTrn-1625_c76b8888fa736cd7c22356292f5e0811: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[594] WebQTrn-2259_8256a6d056e02e4baafa214d341be43e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[595] WebQTrn-2597_e2633d0ba6ea2a1c452a4ab16b07e0a1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[597] WebQTrn-1941_ba55edfa12d41ddbc3d2a9fca81c5259: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[600/2931] hit=0.444 hit@1=0.417 f1=0.434
+[610/2931] hit=0.443 hit@1=0.417 f1=0.434
+[612] WebQTrn-2238_985dab73caf2edd26a7186e2fcdef01b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[619] WebQTest-723_4113aede1f017d18f13a198d67c8acae: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[620/2931] hit=0.442 hit@1=0.416 f1=0.433
+[630/2931] hit=0.441 hit@1=0.416 f1=0.432
+[637] WebQTrn-3012_fbb250d577dae6a4255a0a693c10fb6d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[640/2931] hit=0.437 hit@1=0.412 f1=0.428
+[642] WebQTrn-3563_826423d37d41eab28018360bdb9d3a7b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[645] WebQTrn-69_db823e53be1138fba81bb96a197175b9: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[647] WebQTrn-3563_cf55d9591eb3d3add7dc45f8927c77ee: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[650/2931] hit=0.435 hit@1=0.410 f1=0.427
+[658] WebQTrn-3358_956b0d9a7b66719e1666cf4a5bae9d5a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[660/2931] hit=0.437 hit@1=0.411 f1=0.427
+[662] WebQTrn-1109_ff1c5d0353929864558b4525e67aa548: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[663] WebQTrn-2150_6513ed680ff824d0f6c8473f03134ac8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[670/2931] hit=0.434 hit@1=0.408 f1=0.425
+[679] WebQTrn-538_d14b0fb81ffe51a1a9d49edc2e26c5bc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[680/2931] hit=0.432 hit@1=0.407 f1=0.424
+[686] WebQTest-723_d3db1d9ee6141b3c28a84d22629a8647: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[688] WebQTrn-1472_49e701f7e2f280457335458592967e9e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[690/2931] hit=0.427 hit@1=0.403 f1=0.419
+[690] WebQTest-147_eca682a0fdfa9052c4c55d6aa80b3bcd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[691] WebQTest-652_b803f7cb1ed033efb84cf19de9fa09eb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[700/2931] hit=0.425 hit@1=0.400 f1=0.417
+[710/2931] hit=0.423 hit@1=0.399 f1=0.414
+[715] WebQTrn-3437_5de3e359a7c24f01518702a711ee08f3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[717] WebQTrn-909_5c386ec362c900f6c7cb32d468b934db: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[718] WebQTest-1792_ffdbb02b4add48ef853f39e580229071: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[719] WebQTest-1382_6b6f19d9abc98d7eda3c6da9a66f1176: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[720/2931] hit=0.418 hit@1=0.394 f1=0.410
+[721] WebQTest-820_33d04cfe92d79a2489293e56ff1910c3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[724] WebQTrn-1178_28b7c366a3eb8e89cfe46ed74213b504: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[730/2931] hit=0.417 hit@1=0.392 f1=0.408
+[731] WebQTest-1792_e82cd4861293f42a4365f1778ca09dc2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[737] WebQTrn-1631_ff983e0d67fea27a2bfdb13ba7c06bcc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[740/2931] hit=0.420 hit@1=0.395 f1=0.411
+[742] WebQTest-1137_730f73e6218e68ad4aab794f4556003c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[746] WebQTest-426_b9b4dbcf721e6ef7838dcd3082761330: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[749] WebQTrn-3252_40bec45d5ae2615a6c92326480da6c0c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[750/2931] hit=0.419 hit@1=0.394 f1=0.409
+[752] WebQTest-527_670e5ac8bf5cdf7dbdf3fec5a019de0e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[753] WebQTrn-1977_deb498674439879541db12bd74b06368: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[754] WebQTest-823_87a318a0b4e458fc792522fd30384bc7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[760/2931] hit=0.415 hit@1=0.391 f1=0.406
+[767] WebQTrn-538_bf541edb41de0f696ed78329c0c5e4da: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[769] WebQTrn-3252_19ad19ca437467ed60077500e12e5220: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[770/2931] hit=0.415 hit@1=0.391 f1=0.405
+[770] WebQTrn-263_9ed0d6bc4c0a2357c322a706a7972b01: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[771] WebQTest-1137_67f5f717564163742ca2588b7e186fd8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[777] WebQTrn-1754_90b157810bb6f4b71e3286400ee83fb8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[780/2931] hit=0.413 hit@1=0.390 f1=0.404
+[782] WebQTrn-3012_eab08fa7396bcb265913fcca849befec: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[786] WebQTrn-1538_bc5cf8cd59582d4a1c8f4c416c010e71: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[788] WebQTrn-3529_61a4128e6c4459c6ee6e6ae6d2a3fdfa: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[790/2931] hit=0.410 hit@1=0.387 f1=0.401
+[794] WebQTrn-1447_9e704e8a5814ef82282f41b7fa504de1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[797] WebQTrn-1430_094d045297f35d57a24871b0d37237a1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[800/2931] hit=0.408 hit@1=0.385 f1=0.400
+[807] WebQTrn-2944_6bd2ce4aab631c5e72a80da02ce8c1b3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[810/2931] hit=0.408 hit@1=0.384 f1=0.400
+[820/2931] hit=0.410 hit@1=0.384 f1=0.401
+[826] WebQTrn-63_05c34363c7c7069cc48ec78f1b85ffee: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[830/2931] hit=0.407 hit@1=0.381 f1=0.397
+[832] WebQTrn-3475_ce643b91fa902298ff39cad8f0aa9732: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[834] WebQTest-1382_0b10be04df39049e5122937dea8174e0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[835] WebQTrn-1949_87956ea6f24ab32d1783bc884864a005: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[836] WebQTrn-2190_cd1ca7de1c2bd1d5d04c8c4a806241fb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[840/2931] hit=0.408 hit@1=0.382 f1=0.399
+[843] WebQTest-1782_839fa68cda37e890bb3eed45714fcc43: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[850/2931] hit=0.407 hit@1=0.381 f1=0.398
+[851] WebQTest-426_910cb777774c109bb5c84bd6c5e9f3ee: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[853] WebQTrn-2346_8af071db2e2ba1de581a9a5e907c40ad: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[854] WebQTrn-2611_2155aecca07f01c80e58bdbe610a45b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[858] WebQTrn-3252_12ea164334adaa0b6bc7a59ec6b12906: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[859] WebQTest-1792_f68b826136dea7d910f01719ad343c29: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[860/2931] hit=0.405 hit@1=0.378 f1=0.396
+[865] WebQTest-426_5b4ebc4b735eb503dac0b45813008929: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[870/2931] hit=0.408 hit@1=0.379 f1=0.397
+[872] WebQTest-810_e6b6120a77b1be628b4de47653fbd86f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[880/2931] hit=0.407 hit@1=0.378 f1=0.397
+[890/2931] hit=0.404 hit@1=0.376 f1=0.394
+[893] WebQTrn-73_aae1720ca8d746eb8883d69655f9e1e0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[896] WebQTrn-1373_f43a0e344efe5ad942a22ed8b4a21949: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[899] WebQTest-1591_4c56262d6806c8bd5c0fadb75177520a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[900/2931] hit=0.402 hit@1=0.375 f1=0.393
+[903] WebQTrn-1430_a5440fa35cfed6c3f75a320e0f6f88c1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[904] WebQTrn-3563_9487e838df9b0506222c1535ebc5f18d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[905] WebQTrn-1941_f2c1157528d187412332275a6e131272: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[908] WebQTest-472_8b60d7264558869b5cef5f60dbc41a87: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[910/2931] hit=0.403 hit@1=0.373 f1=0.393
+[918] WebQTrn-2259_369cf01a3aff2ce256a851df64fb3752: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[920/2931] hit=0.404 hit@1=0.374 f1=0.393
+[921] WebQTest-775_bef04d535055ee5b810b7ff34d87e298: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[930/2931] hit=0.403 hit@1=0.372 f1=0.391
+[930] WebQTrn-1363_dd3a4f1b7a8714b2250bfd037c0ce602: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[935] WebQTest-723_750c6148607949e96c6b830965b20455: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[937] WebQTrn-1529_fd6e419f422eb640f1195f506522023e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[939] WebQTrn-1657_4d48de3af54d019aaf2c6aa4b2f4bc38: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[940/2931] hit=0.402 hit@1=0.369 f1=0.390
+[942] WebQTest-1382_140de5b9cf3cecdb019dcdc20300579f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[946] WebQTrn-3358_739cb11f9587d0d40e3be78ffb5416db: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[948] WebQTrn-648_21d93e83b78eb4bae89800d09deafa2f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[950/2931] hit=0.402 hit@1=0.368 f1=0.389
+[953] WebQTrn-2150_473c0dd1e422495b8fa57aa6c3f25cc3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[956] WebQTest-823_f113481a11cc93f40d6bc10ef6df24ef: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[958] WebQTrn-3563_ac7133fabc2311ee7ec9291394a13d3e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[960/2931] hit=0.403 hit@1=0.367 f1=0.388
+[964] WebQTrn-191_00e985cb0647bae82592566097064735: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[965] WebQTrn-2401_3d63b6329462313cd668b2ca83dcd19d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[970/2931] hit=0.401 hit@1=0.366 f1=0.387
+[979] WebQTrn-3772_fa8f88d710c648ea3f156896e37217aa: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[980/2931] hit=0.400 hit@1=0.366 f1=0.386
+[980] WebQTrn-1447_46418acae743f1c9d86b5257147c544f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[985] WebQTest-1137_3848452a1be94a8f0dcb3c1c907417ae: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[990/2931] hit=0.399 hit@1=0.364 f1=0.387
+[999] WebQTrn-1949_7e164bbc34893ca91efe72005d638089: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1000/2931] hit=0.401 hit@1=0.367 f1=0.389
+[1005] WebQTrn-334_675e2a842506fdbbcf3ccdec8f51cee3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1010/2931] hit=0.397 hit@1=0.364 f1=0.386
+[1020/2931] hit=0.396 hit@1=0.363 f1=0.385
+[1022] WebQTest-1976_53fc460627d215d4452aa242a346ee84: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1027] WebQTrn-191_e724ba65624a1fb242c4e41b47cc93af: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1030/2931] hit=0.394 hit@1=0.362 f1=0.384
+[1033] WebQTest-1382_5bf6906c26a34660ad81a9e0506d36fc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1037] WebQTest-823_9270934b78084dda8ad24b83f3653715: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1039] WebQTrn-1793_1f3f7417b06d43f14600e1091c60a934: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1040/2931] hit=0.392 hit@1=0.360 f1=0.382
+[1049] WebQTrn-1977_8b60d7264558869b5cef5f60dbc41a87: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1050/2931] hit=0.392 hit@1=0.358 f1=0.381
+[1053] WebQTrn-538_5831bd7b6badbaf458df00184249bb38: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1056] WebQTest-823_0b10be04df39049e5122937dea8174e0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1060/2931] hit=0.393 hit@1=0.360 f1=0.382
+[1062] WebQTrn-417_7addd0351e104a725c3aa978d3bfb0b1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1064] WebQTrn-2259_167aff228b273413c548eb151281b97f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1065] WebQTrn-1430_9e5ee774cea6bb9b11a0b71cd52f0943: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1066] WebQTrn-2259_4358584f7e42859b61e05a50e0a06a40: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1070/2931] hit=0.393 hit@1=0.361 f1=0.383
+[1074] WebQTrn-1026_c35bb2084b90397ffa56c11337d33c31: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1078] WebQTrn-1430_5fe237448800c2adeef96477ec9d4f71: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1080/2931] hit=0.392 hit@1=0.359 f1=0.381
+[1087] WebQTrn-3695_cebb1c84612c9b2deacb95a6f5603ea7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1090/2931] hit=0.394 hit@1=0.359 f1=0.381
+[1093] WebQTest-1081_95b07beeed9361c80ad734e1ef7b3728: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1095] WebQTrn-3252_bc9d994afa57df43a980b18e9600b5b2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1097] WebQTest-638_e720f6c51fa9762bbf53cde50a3a8542: MemoryValidationError {'failure_stage': 'questions', 'error_code': 'question_limit'}
+[1099] WebQTrn-2674_0578b3bf3d98f1ac42baedc447bbdcb5: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1100/2931] hit=0.393 hit@1=0.359 f1=0.382
+[1109] WebQTest-1382_1e84fe0749fa5e8059c25f71ac1629b4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1110/2931] hit=0.392 hit@1=0.357 f1=0.379
+[1114] WebQTrn-1657_135c576c85060d076311cb5bbd9b68b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1116] WebQTest-426_4d55bb861b17489ec6c5c4fda313c108: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1120/2931] hit=0.389 hit@1=0.355 f1=0.377
+[1127] WebQTrn-1977_9d539de3db5f1699f782ae7397a7c864: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1128] WebQTrn-3012_94fa484609e681ec18604fcae937af56: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1130/2931] hit=0.389 hit@1=0.355 f1=0.378
+[1140/2931] hit=0.387 hit@1=0.353 f1=0.376
+[1142] WebQTrn-417_a5b6e77ba18097f2957a8a47edbed6a0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1148] WebQTrn-1784_5cb985cdc688d29d689477d1aa1134c3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1150/2931] hit=0.385 hit@1=0.351 f1=0.374
+[1151] WebQTest-1382_05a49eb00f9fa7d509fc776493d05b8c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1154] WebQTrn-1657_2f965374667bed23fdd8d2da7247ec8c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1160/2931] hit=0.384 hit@1=0.351 f1=0.374
+[1166] WebQTest-823_1ac8ccb9cd6f48d856dfcad7600bf7f6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1170/2931] hit=0.383 hit@1=0.350 f1=0.374
+[1170] WebQTest-1081_be0361ca09dc4ecb3e4eb5ca7d29c379: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1179] WebQTrn-2494_107d0cef866b26c6e059297a5b7eec2e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1180/2931] hit=0.385 hit@1=0.351 f1=0.375
+[1180] WebQTrn-2686_66d78e979f974fc3b0cc043967ca25d8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1182] WebQTest-1191_d50834f94faf4fc329933bfc896be576: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1183] WebQTrn-3252_ff6f0dd04f6c7f628af703fea5c940dc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1184] WebQTest-1508_864441b0cd80bc9e5c41614404e8239b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1190/2931] hit=0.382 hit@1=0.349 f1=0.373
+[1200/2931] hit=0.383 hit@1=0.349 f1=0.374
+[1209] WebQTrn-2693_1d0ff6c917a0f064ebbfa4dd0ba6138b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1210/2931] hit=0.380 hit@1=0.347 f1=0.371
+[1220/2931] hit=0.377 hit@1=0.345 f1=0.369
+[1223] WebQTrn-2625_17dce559f069bbd76f045192423e1ce0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1230/2931] hit=0.378 hit@1=0.345 f1=0.370
+[1230] WebQTrn-1861_65710866f55dc26fc8c316750fc4fd3c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1240/2931] hit=0.375 hit@1=0.343 f1=0.367
+[1247] WebQTest-775_6a41a5701e4e1ae90345757c100f8458: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1250/2931] hit=0.372 hit@1=0.340 f1=0.364
+[1254] WebQTrn-2603_7f2874d47e29b725668c81e6a73e86ff: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1257] WebQTrn-3395_671a2d760f367a29ce3d61131e74fe03: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1259] WebQTrn-659_6ea156af5da1288d9b7881bfaa6f1878: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1260/2931] hit=0.371 hit@1=0.340 f1=0.363
+[1263] WebQTrn-2686_cd753b408c8dbbd45a30bfd1f5214b3b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1264] WebQTrn-1447_86e83d5df47a58e75dff906ab518fee9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1270/2931] hit=0.370 hit@1=0.339 f1=0.362
+[1270] WebQTrn-3012_ec5e1d0c335ea3ad9f9d6325aa524733: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1280/2931] hit=0.369 hit@1=0.338 f1=0.362
+[1284] WebQTest-775_9ba5a54d6d5247349a875b12c7523479: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1285] WebQTest-638_fd6e419f422eb640f1195f506522023e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1290/2931] hit=0.367 hit@1=0.336 f1=0.360
+[1294] WebQTest-1043_dda0c617176c6105c75850c2e3d70b99: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1295] WebQTrn-1920_0551ec77ef8451b897ba04252c8607d0: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1296] WebQTrn-1563_72ce675be82a5655a30547169d8008e9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1299] WebQTest-384_2ec81eebaaf15badced3020612cc31ca: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1300/2931] hit=0.365 hit@1=0.334 f1=0.358
+[1310/2931] hit=0.365 hit@1=0.335 f1=0.359
+[1314] WebQTrn-970_f6bfa7405251beb29349620b9f5f13de: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1315] WebQTrn-538_8b034a64d61ccf9b732e9314a1df67be: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1320/2931] hit=0.366 hit@1=0.336 f1=0.360
+[1322] WebQTrn-2711_1a821009d9d43af7c2094125b1dd5136: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1330/2931] hit=0.365 hit@1=0.335 f1=0.359
+[1330] WebQTrn-69_077663ab8d6ddd23a988ac47f1c6371d: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1331] WebQTest-527_c1e97cdbacfb105cce6899c709ed2f60: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1336] WebQTest-937_060135e66e84cbaa29a73145435c5457: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1338] WebQTrn-3681_05d1c838fdb244947dc2d5adf1f4f4d9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1340/2931] hit=0.364 hit@1=0.334 f1=0.358
+[1346] WebQTrn-2603_94fc0cfeacc6129ff2e823381a1fe913: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1347] WebQTest-1081_1ecabf57357cb4abd089a4af52154854: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1350/2931] hit=0.363 hit@1=0.333 f1=0.356
+[1350] WebQTest-196_b440e333e90911c97b2321bc448f257f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1352] WebQTrn-2808_bf6de3443ff80ebd1cf7e57db4210c8c: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1355] WebQTrn-63_f48aa1a9b211c8670d2db35ce52512b5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1356] WebQTrn-2693_520257486600615e5f5704a63c2281dd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1360/2931] hit=0.362 hit@1=0.332 f1=0.355
+[1360] WebQTrn-3358_202ded8e5df1c80ea9770154e24e5ffb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1364] WebQTrn-3287_df1ca191a3ee93f7012b4e5161f4b227: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1365] WebQTrn-1447_9df06c705c868bfeedad527f32e82cc5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1366] WebQTest-527_107e8d171498b4663b17e920cc9f1989: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1367] WebQTrn-2259_b74d5f246db805760dd5c88ef227b16c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1370/2931] hit=0.360 hit@1=0.330 f1=0.354
+[1379] WebQTest-936_25c5584da286a22ff9a9ae67a986f11b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1380/2931] hit=0.358 hit@1=0.327 f1=0.352
+[1382] WebQTrn-3252_9f71adaec94b0e3adb8c440cad935a83: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1385] WebQTrn-1363_e94e95ef8a6994a3e5ef504459524eb8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1387] WebQTrn-3529_a64ef0f5ce397a5e1ef6fcd550ebfcfb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1389] WebQTest-1898_9f8b39da7c3f621417a7bb2a708495b3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1390/2931] hit=0.358 hit@1=0.327 f1=0.352
+[1394] WebQTrn-2150_b90deee5f877e7e0d697149077eb0aec: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1397] WebQTest-270_4449720a6e25f3093a8065ae980f0221: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1400/2931] hit=0.358 hit@1=0.327 f1=0.352
+[1402] WebQTrn-909_fe06c5a92e0219525f1703c48dbe6e6d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1405] WebQTrn-648_765336ce498563d83d62643fccdd19e1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1406] WebQTest-426_3262810ea731d4d41d8de2942c0797b8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1407] WebQTrn-1793_4cf55de92667f2db566bd1fd11e01a16: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1410/2931] hit=0.357 hit@1=0.326 f1=0.351
+[1420/2931] hit=0.357 hit@1=0.326 f1=0.351
+[1422] WebQTrn-834_3d84ddaa55002207fd7347663e655a6a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1424] WebQTrn-3437_0d0b507c443b11e065c3dbf208eefbea: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1430/2931] hit=0.356 hit@1=0.324 f1=0.350
+[1433] WebQTest-1081_4c79067ed17734dc60e3211489003b0b: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1437] WebQTrn-1816_add926a35447f633156c3f6f5d6929f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1440/2931] hit=0.357 hit@1=0.326 f1=0.351
+[1441] WebQTrn-2259_cba082b234c28b8473efa91eafdf177d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1442] WebQTrn-1632_9d564348c6e6476909f31f7578372624: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1443] WebQTrn-1026_e2a3201452b661586c790521d6f32553: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1444] WebQTrn-1447_909a461bad3d4430117da41a3ff3ff5a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1450/2931] hit=0.357 hit@1=0.325 f1=0.350
+[1455] WebQTrn-441_0e1a7600e60682b064090e01c8c228db: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1459] WebQTrn-1816_681d3cc1ea84472510a4fceba6d16eb4: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1460/2931] hit=0.356 hit@1=0.323 f1=0.348
+[1460] WebQTrn-2190_1fef23c52658b0d04e54cfdab0d84822: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1470/2931] hit=0.355 hit@1=0.323 f1=0.348
+[1472] WebQTrn-3271_aefa6ed2b29ac4dda25980b2832ed049: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1475] WebQTrn-2150_da0668978f10010c4f6ccaef61d0da3f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1477] WebQTrn-1754_97a6655f899fb95b62ba1d272c00dfe6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1480/2931] hit=0.355 hit@1=0.323 f1=0.348
+[1490/2931] hit=0.355 hit@1=0.321 f1=0.347
+[1492] WebQTrn-1809_1725d0d17922d6ce0f2ed136d1b156bb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1498] WebQTrn-3768_373aa1287afcabdf257f6d96974bef6b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1500/2931] hit=0.355 hit@1=0.321 f1=0.347
+[1500] WebQTest-1382_db353fd59c7b923d38fed2b103f88725: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1510/2931] hit=0.356 hit@1=0.322 f1=0.348
+[1517] WebQTest-147_42db58dfa6d9ec581dbc663a46518a0e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1520/2931] hit=0.355 hit@1=0.321 f1=0.347
+[1523] WebQTrn-1641_ca14421db121154668fce47290cebfa0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1524] WebQTrn-1754_367011ab70e77fa1cb858ac620d4d92c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1525] WebQTrn-3346_52b8d8ac3e484e58160db31a00865909: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1526] WebQTrn-1784_cd71ae7e70ed1697f6182815a3ca875e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1530/2931] hit=0.355 hit@1=0.320 f1=0.347
+[1539] WebQTrn-3563_9d79b1666d87dadafdf745a155fef55d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1540/2931] hit=0.354 hit@1=0.320 f1=0.346
+[1541] WebQTest-723_efefcf5127932b7256360bcba8dfac29: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1547] WebQTrn-3437_4e581304d3fec9b3aeb2208b49421402: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1549] WebQTrn-806_7410569b44c208e82f63fd41b3c0f774: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1550/2931] hit=0.353 hit@1=0.319 f1=0.345
+[1554] WebQTest-527_7865ae8622c80b09d6569005c0397496: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1559] WebQTrn-1178_dafc139b4513a2c6b93fd88bef36498e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1560/2931] hit=0.351 hit@1=0.317 f1=0.343
+[1560] WebQTrn-659_dc768c729a0fdf96e3638c642af2bf7b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1567] WebQTrn-577_aefa6ed2b29ac4dda25980b2832ed049: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1569] WebQTest-147_348a3cad473d462d127a9ce91aba1ac6: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1570/2931] hit=0.350 hit@1=0.316 f1=0.342
+[1580/2931] hit=0.348 hit@1=0.314 f1=0.340
+[1580] WebQTrn-2298_a869b3a020d6f7fd42ddbf74214d3a2b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1583] WebQTrn-1363_e027972f7a7e70d5b0f366502bfe3c87: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1586] WebQTrn-1036_2f26ec4b991b438ba16cb381afbf3fa0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1590/2931] hit=0.346 hit@1=0.313 f1=0.338
+[1591] WebQTrn-295_0a048612e873cf284616f245037887be: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1595] WebQTrn-2693_e0781ce6ee283851f8bf3a5c386c764f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1600/2931] hit=0.345 hit@1=0.312 f1=0.337
+[1600] WebQTrn-1363_9ed4de9416765426d39b1362249e9ea3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1602] WebQTrn-1026_e06f173eb98d2baa136bc35ac9dbb3b6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1608] WebQTest-1043_8215bc84fd3a751d835470764a13b63c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1610/2931] hit=0.344 hit@1=0.311 f1=0.336
+[1617] WebQTrn-73_12781e726ed82c2dac09fcd2dce236fb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1620/2931] hit=0.346 hit@1=0.312 f1=0.337
+[1621] WebQTrn-69_75f7d39d822bda23a91efa98ddabf6e8: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1627] WebQTrn-3012_36a80dbb669ce56da38988bfce8b4825: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1630/2931] hit=0.346 hit@1=0.310 f1=0.336
+[1631] WebQTest-967_399c19436cbc08af46c892b88346ab2b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1635] WebQTrn-1754_cd6f24d971b82797be9403b96ff4a9cc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1638] WebQTrn-3252_83db7f44b529d45718cc97f5e1a70a99: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1640/2931] hit=0.346 hit@1=0.310 f1=0.335
+[1641] WebQTest-1898_d924c0e2ecd8ee8289e86c845eff324b: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1645] WebQTest-1976_aeb24745935dbb847d7bc38c88e2eb81: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1650/2931] hit=0.345 hit@1=0.310 f1=0.335
+[1651] WebQTrn-2211_242efa9cd37175c1358f6bb62a7dcbbc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1660/2931] hit=0.343 hit@1=0.308 f1=0.333
+[1670/2931] hit=0.341 hit@1=0.305 f1=0.331
+[1680/2931] hit=0.342 hit@1=0.306 f1=0.332
+[1680] WebQTrn-1657_a7abdbe618ef44903e64ee38215d14ac: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1682] WebQTrn-1949_09d5326469c1c573f89e7d032570d3d9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1684] WebQTrn-2259_9bf8a19c7b33db408b6f02ce55056481: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1687] WebQTrn-191_74efd19081a3ab048a9071831353f334: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1688] WebQTest-1121_219d76ff98f71fe939c88e81e2a66960: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1690/2931] hit=0.342 hit@1=0.306 f1=0.332
+[1691] WebQTrn-1657_d64fd535c1d2db83011eeb1ac4557716: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1693] WebQTest-1441_1e65a5a88d0328acfcef234f424d56bd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1694] WebQTrn-1657_a7772ed9b3c3d89b8c008f266ee0d86a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1700/2931] hit=0.344 hit@1=0.308 f1=0.333
+[1709] WebQTrn-1447_b861d31ca089915150df92ead34fe28e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1710/2931] hit=0.345 hit@1=0.309 f1=0.334
+[1711] WebQTest-1898_0086d2537f89176e0be67746d2047d84: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1716] WebQTrn-441_c1dcebb44ac0494c2dad01917edd14f9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1720/2931] hit=0.343 hit@1=0.308 f1=0.333
+[1726] WebQTest-1694_fe49ec607a9d3f139d2d4c8f5593186d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1730/2931] hit=0.342 hit@1=0.306 f1=0.331
+[1730] WebQTest-952_e6d39a9b5febd6b64ecba02a291338ba: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1731] WebQTest-1819_0844d213b8e04ea46a8222f54408f02a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1739] WebQTrn-116_86357fc301df73754877cf3af70e0406: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1740/2931] hit=0.343 hit@1=0.307 f1=0.332
+[1740] WebQTrn-1036_c7964000752a9a34f003045075f0deb4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1747] WebQTrn-3271_00190585dba1ae6683ec8f49dcfb774e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1749] WebQTrn-191_9993f19c007ff44eb11ce8480b251f7b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1750/2931] hit=0.344 hit@1=0.308 f1=0.333
+[1750] WebQTrn-3647_549761eca9c4f858651ea00f4f9c4abc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1751] WebQTrn-1447_53eedc183ac79923bf10df8c6b01e9f9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1757] WebQTrn-538_edf538d65cbd0df3c44e9639aed1d945: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1758] WebQTrn-63_c285d0b23d2b7f0767a0100f0c9038b2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1759] WebQTrn-1178_8d7ba5aba8a2c4076761e40473acdbd2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1760/2931] hit=0.344 hit@1=0.308 f1=0.333
+[1767] WebQTrn-1109_5706a9f49af8b58fe906d96a0490edb6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1768] WebQTrn-421_7ecd2e240f353965762db4f5ebf4f0d1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1770/2931] hit=0.342 hit@1=0.307 f1=0.332
+[1779] WebQTrn-3507_f0cddbfe8cbc12b1439beff6b530c17d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1780/2931] hit=0.341 hit@1=0.306 f1=0.332
+[1784] WebQTrn-2597_09d5326469c1c573f89e7d032570d3d9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1785] WebQTrn-2674_34844a809b1f9c76d9611df64e40aaeb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1790/2931] hit=0.340 hit@1=0.305 f1=0.331
+[1790] WebQTest-936_4ff18828d6e061ff7d5a54d45c26dc36: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1791] WebQTrn-3529_7e0c281efae0de5b00483718c711b829: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1793] WebQTrn-441_5d1cba94c816bec220b9f98e97493b0f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1800/2931] hit=0.341 hit@1=0.306 f1=0.332
+[1809] WebQTrn-3358_2776f1160658bdfef912a226f7600b36: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1810/2931] hit=0.341 hit@1=0.305 f1=0.331
+[1811] WebQTrn-2711_0e84853362b905cda124cda5165afb90: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1812] WebQTrn-1351_4c56262d6806c8bd5c0fadb75177520a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1816] WebQTest-1782_b183c990916cd703ef71720d378b748e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1820/2931] hit=0.342 hit@1=0.307 f1=0.332
+[1830/2931] hit=0.342 hit@1=0.307 f1=0.332
+[1830] WebQTest-1898_add926a35447f633156c3f6f5d6929f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1831] WebQTrn-363_da2dab563bd0169160a7ada840a2751e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1834] WebQTrn-659_92cd88da247f06a2a19f25b5d45c8d9c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1835] WebQTrn-1542_77c420382ba6d010795aca544a34bd60: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1840/2931] hit=0.341 hit@1=0.305 f1=0.332
+[1849] WebQTrn-3363_ea9a3ec334786222d16751baf87037cf: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1850/2931] hit=0.339 hit@1=0.303 f1=0.330
+[1855] WebQTrn-3346_fefd8e835788eb875c5193327111a2f9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1857] WebQTrn-2150_9aa808981a5d76aaaf6a06c087a9f2a5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1859] WebQTrn-2774_7fc27e583972988f5079cfae63e2992d: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[1860/2931] hit=0.340 hit@1=0.304 f1=0.330
+[1861] WebQTest-823_84872205fc39f2c3a9c0f3a1747aa8bc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1864] WebQTrn-1447_437f145c76453577e1904fa64337c6e7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1866] WebQTest-723_b40b22368bfe8fd95e9ca051fab6df89: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1870/2931] hit=0.340 hit@1=0.305 f1=0.331
+[1872] WebQTrn-295_b9e09c8c52d19fcce05395507d3a33f2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1875] WebQTrn-1542_ac573120b9041418777752b4ce106c4e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1876] WebQTest-1898_681d3cc1ea84472510a4fceba6d16eb4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1880/2931] hit=0.339 hit@1=0.303 f1=0.330
+[1881] WebQTrn-3252_4cff52ee00d48c443727778efb01c77a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1890/2931] hit=0.339 hit@1=0.303 f1=0.330
+[1892] WebQTest-1191_a5a6ec77d26685efbc82d0f40b5256fe: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1893] WebQTest-1392_677460ee64a5213a4a95745e62abf1a5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1894] WebQTrn-2711_f3518e7c28ab856cf7e4795c229cc993: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1895] WebQTrn-1447_a52658886e50dedb04209d06d43fe53b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1900/2931] hit=0.338 hit@1=0.303 f1=0.329
+[1905] WebQTrn-1977_d8607771e5a63c735a7ea4e65c927ab1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1910/2931] hit=0.337 hit@1=0.302 f1=0.328
+[1920/2931] hit=0.338 hit@1=0.303 f1=0.329
+[1927] WebQTrn-191_cb535b26088aa7a8cf49a7aba65ef3d3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1930/2931] hit=0.337 hit@1=0.302 f1=0.328
+[1930] WebQTrn-3252_c05b8453b8c10d437de530c83ca3e87f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1935] WebQTrn-69_89af1e05cf5f1ce201fc2df545e91fa9: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1936] WebQTrn-1861_8e119201800c5787d52b5d764ca5e0ff: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1940/2931] hit=0.337 hit@1=0.302 f1=0.328
+[1941] WebQTrn-1173_c00ef7c27c0bc5b044830449a9ecbdfc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1946] WebQTest-1694_cfd118807ce64912996343c2b9b042b2: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1948] WebQTrn-1657_f4911e93c40f00f8c256e3ccf42422c1: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1950/2931] hit=0.336 hit@1=0.301 f1=0.327
+[1954] WebQTrn-421_173b9cb7d378510679e706f312c87a78: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1960/2931] hit=0.336 hit@1=0.301 f1=0.327
+[1963] WebQTrn-1563_9589fa0cb928db083a8c27074313e0b7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1967] WebQTrn-63_f1cf0646827575b26f2c01d64b05ad95: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1968] WebQTest-775_3c5e6f8736bdeb75994d353bec7108d7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1970/2931] hit=0.336 hit@1=0.301 f1=0.327
+[1974] WebQTrn-538_136e8ccbc3133336d8a4d219fa31fe4d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1977] WebQTrn-2986_2dc0a662213b327801918808306aab0a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1978] WebQTrn-1085_735bae30acb62539ea366fd5118d9688: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1980/2931] hit=0.335 hit@1=0.299 f1=0.326
+[1980] WebQTrn-3563_dab346b38652f6b01f76a5371c4ba759: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1982] WebQTrn-2544_b50f654608a0b53665fc001a9c12902c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1983] WebQTrn-1632_55881f911c82274c9bea7fe00b3b6793: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1985] WebQTrn-2259_88c90369cf682e4b7e5aae0d2a8d58c9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1986] WebQTest-1792_41d970b7e6fddd9fe4cf7eaa0528fe54: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1990/2931] hit=0.334 hit@1=0.299 f1=0.326
+[1992] WebQTest-1191_17dce559f069bbd76f045192423e1ce0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1993] WebQTest-147_644d8b10e41eb2694964c46b85083b9e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[1994] WebQTrn-1688_a72771ee483a6c179b148fa9f9dcf49c: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[1997] WebQTrn-2601_3f44e0c4fd23a8334a972ebb812e0e35: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2000/2931] hit=0.334 hit@1=0.298 f1=0.325
+[2002] WebQTrn-69_716ec34af0f67da67b0ea251b67aa01d: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2007] WebQTrn-2759_9b1129f886de513cf07f3f7516b30442: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2010/2931] hit=0.332 hit@1=0.297 f1=0.323
+[2010] WebQTest-801_8b3815ec57389b13892dd5abb108cc4e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2019] WebQTrn-63_b24d450e9267dcfb21f8e03801deeec2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2020/2931] hit=0.332 hit@1=0.297 f1=0.323
+[2021] WebQTrn-1212_4fcc5622697405644a8b9989677d0f6a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2022] WebQTrn-659_b0acdd2d5f3774a0c85b5206041df88e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2025] WebQTrn-191_5cb49417d744150fabe3bf8a60f0625e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2027] WebQTrn-2190_aa99a807b452745f12d88cebcb393610: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2028] WebQTrn-1657_2c5591f1dbe7402405004d7a0836dd3b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2029] WebQTrn-191_495daa820d7c01814f576b47dc031143: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2030/2931] hit=0.332 hit@1=0.296 f1=0.323
+[2031] WebQTrn-659_a28c0289a5dca981676d759376b842bc: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2033] WebQTrn-659_e2cc7bfdd3ce0acb1cfd8158d4e09384: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2037] WebQTrn-1173_8c0b5fd744b09b6f5c4127b27d41b3fd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2038] WebQTrn-1447_5a4b01dec0c11589bc2a1ecc7931c1c5: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2040/2931] hit=0.334 hit@1=0.297 f1=0.325
+[2040] WebQTrn-3364_5c3a608fb44a9825e6ba6d2b62f4e051: ValueError {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[2041] WebQTrn-659_3833f4a529eda2b01fd6d8ba457f58b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2042] WebQTrn-2169_a22aa8dc00f98fdee43f88f4c6306f5c: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2043] WebQTrn-2603_265b8bfc06092567e0cb22e217c2fe98: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2044] WebQTrn-2711_4a9a779c809b1181a4c82ca6b1d70972: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2050/2931] hit=0.334 hit@1=0.298 f1=0.325
+[2058] WebQTrn-3466_3a3a861fe35922a25bb5991497496887: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2060/2931] hit=0.333 hit@1=0.297 f1=0.324
+[2062] WebQTrn-2401_ff755fe25d565a631b18fd316f4c7e3d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2065] WebQTrn-1625_f48b973ac6e0865d1d91924cf25c3597: ReadTimeout {'failure_stage': 'unclassified', 'error_code': 'unclassified'}
+[2068] WebQTrn-3118_75053cb108f036148b2e5631983f76a3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2070/2931] hit=0.333 hit@1=0.295 f1=0.323
+[2070] WebQTrn-538_4838664135da94e761e7580ea80a051d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2080/2931] hit=0.331 hit@1=0.294 f1=0.321
+[2080] WebQTrn-1929_13ceb7fe0367680a06a1c16bd4e3a466: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2083] WebQTrn-1657_eaeaff16b51e52669edc90501a373c61: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2084] WebQTrn-2211_a0b949c102a4a25cc7c5245a184af113: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2090/2931] hit=0.330 hit@1=0.294 f1=0.321
+[2098] WebQTrn-538_82e2806f1a303fa4337f0e3b72d02236: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2100/2931] hit=0.330 hit@1=0.293 f1=0.321
+[2103] WebQTrn-806_a0d4d7a62c31a7c168182b388c6a97d6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2108] WebQTest-723_52408c07e7ff0a98e712f75cfee90299: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2110/2931] hit=0.329 hit@1=0.292 f1=0.320
+[2111] WebQTrn-1373_dfc0f848e949e200c79257efbe0d6b4a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2115] WebQTrn-1784_ac8f4602caa4eff4ae878915fb90aed4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2120/2931] hit=0.329 hit@1=0.292 f1=0.319
+[2120] WebQTrn-1447_d3cb57501a6cc119b5df32ce0bd8ba18: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2123] WebQTrn-1784_db06b6ad34883a5beb6168c970f98b7c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2130/2931] hit=0.329 hit@1=0.292 f1=0.319
+[2132] WebQTrn-1183_2ec12a06ceff1fc38dbfabc809aba1ea: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2135] WebQTrn-1036_9665cbedeccb1e77d897b5ead8fdce37: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2140/2931] hit=0.330 hit@1=0.292 f1=0.319
+[2142] WebQTrn-2597_ed2bdc3797819981c61646d9c7d41fc2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2149] WebQTrn-2094_339eebcb3fc48e1dd023df1eb6523445: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2150/2931] hit=0.329 hit@1=0.292 f1=0.318
+[2151] WebQTest-1362_fab32877e9e068dc7d70264f4e00b3ac: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2152] WebQTrn-3252_bde48b8fcd994264496aae4133e373f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2158] WebQTrn-63_5a1a688f44243d711cce8c47969dc50e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2160/2931] hit=0.330 hit@1=0.292 f1=0.319
+[2163] WebQTrn-73_77c420382ba6d010795aca544a34bd60: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2167] WebQTrn-1949_444f79cd4b14f26ff220c19e4c97a36f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2170/2931] hit=0.330 hit@1=0.292 f1=0.320
+[2175] WebQTrn-1447_d66e2e0e65358ce744c452b8be2aa567: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2180/2931] hit=0.329 hit@1=0.290 f1=0.319
+[2180] WebQTrn-2693_7eef3253bf4eafe45e05c66e05a2c94c: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2190/2931] hit=0.329 hit@1=0.290 f1=0.319
+[2191] WebQTrn-1447_9c119eb39e52c2db865c020511acb221: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2195] WebQTest-334_ca6ce44d620e3ead920f09f2813da1af: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2198] WebQTrn-970_538a7b35067a537bfa6c692fab856ba0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2200/2931] hit=0.328 hit@1=0.289 f1=0.318
+[2200] WebQTest-723_72807d265bdd7db15573fb71c9501a79: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2204] WebQTrn-3358_23b055b19da513d2651226356225081a: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2207] WebQTrn-2401_16bcc3dca8a1c20229f4341ad409bb04: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2208] WebQTrn-404_3dca701dd925679f24badbf7c4cdd016: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2210/2931] hit=0.328 hit@1=0.288 f1=0.317
+[2210] WebQTest-1591_f1a83a32bf04983a5a5f9da914f867c8: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2214] WebQTrn-3529_3ceebcda122a76f3bf84eceea827c40f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2218] WebQTrn-3252_2bc1377f0b61fb7c69e9eb0272b28da0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2220/2931] hit=0.328 hit@1=0.288 f1=0.317
+[2220] WebQTest-652_c1fdea9e12dca0002497e19c4f34b952: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2222] WebQTrn-1688_173b9cb7d378510679e706f312c87a78: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2228] WebQTrn-3517_0a780a8b810e37e07c5ad0e863bd99fe: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2230/2931] hit=0.329 hit@1=0.289 f1=0.317
+[2232] WebQTrn-1861_e344ce60de3bfdf9a85d49287b94e5ff: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2236] WebQTrn-659_10d3a341df70e5e0eb0ba47f64d14c59: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2237] WebQTrn-2150_ddc384a9880b4ac4cca0772b4eedf416: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2238] WebQTrn-2711_f3317b6b2e24cd774ae8b250522a44be: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2239] WebQTest-418_1a580a0b72b0806c7ed3e7560280233e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2240/2931] hit=0.329 hit@1=0.289 f1=0.318
+[2241] WebQTrn-69_a119a31e4d87fe4674cac81a07c6909a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2242] WebQTrn-191_664396d62d6d576b56420b4865698e30: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2246] WebQTest-823_98b627f884a2b98a10b240373045a94d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2249] WebQTrn-1173_49395a58e9436ac1192810054a389e92: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2250/2931] hit=0.329 hit@1=0.289 f1=0.318
+[2253] WebQTest-1137_2556f08f589714ccae48884d43d5641e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2256] WebQTrn-69_64dac89c573ed801ec4fb9a2d0624cc7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2260/2931] hit=0.328 hit@1=0.289 f1=0.317
+[2262] WebQTest-1137_4699f1594cac00e5e92a5fd4f4003c0e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2270/2931] hit=0.327 hit@1=0.288 f1=0.316
+[2280/2931] hit=0.327 hit@1=0.288 f1=0.316
+[2280] WebQTrn-1657_306f327a2508b5627dd0bec7032432b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2290/2931] hit=0.327 hit@1=0.287 f1=0.315
+[2291] WebQTrn-538_afee52d7c46673cbd03454edc1d0ef9f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2299] WebQTrn-1447_b62496f09dd89eff37a95aae73009f4f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2300/2931] hit=0.327 hit@1=0.288 f1=0.316
+[2304] WebQTrn-1941_1b19fc1a0f9a02115594348e3cb27ceb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2310/2931] hit=0.326 hit@1=0.287 f1=0.315
+[2310] WebQTest-1362_f67fac2525cad6370ab7265bc77f883a: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2315] WebQTrn-1542_5a6ff4d04a675a1faca2c42267554795: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2319] WebQTrn-63_7860f9ce045ce02c83215bb9ce0ff73e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2320/2931] hit=0.326 hit@1=0.287 f1=0.316
+[2320] WebQTrn-1036_6462820c85137cc68aa77506ba9d4beb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2323] WebQTrn-3647_bfb16d956224f4ff7df39609f2a84210: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2329] WebQTest-810_f12c28a04e894937d193ae473c7dccab: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2330/2931] hit=0.326 hit@1=0.286 f1=0.315
+[2332] WebQTrn-2211_133e1781eea4a391f05a0abcb2a8cde4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2337] WebQTrn-1949_4f566ce900e51b482747270e3bc03c85: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2340/2931] hit=0.326 hit@1=0.286 f1=0.314
+[2340] WebQTest-1792_358f9d01de5f9352c9de9b8cd76ed62e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2344] WebQTest-827_0ed55ab55fae21af5b4b03af90678e30: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2348] WebQTrn-3252_517c2c9a60d4450a134b37883844d398: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2350/2931] hit=0.326 hit@1=0.286 f1=0.314
+[2357] WebQTrn-836_9be8c18e016b713cbb7f7feb6badebc7: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2358] WebQTrn-806_ae64704cb347aa76764b4232059b8823: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2359] WebQTrn-538_64fc62dc06d16e612aafb00889d4ada1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2360/2931] hit=0.327 hit@1=0.287 f1=0.315
+[2366] WebQTest-1382_e18694cce96ebad5237f82e2126706ef: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2370/2931] hit=0.327 hit@1=0.286 f1=0.315
+[2371] WebQTrn-3563_a1ef4f2b041540b3ab20c9718475297d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2372] WebQTest-723_9e457911e56fb0e6564dff89d6fed958: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2376] WebQTest-1081_5a03977a9adf88e772806c9d6eff7955: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2379] WebQTrn-3563_ecf74b22fdffc9655aa5128a68cb4dbd: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2380/2931] hit=0.327 hit@1=0.287 f1=0.315
+[2382] WebQTrn-1178_8b3a06ce7029f01e8a8b5b5159eefd29: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2385] WebQTrn-1430_2010abf19410e8e84d100047767e7a24: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2386] WebQTest-577_eb49db682cf9974e8acb43c952272f23: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2388] WebQTrn-806_a725d13be16116bdc37bf5dd852e35b1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2390/2931] hit=0.327 hit@1=0.287 f1=0.315
+[2390] WebQTrn-1941_e27653aa9e2debbbdce047ab9b8b8915: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2392] WebQTrn-3488_9feec7b85d9fba5c263cd3dfbb9e8626: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2397] WebQTrn-191_0652d8b1cb95848c9630860c92e38e6f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2400/2931] hit=0.328 hit@1=0.287 f1=0.316
+[2410/2931] hit=0.328 hit@1=0.287 f1=0.316
+[2410] WebQTrn-69_ca62465710b16274091525842f3659e6: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2412] WebQTrn-1632_21eb9cb85cf7d027c40759101e622c6f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2416] WebQTrn-3645_3dfd9577aee79ae6cdf8c651481460a1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2420/2931] hit=0.328 hit@1=0.288 f1=0.316
+[2430/2931] hit=0.329 hit@1=0.289 f1=0.317
+[2431] WebQTrn-2601_d8b5063bf6002e4ef341480f3460c1b6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2436] WebQTrn-1625_731fcede551ae1a853e803a8005b70a1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2437] WebQTrn-686_af0cf33a6bff9c43bc329d80c5ac4776: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2440/2931] hit=0.330 hit@1=0.290 f1=0.318
+[2446] WebQTrn-1430_88deedec2509dc730005ca2efcc75cf4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2447] WebQTrn-2190_75abf87bc494c1e19b18281eaf0f143e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2450/2931] hit=0.328 hit@1=0.288 f1=0.317
+[2457] WebQTest-823_52563cb3877dbd487ba8cf4e24702282: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2458] WebQTest-1508_8eeafe30df28a9fc78535b885d7a588e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2459] WebQTest-426_dba1c673c0cb44ceb17bfdc3182e37bc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2460/2931] hit=0.328 hit@1=0.288 f1=0.317
+[2461] WebQTrn-2259_de33e5e91c716238ec88411e9508862f: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2470/2931] hit=0.329 hit@1=0.289 f1=0.317
+[2474] WebQTest-952_0814071ee382e8259c04cf243750411c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2480/2931] hit=0.330 hit@1=0.289 f1=0.318
+[2483] WebQTest-270_bedca5dd05ad5ab7a102072e28f15864: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2485] WebQTest-1050_0086d2537f89176e0be67746d2047d84: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2490/2931] hit=0.329 hit@1=0.289 f1=0.318
+[2491] WebQTrn-3012_e265c12ea7f5db03d7c05768cb86ec90: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2500/2931] hit=0.328 hit@1=0.288 f1=0.317
+[2501] WebQTrn-3287_312830a2f3fda705f28548392ebaa8d0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2502] WebQTest-775_263c00ebe2943dc50195dcc0c42c646c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2504] WebQTrn-1565_9097e30ada20504913aa8682a1e23dd3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2510/2931] hit=0.329 hit@1=0.289 f1=0.318
+[2511] WebQTrn-1941_a4276bb7e748ba2d6f404dbf1c6f2fa1: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2512] WebQTest-1137_3dd666cc5b96cfebc2a0ffb38ed94938: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2513] WebQTrn-1363_e61667194d3ce9b58fd868cc0fb9f9ae: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2520/2931] hit=0.329 hit@1=0.289 f1=0.317
+[2522] WebQTest-310_2945752f3c92dbdddaf2ae179c5f6e12: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2526] WebQTrn-648_82d451237e3819f1b085a95e72a89aa4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2530/2931] hit=0.328 hit@1=0.288 f1=0.316
+[2537] WebQTrn-1173_99ba381b3d7731fed626e6120d4673e1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2540/2931] hit=0.327 hit@1=0.287 f1=0.316
+[2550/2931] hit=0.326 hit@1=0.286 f1=0.314
+[2551] WebQTrn-2050_fd6e419f422eb640f1195f506522023e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2554] WebQTrn-1026_10db80b251acde2fbe2a50baeaca7192: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2560/2931] hit=0.327 hit@1=0.287 f1=0.315
+[2563] WebQTrn-2211_c5868f16586f63c698c60ce403e3c309: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2570/2931] hit=0.327 hit@1=0.286 f1=0.315
+[2574] WebQTrn-3529_672902a00b25f005ed3c211f1688c718: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2575] WebQTrn-659_0a0e93b0d63fe2e90e2f106645ad5a2a: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2577] WebQTrn-1793_d5475cda40f403fe0ccf997c8b0b2b58: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2578] WebQTrn-1915_5fc1f8bfcdc0eb7f09c9d976ed42f1c4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2579] WebQTrn-1036_08c0146e6ee5281e52c72f9bb9199474: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2580/2931] hit=0.328 hit@1=0.287 f1=0.316
+[2581] WebQTrn-1735_7b4a6cda045eff7f31193c2992ff7153: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2590/2931] hit=0.327 hit@1=0.286 f1=0.315
+[2591] WebQTrn-2211_3456bd451e39022ee300a76bf08f7535: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2599] WebQTest-681_f7af0a03490b33302d4200901fed5162: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2600/2931] hit=0.328 hit@1=0.286 f1=0.316
+[2601] WebQTrn-1447_87a7c326d1805d780ab20f08a677e322: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2606] WebQTest-426_060135e66e84cbaa29a73145435c5457: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2610/2931] hit=0.328 hit@1=0.286 f1=0.316
+[2615] WebQTrn-1927_972ab0e289bf3299d6fa9b5fff729f54: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2616] WebQTrn-3271_7f9ae201cca433d26ab1ea95fea47844: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2620/2931] hit=0.329 hit@1=0.286 f1=0.316
+[2624] WebQTest-1792_324f0ff9176003570d081f09a51698a3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2626] WebQTrn-2625_58e9566abd822ef6687a4e1a0a22926c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2628] WebQTrn-417_dec931dea52eaf54065477c27fefc69c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2630/2931] hit=0.328 hit@1=0.286 f1=0.316
+[2635] WebQTest-723_0b42e146002f3c196d3de57d91983232: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2639] WebQTrn-2944_bcc7cf86fe716e0c10225e1a98b719bb: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2640/2931] hit=0.327 hit@1=0.285 f1=0.315
+[2641] WebQTest-723_313ad5665508312b968492895147f134: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2645] WebQTrn-1688_37b2b4bd1fe4409bb4e5cbbf955575fc: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2646] WebQTrn-1447_6b46bf8ab0a162497f6fa69398ce4040: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2650/2931] hit=0.327 hit@1=0.284 f1=0.314
+[2657] WebQTest-1853_06a84cc9bf03486f3a4d2ddf960f2837: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2660/2931] hit=0.328 hit@1=0.286 f1=0.315
+[2665] WebQTrn-2944_91fbb9146e3addbb313ff7ead5eb51f8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2669] WebQTest-527_c707414f103503f2530fc654a85645fe: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2670/2931] hit=0.328 hit@1=0.286 f1=0.316
+[2672] WebQTrn-1447_7b72c53e0d683dc19ef38347b9dedf46: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2680/2931] hit=0.327 hit@1=0.285 f1=0.315
+[2688] WebQTrn-3695_1e30d8a45dd5824e557bb244bdc58da0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2690/2931] hit=0.326 hit@1=0.285 f1=0.314
+[2694] WebQTest-426_9b79e13b1905c44914eab9916a30cf0c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2700/2931] hit=0.326 hit@1=0.285 f1=0.315
+[2701] WebQTrn-1447_bcf541828837d93a2ea1b023102e4a10: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2705] WebQTest-1792_8b20e10078b6c375fc754ac0145d9bec: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2708] WebQTest-936_9a2b149a596788a7e0375f644b0edece: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2710/2931] hit=0.328 hit@1=0.286 f1=0.316
+[2710] WebQTest-936_07b2e0f58312e8bcf2eb8eaefb85ccc2: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2718] WebQTest-1364_5c7788508d40112703d31aeb04afe228: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2720/2931] hit=0.328 hit@1=0.286 f1=0.315
+[2730/2931] hit=0.327 hit@1=0.286 f1=0.315
+[2733] WebQTrn-2948_e52f11be0b196f56e47d11dae62dc7d9: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2736] WebQTest-652_8073c926c0609d7fd900b30c51009e8b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2737] WebQTrn-2458_5ce3b93f013bd718d5ca753d5c7075de: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2740/2931] hit=0.328 hit@1=0.286 f1=0.315
+[2741] WebQTrn-2150_1ee37da8542146144a1ebcb2500a2114: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2742] WebQTrn-2190_09e65ee4415be6cf814dfc8c4cd33ace: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2750/2931] hit=0.327 hit@1=0.285 f1=0.314
+[2757] WebQTrn-2150_04ad49b5e54a4a7667bb2238b0a06717: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2758] WebQTrn-538_3594eec2da1975b582d92306cb550b04: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2760/2931] hit=0.327 hit@1=0.285 f1=0.314
+[2760] WebQTrn-3252_486294eb91124adee733f0f1076b2d5b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2765] WebQTest-1361_29cb8eca443e477e655fbeb6dd6a625c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2770/2931] hit=0.325 hit@1=0.284 f1=0.313
+[2773] WebQTrn-3437_af39d276a5a2106607da59256a7cd650: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2774] WebQTrn-1948_ea7ebebfb3a25c8e83b4bbfdda67d52d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2775] WebQTest-1364_6c397eba2af0acc5963d92c4bebdad09: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2776] WebQTrn-3466_ca6ce44d620e3ead920f09f2813da1af: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2777] WebQTest-1081_cae5d27828e858834fa1311abf598bce: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2780/2931] hit=0.325 hit@1=0.283 f1=0.312
+[2782] WebQTest-823_7928c31906d17532b294eb0d786e1ccc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2790/2931] hit=0.325 hit@1=0.283 f1=0.312
+[2790] WebQTest-820_e4b8cc2902be555d609610b698dae3f0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2792] WebQTrn-1948_ae466d1b65d4519cfc39b992275f7a99: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2795] WebQTrn-2325_66bb020a894138146f4649fdab1a7a17: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2797] WebQTrn-1534_bba09e9aad08f962be6e30bd7c55f28d: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2798] WebQTest-472_3bade34690f94a435d217ffbe1a726b0: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2799] WebQTest-1643_6f4dd38c2af13444f82e642ac15aaff4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2800/2931] hit=0.324 hit@1=0.282 f1=0.311
+[2803] WebQTrn-806_28d082235797a3b3fa75aa08fd163f17: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2809] WebQTrn-806_9123442ba659e0626fc1c66eef37398a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2810/2931] hit=0.325 hit@1=0.282 f1=0.311
+[2813] WebQTest-1792_d883a8a48671befac33bf89e3d801830: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2820/2931] hit=0.325 hit@1=0.282 f1=0.311
+[2821] WebQTest-527_ae6d818b464ba6049b12e5b15ae953d9: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2822] WebQTrn-3252_6c782d802f40bdaaf98052192e706516: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2826] WebQTest-1441_a3b2db46dae148f34af3cf3725a860d8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2830/2931] hit=0.324 hit@1=0.282 f1=0.310
+[2840/2931] hit=0.324 hit@1=0.281 f1=0.309
+[2850/2931] hit=0.323 hit@1=0.280 f1=0.309
+[2857] WebQTrn-531_9e891173fd8dfbe0f6a243d47ae5808e: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2858] WebQTrn-421_37b2b4bd1fe4409bb4e5cbbf955575fc: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2860/2931] hit=0.322 hit@1=0.280 f1=0.308
+[2861] WebQTrn-191_3b0320d9955c2d7cca3803e287f379f6: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2864] WebQTrn-659_d1fc3947ed4865e2143cf7690cbb5220: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2866] WebQTrn-836_1a821009d9d43af7c2094125b1dd5136: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2869] WebQTrn-73_cafa7eef130748bfa1a8d35b02769a62: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2870/2931] hit=0.323 hit@1=0.280 f1=0.309
+[2870] WebQTrn-3012_503cf2185c966c0ee0a762bf7a25faa4: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2871] WebQTrn-1447_d1a984c71ef01065e1506cdf340d2ccb: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2880/2931] hit=0.323 hit@1=0.281 f1=0.309
+[2881] WebQTrn-1036_7a1f9047f5100e2853d54d69c6793f2d: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2882] WebQTest-1081_b7b740e4cc26ba9a07d4e983dc77610a: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2890/2931] hit=0.322 hit@1=0.280 f1=0.308
+[2891] WebQTest-1362_07551014c7552b5c62aad0708fcbf065: MemoryValidationError {'failure_stage': 'answers', 'error_code': 'answer_membership'}
+[2894] WebQTrn-538_7835fa0c9d5a5be03696300d3a289b68: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2897] WebQTrn-2686_c3e4efd051fa3ee9af31e20cfa735f1c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2900/2931] hit=0.322 hit@1=0.279 f1=0.307
+[2901] WebQTrn-314_7307101cc5def332a7d6ec9b44c2b45b: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2904] WebQTrn-1447_f27c39ce44e24ccea03afc8adacb031c: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2906] WebQTrn-63_54f7b86034c776ae4a456973af01f7a8: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2910/2931] hit=0.321 hit@1=0.279 f1=0.307
+[2910] WebQTrn-1447_5912713a81269e28e54d0b8311b93490: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2912] WebQTrn-1816_9f8b39da7c3f621417a7bb2a708495b3: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2913] WebQTrn-1363_b478ae21c5a036a8227a221450bf4243: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2920/2931] hit=0.321 hit@1=0.278 f1=0.307
+[2921] WebQTrn-1688_7ecd2e240f353965762db4f5ebf4f0d1: MemoryValidationError {'failure_stage': 'selection', 'error_code': 'selected_membership'}
+[2930/2931] hit=0.321 hit@1=0.279 f1=0.307
+
+=== E2E results (n=2287, errors=644) ===
+Hit   = 0.3209
+Hit@1 = 0.2790
+F1    = 0.3073
+time 22385s

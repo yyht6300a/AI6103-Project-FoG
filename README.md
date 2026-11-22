@@ -359,9 +359,9 @@ python -m unittest discover -s tests -p 'test_b_*.py'
 
 ### LLM configuration
 
-Copy [`env_example`](env_example) to `.env` and fill in `LLM_API_KEY` locally. The local file contains only `LLM_MODEL_NAME`, `LLM_API_KEY` and `LLM_BASE_URL`. Nonempty model and URL values override defaults in [`config/config-dev.yml`](config/config-dev.yml); blank values retain those defaults. The key is read only from `.env`, which Git ignores. Shared YAML defaults remain `gpt-4o-mini` at `https://api.openai.com/v1`. For local development, `.env` may select `deepseek-flash` at `https://api.deepseek.com` with a DeepSeek key through the [official OpenAI-compatible API](https://api-docs.deepseek.com/). Member D must switch back to `gpt-4o-mini` with the OpenAI endpoint and key and validate the module before delivery. Set the model and URL together, or leave both blank for YAML defaults; failures do not trigger a provider fallback. The allowed models are `deepseek-flash`, `gpt-4o-mini`, `gpt-4`, and `gpt-4o`. The earlier OpenAI live check passed on 2026/11/08 with `gpt-4o-mini-2024-07-18`.
+Copy [`env_example`](env_example) to `.env` and fill in `LLM_API_KEY` locally. The local file contains only `LLM_MODEL_NAME`, `LLM_API_KEY`, `LLM_BASE_URL` and an optional `LLM_PROXY_URL`. Nonempty model and URL values override defaults in [`config/config-dev.yml`](config/config-dev.yml); blank values retain those defaults. The key is read only from `.env`, which Git ignores. Shared YAML defaults remain `gpt-4o-mini` at `https://api.openai.com/v1`. For local development, `.env` may select `deepseek-flash` at `https://api.deepseek.com` with a DeepSeek key through the [official OpenAI-compatible API](https://api-docs.deepseek.com/). Member D must switch back to `gpt-4o-mini` with the OpenAI endpoint and key and validate the module before delivery. Set the model and URL together, or leave both blank for YAML defaults; failures do not trigger a provider fallback. The allowed models are `deepseek-flash`, `gpt-4o-mini`, `gpt-4`, and `gpt-4o`. The earlier OpenAI live check passed on 2026/11/08 with `gpt-4o-mini-2024-07-18`.
 
-Set `llm.timeout` and `llm.max_retries` only in YAML. Timeout is a positive finite number of seconds per HTTP connect/read operation; max_retries is the non-negative number of additional attempts after the first request. Legacy `LLM_TIMEOUT` and `LLM_MAX_RETRIES` entries in `.env` are ignored. Dotenv files support single-line assignments, quotes, optional `export` prefixes and comments; shell commands, multiline values and variable interpolation are unsupported. Configuration loading neither reads nor modifies process environment variables. The HTTP client disables environment-derived proxies, CA bundles and credentials and passes the model, key, endpoint and timeout explicitly. It uses the OpenAI-compatible `/chat/completions` protocol; other protocols need a separate adapter.
+Set `llm.timeout` and `llm.max_retries` only in YAML. Timeout is a positive finite number of seconds per HTTP connect/read operation; max_retries is the non-negative number of additional attempts after the first request. Legacy `LLM_TIMEOUT` and `LLM_MAX_RETRIES` entries in `.env` are ignored. Dotenv files support single-line assignments, quotes, optional `export` prefixes and comments; shell commands, multiline values and variable interpolation are unsupported. Configuration loading neither reads nor modifies process environment variables. The HTTP client disables environment-derived proxies, CA bundles and credentials and passes the model, key, endpoint and timeout explicitly. An explicit `LLM_PROXY_URL` in `.env` is honored as the transport proxy; without it no proxy is used. It uses the OpenAI-compatible `/chat/completions` protocol; other protocols need a separate adapter.
 
 ```python
 from src.agent.llm_config import load_llm_config
@@ -532,3 +532,14 @@ python scripts/run_e2e.py \
 脚本按题目逐条容错，单题异常不会中断整体运行；每 10 题打印一次进度，最后输出
 `n`、`errors`、`Hit`、`Hit@1`、`F1` 与总耗时。这是当前端到端第一版指标，
 多轮再检索与问题分解是后续扩展方向。
+
+## 9. 进展更新（2026-11-22）
+
+端到端链路（A→B→C→D→E）已全量跑通，关键修复与结论：
+
+- 支持可选代理：`.env` 新增 `LLM_PROXY_URL`，用于在无法直连 OpenAI 的节点上走本地代理。
+- evidence_decision 失败时回退到 Figure 8 基线选择；排名阶段改为严格 JSON 输出；membership 校验改为 NFC+去首尾空格归一化；非 JSON 响应与 403 支持重试。
+- `tau_p` 按我们自己的分数分布重新定标（论文 0.7 不适用）：WebQSP 取 0.30，CWQ 取 0.15。
+- 全量 `gpt-4o-mini` 结果：WebQSP Hit 0.4726 / Hit@1 0.4473 / F1 0.4593（1523 题，99 错）；CWQ Hit 0.3209 / Hit@1 0.2790 / F1 0.3073（2931 题，644 错）。
+- 主要瓶颈：复现版 scorer/FFP 分数偏低、CWQ 未做联合训练、mini 在 CWQ 上的三元组字面一致性问题。
+- 详细分析与数据见 `analysis/preliminary_analysis.md`，过程日志归档在 `analysis/archive/logs/`。

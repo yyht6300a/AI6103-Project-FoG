@@ -1,0 +1,4 @@
+nohup: ignoring input
+eval questions: 289
+no-FFP   : {'auc': 0.9335, 'tau_e_recall': 0.8906, 'tau_e_kept_frac': 0.2113, 'tau_p_recall': 0.2033}
+with-FFP : {'auc': 0.9601, 'tau_e_recall': 0.8122, 'tau_e_kept_frac': 0.1089, 'tau_p_recall': 0.439}

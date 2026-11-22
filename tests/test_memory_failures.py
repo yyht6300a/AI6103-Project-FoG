@@ -169,7 +169,6 @@ class MemoryFailureTests(unittest.TestCase):
         bad_json = completion([B], [B[2]])
         bad_json["choices"][0]["message"]["content"] = "not JSON"
         cases = (
-            (b"not JSON", "error"),
             ([], "error"),
             ({"choices": []}, "success"),
             (bad_json, "success"),
@@ -194,6 +193,17 @@ class MemoryFailureTests(unittest.TestCase):
                 self.assertEqual(len(rows), 1)
                 self.assertEqual(rows[0]["status"], status)
                 self.assertEqual(bool(rows[0]["error_type"]), status == "error")
+        # A malformed HTTP body is transport-level and is retried inside the
+        # client budget before surfacing, unlike business-content validation.
+        with patch("requests.adapters.HTTPAdapter.send",
+                   side_effect=[self.response(b"not JSON")] * 3) as send, patch(
+            "src.agent.llm_client.time.sleep",
+        ) as sleep:
+            with self.assertRaises(ValueError):
+                self.run_round()
+            self.assertEqual(send.call_count, 3)
+            self.assertEqual(sleep.call_args_list, [call(1), call(2)])
+        self.assert_original_state()
         with patch("requests.adapters.HTTPAdapter.send", return_value=self.response(completion([A, B], [B[2]]))):
             result = self.run_round()
         self.assertEqual(result.state.memory_triplets, {A, B})
@@ -215,8 +225,8 @@ class MemoryFailureTests(unittest.TestCase):
              requests.Timeout, ["error"] * 3, ["Timeout"] * 3),
             ("rate_limit", [self.response({}, 429) for _ in range(3)],
              requests.HTTPError, ["error"] * 3, ["HTTPError"] * 3),
-            ("outer_json", [self.response(b"{invalid JSON")],
-             ValueError, ["error"], ["JSONDecodeError"]),
+            ("outer_json", [self.response(b"{invalid JSON") for _ in range(3)],
+             ValueError, ["error"] * 3, ["JSONDecodeError"] * 3),
             ("content_json", [self.response(invalid_content)],
              ValueError, ["success"], [""]),
             ("unknown_triple", [self.response(completion(

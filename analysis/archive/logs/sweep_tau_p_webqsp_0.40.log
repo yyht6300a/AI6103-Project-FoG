@@ -1,0 +1,10 @@
+e2e questions: 20
+llm: gpt-4o @ https://api.openai.com/v1
+[10/20] hit=0.500 hit@1=0.500 f1=0.500
+[20/20] hit=0.550 hit@1=0.550 f1=0.550
+
+=== E2E results (n=20, errors=0) ===
+Hit   = 0.5500
+Hit@1 = 0.5500
+F1    = 0.5500
+time 72s

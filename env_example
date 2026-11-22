@@ -11,3 +11,6 @@
 LLM_MODEL_NAME=
 LLM_API_KEY=
 LLM_BASE_URL=
+# Optional: local transport proxy for reaching the LLM endpoint (e.g. 127.0.0.1:7890).
+# Leave blank when the endpoint is reachable directly. Never committed publicly.
+LLM_PROXY_URL=

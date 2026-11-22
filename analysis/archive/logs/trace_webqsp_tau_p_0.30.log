@@ -1,0 +1,21 @@
+WebQTest-0: HIT pred=['Jamaican Creole English Language', 'Jamaican English'] gold=['Jamaican English', 'Jamaican Creole English Language']
+WebQTest-1: C_pruned (gold missing in kept); gold_scores_present=[0.471]
+WebQTest-3: HIT pred=['William Roache'] gold=['William Roache']
+WebQTest-6: HIT pred=['Mobile'] gold=['Mobile']
+WebQTest-7: HIT pred=['Diamond'] gold=['Diamond']
+WebQTest-8: HIT pred=['Bifocals', 'Franklin stove', 'Glass harmonica', 'Lightning rod'] gold=['Lightning rod', 'Bifocals', 'Glass harmonica', 'Franklin stove']
+WebQTest-9: A_candidate
+WebQTest-13: CD_tau_p (max gold score=0.277 <= 0.3)
+WebQTest-14: CD_tau_p (max gold score=0.162 <= 0.3)
+WebQTest-16: HIT pred=['England', 'Northern Ireland', 'Scotland', 'Wales'] gold=['England', 'Northern Ireland', 'Scotland', 'Wales']
+WebQTest-19: HIT pred=['Central Time Zone'] gold=['Central Time Zone']
+WebQTest-20: CD_tau_p (max gold score=0.154 <= 0.3)
+WebQTest-21: C_pruned (gold missing in kept); gold_scores_present=[]
+WebQTest-22: HIT pred=['Semi-presidential system', 'Provisional government'] gold=['Semi-presidential system', 'Provisional government']
+WebQTest-23: HIT pred=['Memphis'] gold=['Memphis']
+WebQTest-24: HIT pred=['Baltimore'] gold=['Baltimore']
+WebQTest-26: HIT pred=['Georgia Aquarium', 'Zoo Atlanta', 'Six Flags Over Georgia', 'Six Flags White Water', 'Center for Puppetry Arts'] gold=['Atlanta Symphony Orchestra', 'Turner Field', 'Cobb Energy Performing Arts Centre', 'Four Seasons Hotel Atlanta', 'Underground Atlanta', 'Atlanta Marriott Marquis', 'Georgia World Congress Center', 'The Tabernacle', 'Peachtree Road Race', 'Georgia Aquarium', 'Georgia Dome', 'Philips Arena', 'Omni Coliseum', 'Hyatt Regency Atlanta', 'Centennial Olympic Park', 'Zoo Atlanta', 'Six Flags Over Georgia', 'Six Flags White Water', 'Atlanta Cyclorama & Civil War Museum', 'Georgia State Capitol', 'World of Coca-Cola', 'CNN Center', 'Fernbank Science Center', 'Fernbank Museum of Natural History', 'Fox Theatre', 'Woodruff Arts Center', 'Margaret Mitchell House & Museum', 'Martin Luther King, Jr. National Historic Site', 'Atlanta History Center', 'Variety Playhouse', 'Jimmy Carter Library and Museum', 'Masquerade', 'Arbor Place Mall', 'Atlanta Ballet', 'Center for Puppetry Arts', 'Atlanta Jewish Film Festival']
+WebQTest-28: C_pruned (gold missing in kept); gold_scores_present=[0.603]
+WebQTest-33: HIT pred=['Central European Time Zone'] gold=['Central European Time Zone']
+WebQTest-34: C_pruned (gold missing in kept); gold_scores_present=[]
+SUMMARY {"hit": 12, "A_candidate": 1, "C_pruned": 4, "CD_tau_p": 3, "D_answer": 0, "error": 0}

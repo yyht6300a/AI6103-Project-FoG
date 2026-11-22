@@ -25,7 +25,7 @@ def fse_ffp_to_potential(out: FseFfpOutput, subgraph):
     """
     nodes = subgraph.nodes
     triples = [[nodes[e.s].name, e.r, nodes[e.t].name] for e in out.kept_edges]
-    scores = [float(p) for p in out.refined_prob]
+    scores = [float(p.detach()) for p in out.refined_prob]
     return triples, scores
 
 
